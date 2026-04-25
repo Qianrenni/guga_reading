@@ -1,0 +1,81 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "qianrenni/test_main" ]
+  pull_request:
+    branches: [ "qianrenni/test_main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  #  提前切到 Node 24
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4  # 暂时先用 v4(目前最新稳定)
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+
+      - name: Build packages
+        run: |
+          pnpm run types
+
+      - name: Build frontend
+        run: |
+          pnpm run build:all
+
+      - name: Build the Docker image
+        run: |
+          docker build \
+            -t guga_backend \
+            -f ./backend/Dockerfile \
+            ./backend
+          docker build \
+            -t guga_frontend \
+            -f ./Dockerfile \
+            .
+
+      - name: Save Docker images
+        run: |
+          docker save guga_backend -o ./guga_backend.tar
+          docker save guga_frontend -o ./guga_frontend.tar
+          chmod 644 *.tar
+          
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "guga_backend.tar,guga_frontend.tar,user/dist,author/dist"
+          target: "/opt/online_reading"
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /opt/online_reading
+            rm -rf user_dist author_dist
+            mv user/dist user_dist
+            mv author/dist author_dist
+            docker-compose down
+            docker rmi guga_frontend guga_backend || true
+            docker load -i guga_backend.tar
+            docker load -i guga_frontend.tar
+            docker-compose up -d

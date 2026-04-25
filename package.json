@@ -1,0 +1,36 @@
+{
+    "name": "guga-reading",
+    "version": "1.0.0",
+    "private": true,
+    "description": " a online reading project composed by three frontend parts and one backend part",
+    "author": "qianrenni",
+    "type": "module",
+    "license": "ISC",
+    "scripts": {
+        "types": "pnpm --filter @guga-reading/types run build && pnpm --filter @guga-reading/shares run build",
+        "dev:author": "pnpm --filter @guga-reading/author run dev",
+        "dev:user": "pnpm --filter @guga-reading/user run dev",
+        "dev:admin": "pnpm --filter @guga-reading/admin run dev",
+        "build:author": "pnpm --filter @guga-reading/author run build",
+        "build:user": "pnpm --filter @guga-reading/user run build",
+        "build:all": "pnpm --filter @guga-reading/author run build && pnpm --filter @guga-reading/user run build",
+        "prettier": "npx prettier --write \"*/**/*.{js,ts,vue,css,md}\"",
+        "prepare": "husky install"
+    },
+    "dependencies": {
+        "axios": "^1.13.6"
+    },
+    "devDependencies": {
+        "eslint": "^10.2.1",
+        "prettier": "^3.8.3",
+        "@qyani/eslint-config": "workspace:*",
+        "husky": "^8.0.0",
+        "lint-staged": "^16.4.0"
+    },
+    "lint-staged": {
+        "*.{js,ts,vue,css,md}": [
+            "prettier --write",
+            "eslint --cache --fix"
+        ]
+    }
+}

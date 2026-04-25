@@ -1,0 +1,76 @@
+[tool.ruff]
+# 1. 基础设置
+line-length = 88                  # 每行最大字符数(与 Black 默认一致)
+src = ["app","test"]                     # 源代码目录,帮助 Ruff 正确解析第一方导入
+
+# 2. 排除的文件/文件夹
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "migrations",                  # Django 迁移文件通常不需要检查
+]
+
+# 3. Linting (代码质量检查) 配置
+[tool.ruff.lint]
+# 选择要启用的规则集
+select = [
+    "E",      # pycodestyle errors (语法错误、风格问题)
+    "W",      # pycodestyle warnings (警告)
+    "F",      # Pyflakes (未使用的导入、变量等)
+    "I",      # isort (导入排序)
+    "N",      # pep8-naming (命名规范)
+    "UP",     # pyupgrade (自动升级语法,如 f-string, type hint)
+    "B",      # flake8-bugbear (常见 bug 和設計問題)
+    "C4",     # flake8-comprehensions (列表推导式优化)
+    "SIM",    # flake8-simplify (简化代码)
+    "TCH",    # flake8-type-checking (类型检查优化)
+    "ARG",    # flake8-unused-arguments (未使用的参数)
+    "PTH",    # flake8-use-pathlib (推荐使用 pathlib)
+    "RUF",    # Ruff 自有规则
+]
+
+# 忽略特定规则
+ignore = [
+    "E501",   # 忽略行过长错误(由 formatter 自动处理,lint 无需报错)
+    "B008",   # 允许在函数签名中调用函数(常用于 FastAPI/Depends)
+    "SIM108", # 不使用三元运算符替换 if-else(有时可读性更差)
+]
+
+# 允许自动修复的规则
+fixable = ["ALL"]
+unfixable = []
+
+# 每行允许的注释长度等细节
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# 4. Formatter (格式化) 配置
+[tool.ruff.format]
+quote-style = "double"            # 使用双引号 "hello"
+indent-style = "space"            # 使用空格缩进
+skip-magic-trailing-comma = false # 保留魔法尾随逗号
+line-ending = "auto"              # 自动检测换行符 (LF/CRLF)
+
+# 5. 导入排序配置 (isort 兼容)
+[tool.ruff.lint.isort]
+known-first-party = ["app"]  # 替换为你自己的项目包名
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+combine-as-imports = true

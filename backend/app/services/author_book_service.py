@@ -1,0 +1,726 @@
+import os
+
+import aiofiles
+from fastapi import BackgroundTasks, UploadFile
+from sqlmodel import delete, insert, literal, select, update
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.core.config import SETTING
+from app.core.database import get_session_context
+from app.core.error_handler import AppError
+from app.enum.enum import ActionEnum, BookDraftStatusEnum
+from app.middleware.logging import logger
+from app.models.sql.author import Author, AuthorBook
+from app.models.sql.book import BookDraft
+from app.models.sql.book_chapter import BookChapter, BookChapterDraft
+from app.models.sql.statistics import ChapterReadStatistics
+from app.models.sql.user import FullUser
+from app.services.book_service import BookService
+from app.services.cache_service import cache
+from app.utils.codec import PydanticListCodec
+
+
+async def save_book_cover(
+    cover_file: UploadFile | None, book_draft_id: int, is_created: bool
+):
+    """
+    保存书籍封面
+    :param cover_file: 封面文件
+    :param book_draft_id: 书籍id
+    :param is_created: 是否新建
+    :return: None
+    """
+    if not cover_file:
+        return
+    statement = select(BookDraft).where(BookDraft.id == book_draft_id)
+
+    async with get_session_context() as database:
+        try:
+            result = await database.exec(statement)
+            book_draft = result.first()
+            book_dir = (
+                SETTING.STATIC_TEMP_DIR_PATH
+                / f"{'book_create' if is_created else 'book'}"
+                / f"{book_draft.id if is_created else book_draft.book_id}"
+            )
+            cover_path = book_dir / "cover.webp"
+            book_dir.mkdir(parents=True, exist_ok=True)
+            async with aiofiles.open(cover_path, "wb") as f:
+                await f.write(await cover_file.read())
+                logger.info(f"保存书籍封面成功: {cover_path}")
+            book_draft.cover = "temp/book_create" if is_created else "temp/book"
+            await database.commit()
+            logger.info("更新书籍封面成功")
+        except Exception as e:
+            logger.error(e, exc_info=True)
+
+
+async def delete_book_cover(id: int, is_created: bool):
+    """
+    删除书籍封面
+    :param id: 书籍id
+    :param is_created: 是否新建
+    :return: None
+    """
+    book_dir = (
+        SETTING.STATIC_TEMP_DIR_PATH
+        / f"{'book_create' if is_created else 'book'}"
+        / f"{id}"
+    )
+    cover_path = book_dir / "cover.webp"
+    if cover_path.exists():
+        cover_path.unlink()
+        logger.info(f"删除书籍封面: {cover_path}")
+    if len(list(book_dir.iterdir())) == 0:
+        os.removedirs(book_dir)
+        logger.info(f"删除空目录{book_dir}")
+
+
+class AuthorBookService:
+    @staticmethod
+    async def get_author_book_list(
+        database: AsyncSession, user: FullUser, background_tasks: BackgroundTasks
+    ):
+        """
+        获取作者的书籍列表
+        :param database: 数据库会话
+        :param user: 用户
+        :return:
+        """
+        statement = (
+            select(AuthorBook.book_id)
+            .join(Author, AuthorBook.author_id == Author.id)
+            .where(Author.user_id == user.id)
+        )
+        result = await database.exec(statement)
+        book_ids = list(result)
+        books = await BookService.get_book_by_list(
+            book_ids=book_ids, database=database, background_tasks=background_tasks
+        )
+        return books
+
+    @staticmethod
+    async def is_own_book(
+        database: AsyncSession, user: FullUser, id: int, is_draft: bool = False
+    ) -> bool:
+        """
+        判断书籍是否属于当前用户
+        :param database: 数据库会话
+        :param user: 用户
+        :param id: 书籍id
+        :param is_draft: 是否是草稿
+        :return: bool
+        """
+        statement = (
+            select(AuthorBook)
+            .join(Author, AuthorBook.author_id == Author.id)
+            .where(Author.user_id == user.id)
+            .where(AuthorBook.book_id == id)
+        )
+        if is_draft:
+            statement = (
+                select(BookDraft)
+                .join(Author, Author.id == BookDraft.author_id)
+                .where(BookDraft.id == id)
+                .where(Author.user_id == user.id)
+            )
+        result = await database.exec(statement)
+        return bool(result.first())
+
+    @staticmethod
+    async def create_author_book(
+        database: AsyncSession,
+        name: str,
+        author: str,
+        cover: UploadFile,
+        description: str,
+        category: str,
+        tags: str,
+        background_tasks: BackgroundTasks,
+        user: FullUser,
+    ) -> bool:
+        """
+        创建作者书籍关系
+        :param database: 数据库会话
+        :param name: 书籍名称
+        :param author: 作者
+        :param cover: 封面文件
+        :param description
+        :param category
+        :param tags
+        :param background_tasks
+        :param user: 用户
+        :return: AuthorBook
+        """
+
+        try:
+            statement = select(Author).where(Author.user_id == user.id)
+            result = await database.exec(statement)
+            author_model = result.first()
+            if not author_model:
+                raise AppError(message="作者不存在")
+            draft_book = BookDraft(
+                name=name,
+                author=author,
+                description=description,
+                category=category,
+                tags=tags,
+                author_id=author_model.id,
+                created_at=None,
+                updated_at=None,
+            )
+            database.add(draft_book)
+            await database.commit()
+            await database.refresh(draft_book)
+            background_tasks.add_task(
+                save_book_cover, cover, draft_book.id, is_created=True
+            )
+            return True
+        except Exception as e:
+            logger.error(e)
+            await database.rollback()
+            raise AppError(message="创建书籍失败") from e
+
+    @staticmethod
+    async def create_author_book_chapter(
+        database: AsyncSession,
+        book_id: int,
+        title: str,
+        content: str,
+        sort_order: float,
+        user: FullUser,
+        background_tasks: BackgroundTasks,
+    ):
+        """
+        创建作者书籍章节
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param title:  标题
+        :param content:  内容
+        :param sort_order: 排序key
+        :param user:  当前用户
+        :param background_tasks: 后台任务
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=book_id
+        )
+        if not is_own_book:
+            # 403 Forbidden
+            raise AppError(message="您没有权限创建此书籍", status_code=403)
+        try:
+            book_chapter_draft = BookChapterDraft(
+                book_id=book_id,
+                title=title,
+                sort_order=sort_order,
+                word_count=len(content),
+            )
+            database.add(book_chapter_draft)
+            await database.commit()
+            await database.refresh(book_chapter_draft)
+            temp_book_chapter_id = book_chapter_draft.id
+            background_tasks.add_task(
+                BookService.write_temp_book_chapter,
+                book_id,
+                temp_book_chapter_id,
+                content,
+            )
+            return True
+        except Exception as e:
+            logger.error(e)
+            await database.rollback()
+            raise AppError(message="创建书籍章节失败") from e
+
+    @staticmethod
+    async def update_author_book_chapter(
+        database: AsyncSession,
+        book_id: int,
+        content: str,
+        title: str,
+        is_draft: bool,
+        sort_order: float,
+        user: FullUser,
+        background_tasks: BackgroundTasks,
+    ):
+        """
+        更新作者书籍章节
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param sort_order: 排序key
+        :param content:  内容
+        :param is_draft: 是否为草稿
+        :param title:  标题
+        :param user:  当前用户
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=book_id
+        )
+        if not is_own_book:
+            # 403 Forbidden
+            raise AppError(message="您没有权限创建此书籍", status_code=403)
+        temp_book_chapter_id = -1
+        success = False
+        if is_draft:
+            statement = (
+                select(BookChapterDraft)
+                .where(BookChapterDraft.book_id == book_id)
+                .where(BookChapterDraft.sort_order == sort_order)
+            )
+
+            try:
+                result = await database.exec(statement)
+                book_chapter_draft = result.one_or_none()
+                if not book_chapter_draft:
+                    raise AppError(message="章节不存在", status_code=404)
+                book_chapter_draft.title = title
+                book_chapter_draft.word_count = len(content)
+                temp_book_chapter_id = book_chapter_draft.id
+                await database.commit()
+                success = True
+
+            except Exception as e:
+                await database.rollback()
+                logger.error(e)
+                raise AppError(message="更新书籍章节失败") from e
+        else:
+            try:
+                book_chapter_draft = BookChapterDraft(
+                    book_id=book_id,
+                    title=title,
+                    sort_order=sort_order,
+                    action=ActionEnum.UPDATE,
+                    word_count=len(content),
+                    created_at=None,
+                    updated_at=None,
+                )
+                database.add(book_chapter_draft)
+                await database.commit()
+                await database.refresh(book_chapter_draft)
+                temp_book_chapter_id = book_chapter_draft.id
+                success = True
+            except Exception as e:
+                logger.error(e)
+                await database.rollback()
+                raise AppError(message="更新书籍章节失败") from e
+        if success and temp_book_chapter_id != -1:
+            background_tasks.add_task(
+                (
+                    BookService.update_temp_book_chapter
+                    if is_draft
+                    else BookService.write_temp_book_chapter
+                ),
+                book_id,
+                temp_book_chapter_id,
+                content,
+            )
+
+    @staticmethod
+    async def delete_author_book_chapter(
+        database: AsyncSession,
+        book_id: int,
+        sort_orders: list[float],
+        user: FullUser,
+        is_draft: bool,
+    ):
+        """
+        删除作者书籍章节
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param chapter_index:  章节索引
+        :param user:  当前用户
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=book_id
+        )
+        if not is_own_book:
+            # 403 Forbidden
+            raise AppError(message="您没有权限删除此章节", status_code=403)
+        if is_draft:
+            try:
+                statement = (
+                    delete(BookChapterDraft)
+                    .where(BookChapterDraft.book_id == book_id)
+                    .where(BookChapterDraft.sort_order.in_(sort_orders))
+                )
+
+                await database.exec(statement)
+                await database.commit()
+            except Exception as e:
+                logger.error(e)
+                await database.rollback()
+                raise AppError(message="删除书籍章节失败") from e
+        else:
+            # 构造 SELECT 子查询(带固定值)
+            select_statement = (
+                select(
+                    BookChapter.book_id,
+                    BookChapter.sort_order,
+                    BookChapter.title,
+                    literal("DELETE").label("action"),
+                    BookChapter.word_count,
+                    literal("PENDING").label("status"),
+                )
+                .where(BookChapter.book_id == book_id)
+                .where(BookChapter.sort_order.in_(sort_orders))
+            )
+            insert_statement = insert(BookChapterDraft).from_select(
+                ["book_id", "sort_order", "title", "action", "word_count", "status"],
+                select_statement,
+            )
+            try:
+                await database.exec(insert_statement)
+                await database.commit()
+            except Exception as e:
+                logger.error(e)
+                await database.rollback()
+                raise AppError(message="删除书籍章节失败") from e
+
+    @staticmethod
+    async def get_author_book_chapter_draft(
+        database: AsyncSession, book_id: int, user: FullUser, chapter_id: int = -1
+    ):
+        """
+        获取作者书籍章节草稿,如果chapter_id为-1则返回所有草稿
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param user:  当前用户
+        :param chapter_id:  章节id
+        """
+        if book_id == -1:
+            # 获取与作者相关的所有书籍章节草稿
+            statement = (
+                select(BookChapterDraft)
+                .join(AuthorBook, BookChapterDraft.book_id == AuthorBook.book_id)
+                .join(Author, AuthorBook.author_id == Author.id)
+                .where(Author.user_id == user.id)
+            )
+            result = await database.exec(statement)
+            return list(result.all())
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=book_id
+        )
+        if not is_own_book:
+            # 403 Forbidden
+            raise AppError(message="您没有权限获取此章节草稿", status_code=403)
+
+        result = await BookService.get_book_chapter_draft(
+            database=database, book_id=book_id, chapter_id=chapter_id
+        )
+        return result
+
+    @staticmethod
+    async def get_author_book_chapter(
+        database: AsyncSession,
+        book_id: int,
+        sort_order: float,
+        user: FullUser,
+        is_draft: bool,
+    ):
+        """
+        获取作者书籍章节
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param sort_order:  排序key
+        :param user:  当前用户
+        :param is_draft:  是否是草稿
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=book_id
+        )
+        if not is_own_book:
+            # 403 Forbidden
+            raise AppError(message="您没有权限获取此章节", status_code=403)
+        if is_draft:
+            statement = (
+                select(BookChapterDraft)
+                .where(BookChapterDraft.book_id == book_id)
+                .where(BookChapterDraft.sort_order == sort_order)
+            )
+
+            result = await database.exec(statement)
+            book_chapter_draft = result.one_or_none()
+            if not book_chapter_draft:
+                raise AppError(message="章节不存在", status_code=404)
+            content = await BookService.read_temp_book_chapter(
+                book_id=book_id, chapter_id=book_chapter_draft.id
+            )
+            return content
+        else:
+            statement = (
+                select(BookChapter)
+                .where(BookChapter.book_id == book_id)
+                .where(BookChapter.sort_order == sort_order)
+            )
+            result = await database.exec(statement)
+            book_chapter = result.one_or_none()
+            if not book_chapter:
+                raise AppError(message="章节不存在", status_code=404)
+            content = await BookService.book_chapter_read_from_file(
+                book_id, book_chapter.id
+            )
+            return content
+
+    @staticmethod
+    async def get_author_book_chapter_draft_item(
+        database: AsyncSession, book_id: int, sort_order: float, user: FullUser
+    ):
+        """
+        获取作者书籍章节草稿
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param sort_order:  排序key
+        :param user:  当前用户
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=book_id
+        )
+        if not is_own_book:
+            # 403 Forbidden
+            raise AppError(message="您没有权限获取此章节草稿", status_code=403)
+
+        statement = (
+            select(BookChapterDraft)
+            .where(BookChapterDraft.book_id == book_id)
+            .where(BookChapterDraft.sort_order == sort_order)
+        )
+        result = await database.exec(statement)
+        book_chapter_draft = result.one_or_none()
+        if not book_chapter_draft:
+            raise AppError(message="章节不存在", status_code=404)
+        return book_chapter_draft
+
+    @staticmethod
+    async def get_author_book_draft(
+        database: AsyncSession, user: FullUser, id: int = -1
+    ):
+        """
+        获取作者图书草稿,如果id为-1则返回所有草稿
+        :param database:  数据库连接
+        :param user:  当前用户
+        :param id:  图书id
+        """
+        statement = (
+            select(BookDraft)
+            .join(Author, BookDraft.author_id == Author.id)
+            .where(Author.user_id == user.id)
+        )
+        if id != -1:
+            statement = statement.where(BookDraft.id == id)
+        result = await database.exec(statement)
+        book_drafts = list(result.all())
+        for book_draft in book_drafts:
+            book_draft.cover = f"{SETTING.SERVER_URL}/static/{book_draft.cover}/{book_draft.book_id if book_draft.book_id is not None else book_draft.id}/cover.webp"
+        return book_drafts
+
+    @staticmethod
+    async def submit_author_book_chapter(
+        database: AsyncSession, book_id: int, sort_order: float, user: FullUser
+    ):
+        """
+        提交作者图书章节
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param sort_order:  排序key
+        :param user:  当前用户
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=book_id
+        )
+        if not is_own_book:
+            raise AppError(message="您没有权限提交此章节", status_code=403)
+
+        statement = (
+            update(BookChapterDraft)
+            .where(BookChapterDraft.book_id == book_id)
+            .where(BookChapterDraft.sort_order == sort_order)
+            .where(BookChapterDraft.status == BookDraftStatusEnum.PENDING)
+            .values(status=BookDraftStatusEnum.REVIEWING)
+        )
+
+        try:
+            result = await database.exec(statement)
+            if result.rowcount == 0:
+                raise AppError(message="提交失败", status_code=500)
+            await database.commit()
+        except Exception as e:
+            await database.rollback()
+            logger.error(e)
+
+    @staticmethod
+    async def submit_author_book(database: AsyncSession, id: int, user: FullUser):
+        """
+        提交作者图书
+        :param database:  数据库连接
+        :param id:  表Id
+        :param user:  当前用户
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=id, is_draft=True
+        )
+        if not is_own_book:
+            raise AppError(message="您没有权限提交此图书", status_code=403)
+        statement = (
+            update(BookDraft)
+            .where(BookDraft.id == id)
+            .values(status=BookDraftStatusEnum.REVIEWING)
+        )
+
+        try:
+            result = await database.exec(statement)
+            if result.rowcount == 0:
+                raise AppError(message="提交失败", status_code=500)
+            await database.commit()
+        except Exception as e:
+            await database.rollback()
+            logger.error(e)
+            raise AppError(message="提交失败", status_code=500) from e
+
+    @staticmethod
+    async def delete_author_book_draft(
+        database: AsyncSession,
+        id: int,
+        user: FullUser,
+        action: str,
+    ):
+        """
+        删除作者图书草稿
+        :param database:  数据库连接
+        :param id:  表Id
+        :param user:  当前用户
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=id, is_draft=True
+        )
+        if not is_own_book:
+            raise AppError(message="您没有权限删除此图书草稿", status_code=403)
+        statement = select(BookDraft).where(BookDraft.id == id)
+        try:
+            result = await database.exec(statement)
+            item = result.first()
+            await delete_book_cover(
+                id if action == ActionEnum.CREATE.value else item.book_id,
+                is_created=action == ActionEnum.CREATE.value,
+            )
+            await database.delete(item)
+            await database.commit()
+        except Exception as e:
+            await database.rollback()
+            logger.error(e)
+            raise AppError(message="删除失败", status_code=500) from e
+
+    @staticmethod
+    async def update_author_book(
+        database: AsyncSession,
+        id: int,
+        name: str,
+        author: str,
+        cover: UploadFile | None,
+        description: str,
+        category: str,
+        tags: str,
+        is_draft: bool,
+        action: ActionEnum,
+        user: FullUser,
+    ):
+        """
+        更新作者图书
+        :param database:  数据库连接
+        :param id:  草稿表ID
+        :param name:  图书名称
+        :param author:  作者
+        :param cover:  封面
+        :param description:  描述
+        :param category:  分类
+        :param tags:  标签
+        :param is_draft: 是否为草稿
+        :param user:  当前用户
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=id, is_draft=is_draft
+        )
+        if not is_own_book:
+            raise AppError(message="您没有权限更新此图书", status_code=403)
+        if is_draft:
+            statement = (
+                update(BookDraft)
+                .where(BookDraft.id == id)
+                .values(
+                    name=name,
+                    author=author,
+                    description=description,
+                    category=category,
+                    tags=tags,
+                )
+            )
+
+            try:
+                result = await database.exec(statement)
+                if result.rowcount == 0:
+                    raise AppError(message="更新失败", status_code=500)
+                await database.commit()
+                if cover:
+                    await save_book_cover(
+                        cover, id, is_created=action == ActionEnum.CREATE
+                    )
+            except Exception as e:
+                await database.rollback()
+                logger.error(e)
+                raise AppError(message="更新失败", status_code=500) from e
+        else:
+            statement = select(Author).where(Author.user_id == user.id)
+            result = await database.exec(statement)
+            author_model = result.first()
+            book_draft = BookDraft(
+                name=name,
+                author=author,
+                description=description,
+                category=category,
+                tags=tags,
+                author_id=author_model.id,
+                created_at=None,
+                updated_at=None,
+                action=ActionEnum.UPDATE,
+                cover="book",
+                book_id=id,
+            )
+            try:
+                database.add(book_draft)
+                await database.commit()
+                await database.refresh(book_draft)
+                if cover:
+                    await save_book_cover(
+                        cover, book_draft_id=book_draft.id, is_created=False
+                    )
+            except Exception as e:
+                logger.error(e)
+                await database.rollback()
+                raise AppError(message="更新失败", status_code=500) from e
+
+    @staticmethod
+    @cache(
+        exclude_kwargs=["database", "user"],
+        codec=PydanticListCodec(ChapterReadStatistics),
+        ignore_null=False,
+    )
+    async def get_author_book_statistics(
+        database: AsyncSession, book_id: int, user: FullUser, chapter_id: int = -1
+    ):
+        """
+        获取作者图书统计信息
+        Args:
+            database (AsyncSession): 数据库会话
+            book_id (int): 图书ID
+            user (FullUser): 当前用户
+        """
+        is_own_book = await AuthorBookService.is_own_book(
+            database=database, user=user, id=book_id
+        )
+        if not is_own_book:
+            raise AppError(message="您没有权限获取此图书统计信息", status_code=403)
+
+        query = select(ChapterReadStatistics).where(
+            ChapterReadStatistics.book_id == book_id
+        )
+        if chapter_id != -1:
+            query = query.where(ChapterReadStatistics.chapter_id == chapter_id)
+        result = await database.exec(query)
+        return list(result.all())

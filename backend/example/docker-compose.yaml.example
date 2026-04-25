@@ -1,0 +1,18 @@
+services:
+  guga_backend:
+    image: guga_backend:latest
+    container_name: guga_backend
+    volumes:
+      - [static-path]:/app/static
+    environment:
+      - SERVER_URL=http://127.0.0.1:8000
+      - REDIS_URL=redis://[password]@[IP]:[port]/[database_index]
+      - MYSQL_DSN=mysql+aiomysql://[user_name]:[password]@[IP]/[database_name]
+      - SECRET_KEY=
+      - ALGORITHM=HS256
+      - PROTOCOL=http
+      - EMAIL_CODE=[QQ_SMTP_CODE]
+      - EMAIL_ACCOUNT=[QQ_ACCOUNT]
+      - ENV=prod
+    ports:
+      - "8000:8000"

@@ -1,0 +1,70 @@
+# 版本控制
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境(常见名称)
+venv/
+ENV/
+.env
+.venv
+env.bak/
+venv.bak/
+
+# 日志 & 临时文件
+logs/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# IDE / 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 敏感文件(非常重要！)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+id_rsa
+config.json
+docker-compose*.yml  # 如果不需要在镜像里
+
+# 测试
+tests/
+.coverage
+.pytest_cache/
+htmlcov/
+
+# 其他
+README.md
+LICENSE
+.gitattributes
+
+scripts/
+pyrightconfig.json
