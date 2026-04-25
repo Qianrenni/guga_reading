@@ -40,8 +40,8 @@ importers:
         specifier: ^3.0.4
         version: 3.0.4(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3))
       qyani-components:
-        specifier: ^1.5.5
-        version: 1.5.6
+        specifier: ^1.5.7
+        version: 1.5.7
       vue:
         specifier: ^3.5.18
         version: 3.5.33(typescript@5.9.3)
@@ -86,8 +86,8 @@ importers:
         specifier: ^3.0.4
         version: 3.0.4(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3))
       qyani-components:
-        specifier: ^1.5.6
-        version: 1.5.6
+        specifier: ^1.5.7
+        version: 1.5.7
       vue:
         specifier: ^3.5.18
         version: 3.5.33(typescript@5.9.3)
@@ -174,8 +174,8 @@ importers:
         specifier: ^3.0.3
         version: 3.0.4(typescript@5.8.3)(vue@3.5.33(typescript@5.8.3))
       qyani-components:
-        specifier: ^1.5.6
-        version: 1.5.6
+        specifier: ^1.5.7
+        version: 1.5.7
       vue:
         specifier: ^3.5.18
         version: 3.5.33(typescript@5.8.3)
@@ -1318,8 +1318,8 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
-  qyani-components@1.5.6:
-    resolution: {integrity: sha512-lTNwRpuFkKPwn11eUph2ahYAqV+hl+mJZqt6L3i2TtvvDcMecch1rGKYSmA+5Ge2CKCe8KRM+2uYF6gJIYdaQQ==}
+  qyani-components@1.5.7:
+    resolution: {integrity: sha512-fHa2D7a4FuUpmjhyzlXms4exrmKwJXixg3LBqdxtqAAwnkWKzwsEF9dZRefIkWqSmRDjdvm33UNe/RPh6PeBdg==}
 
   restore-cursor@5.1.0:
     resolution: {integrity: sha512-oMA2dcrw6u0YfxJQXm342bFKX/E4sG9rbTzO9ptUcR/e8A33cHuvStiYOwH7fszkZlZ1z/ta9AAoPk2F4qIOHA==}
@@ -2669,7 +2669,7 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  qyani-components@1.5.6: {}
+  qyani-components@1.5.7: {}
 
   restore-cursor@5.1.0:
     dependencies:
