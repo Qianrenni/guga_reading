@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-card container">
+  <header class="bg-card container header-container">
     <QIcon
       v-show="isMobile"
       icon="Menu"

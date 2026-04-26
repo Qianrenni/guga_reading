@@ -65,11 +65,6 @@ const routs = [
     name: 'Login',
     component: () => import('./views/auth/LoginView.vue'),
   },
-  {
-    path: '/test',
-    name: 'Test',
-    component: () => import('./views/TestView.vue'),
-  },
 ];
 export const router = createRouter({
   history: createWebHashHistory('/author/'),

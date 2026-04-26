@@ -11,8 +11,8 @@ export default defineConfig(({ mode }) => {
     base: '/author/',
     plugins: [vue()],
     server: {
-      port: 8080,
-      host: '0.0.0.0',
+      port: 80,
+      host: 'localhost',
     },
     resolve: {
       alias: {
