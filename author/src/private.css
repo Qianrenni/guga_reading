@@ -122,10 +122,6 @@ body {
   margin: 0.2rem 0.4rem;
 }
 
-.home-container {
-  display: flex;
-}
-
 .book-item-description {
   font-size: 0.875rem;
   text-indent: 1rem;

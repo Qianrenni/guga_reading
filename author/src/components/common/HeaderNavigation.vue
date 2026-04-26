@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-card header-container container">
+  <header class="bg-card container">
     <QIcon
       v-show="isMobile"
       icon="Menu"
@@ -14,7 +14,7 @@
     <QDrawer v-model:visible="showMenu" direction="left">
       <SiderBar />
     </QDrawer>
-  </div>
+  </header>
 </template>
 <script lang="ts" setup>
 import {
