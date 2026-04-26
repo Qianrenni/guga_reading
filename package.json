@@ -31,6 +31,10 @@
         "*.{js,ts,vue,css,md}": [
             "prettier --write",
             "eslint --cache --fix"
+        ],
+        "backend/**/*.py": [
+            "ruff check --fix --config backend/pyproject.toml",
+            "ruff format --config backend/pyproject.toml"
         ]
     }
 }
