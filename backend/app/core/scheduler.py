@@ -90,6 +90,3 @@ class Scheduler:
             self.scheduler.shutdown(wait=True)
             self.scheduler = None
         logger.info("[Scheduler] Shutdown complete")
-
-
-scheduler = Scheduler()

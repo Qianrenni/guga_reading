@@ -5,7 +5,7 @@ from fastapi.background import BackgroundTasks
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
-from app.core.error_handler import AppError
+from app.depend.verify import verify_author_book
 from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
 from app.models.response_model import ResponseModel
 from app.models.sql.book import Book, BookDraft
@@ -85,13 +85,18 @@ async def update_author_book_chapter(
     :param is_draft: 是否为草稿
     :param database:  数据库连接
     """
+    await verify_author_book(
+        id=book_id,
+        is_draft=False,
+        current_user=current_user,
+        database=database,
+    )
     await AuthorBookService.update_author_book_chapter(
         database=database,
         book_id=book_id,
         content=content,
         title=title,
         sort_order=sort_order,
-        user=current_user,
         is_draft=is_draft,
         background_tasks=background_task,
     )
@@ -130,13 +135,17 @@ async def create_author_book_chapter(
     :param content:  内容
     :param database:  数据库连接
     """
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+    )
     await AuthorBookService.create_author_book_chapter(
         database=database,
         book_id=book_id,
         title=title,
         content=content,
         sort_order=sort_order,
-        user=current_user,
         background_tasks=background_task,
     )
     return
@@ -232,6 +241,12 @@ async def update_author_book(
     :param is_draft: 是否为草稿
     :param database:  数据库连接
     """
+    await verify_author_book(
+        id=id,
+        current_user=current_user,
+        database=database,
+        is_draft=is_draft,
+    )
     await AuthorBookService.update_author_book(
         database=database,
         id=id,
@@ -277,6 +292,12 @@ async def get_author_book_chapter_draft(
     :param chapter_id:  章节id
     :param database:  数据库连接
     """
+    if book_id != -1:
+        await verify_author_book(
+            id=book_id,
+            current_user=current_user,
+            database=database,
+        )
     result = await AuthorBookService.get_author_book_chapter_draft(
         database=database, book_id=book_id, user=current_user, chapter_id=chapter_id
     )
@@ -341,11 +362,11 @@ async def get_author_book_catalog(
     :param chapter_id:  章节id
     :param database:  数据库连接
     """
-    is_own_book = await AuthorBookService.is_own_book(
-        database=database, id=book_id, user=current_user
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
     )
-    if not is_own_book:
-        raise AppError(status_code=403, message="无权限访问此图书")
     result = await BookService.get_catelog_by_id(
         book_id=book_id, database=database, chapter_id=chapter_id
     )
@@ -383,11 +404,15 @@ async def delete_author_book_chapter(
     """
     if len(sort_orders) == 0:
         return
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+    )
     await AuthorBookService.delete_author_book_chapter(
         database=database,
         book_id=book_id,
         sort_orders=sort_orders,
-        user=current_user,
         is_draft=is_draft,
     )
     return
@@ -422,11 +447,16 @@ async def get_author_book_chapter(
     :param is_draft:  是否是草稿
     :param database:  数据库连接
     """
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+        is_draft=is_draft,
+    )
     result = await AuthorBookService.get_author_book_chapter(
         database=database,
         book_id=book_id,
         sort_order=sort_order,
-        user=current_user,
         is_draft=is_draft,
     )
     return ResponseModel[str](data=result)
@@ -461,8 +491,13 @@ async def get_author_book_chapter_draft_item(
     :param sort_order:  排序key
     :param database:  数据库连接
     """
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+    )
     result = await AuthorBookService.get_author_book_chapter_draft_item(
-        database=database, book_id=book_id, sort_order=sort_order, user=current_user
+        database=database, book_id=book_id, sort_order=sort_order
     )
     return ResponseModel[BookChapterDraft](data=result)
 
@@ -494,8 +529,13 @@ async def submit_author_book_chapter(
     :param sort_order:  排序key
     :param database:  数据库连接
     """
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+    )
     await AuthorBookService.submit_author_book_chapter(
-        database=database, book_id=book_id, sort_order=sort_order, user=current_user
+        database=database, book_id=book_id, sort_order=sort_order
     )
 
 
@@ -524,9 +564,13 @@ async def submit_author_book(
     :param id:  图书id
     :param database:  数据库连接
     """
-    await AuthorBookService.submit_author_book(
-        database=database, id=id, user=current_user
+    await verify_author_book(
+        id=id,
+        current_user=current_user,
+        database=database,
+        is_draft=True,
     )
+    await AuthorBookService.submit_author_book(database=database, id=id)
 
 
 @author_router.delete("/book-draft", status_code=204)
@@ -555,8 +599,14 @@ async def delete_author_book_draft(
     :param id:  图书id
     :param database:  数据库连接
     """
+    await verify_author_book(
+        id=id,
+        current_user=current_user,
+        database=database,
+        is_draft=True,
+    )
     await AuthorBookService.delete_author_book_draft(
-        database=database, id=id, user=current_user, action=action
+        database=database, id=id, action=action
     )
 
 
@@ -588,7 +638,12 @@ async def get_author_book_statistics(
         book_id (int): 图书ID
         database (AsyncSession): 数据库会话
     """
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+    )
     result = await AuthorBookService.get_author_book_statistics(
-        database=database, book_id=book_id, user=current_user, chapter_id=chapter_id
+        database=database, book_id=book_id, chapter_id=chapter_id
     )
     return ResponseModel[list[ChapterReadStatistics]](data=result)

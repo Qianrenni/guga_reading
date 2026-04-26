@@ -21,11 +21,11 @@
         "axios": "^1.13.6"
     },
     "devDependencies": {
-        "eslint": "^10.2.1",
-        "prettier": "^3.8.3",
         "@qyani/eslint-config": "workspace:*",
+        "eslint": "^10.2.1",
         "husky": "^8.0.0",
-        "lint-staged": "^16.4.0"
+        "lint-staged": "^16.4.0",
+        "prettier": "^3.8.3"
     },
     "lint-staged": {
         "*.{js,ts,vue,css,md}": [

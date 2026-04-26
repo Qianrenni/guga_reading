@@ -188,8 +188,9 @@ class ChapterStore:
         若章节已存在且未被删除,则抛出异常(符合“创建”语义)。
         """
         if chapter_id in self._index and not self._index[chapter_id]["deleted"]:
-            raise ValueError(
-                f"Chapter {chapter_id} already exists in book {self.book_id}"
+            raise AppError(
+                status_code=400,
+                message=f"Chapter {chapter_id} already exists in book {self.book_id}",
             )
         await self._append_record(chapter_id, content, deleted=False)
 
@@ -220,8 +221,9 @@ class ChapterStore:
         要求章节必须存在且未被删除。
         """
         if chapter_id not in self._index or self._index[chapter_id]["deleted"]:
-            raise ValueError(
-                f"Chapter {chapter_id} does not exist in book {self.book_id}"
+            raise AppError(
+                status_code=404,
+                message=f"Chapter {chapter_id} does not exist in book {self.book_id}",
             )
         await self._append_record(chapter_id, content, deleted=False)
 

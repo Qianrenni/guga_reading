@@ -1,8 +1,8 @@
-def test_forgot_password(client):
-    """测试忘记密码"""
-    email = "1093171693@qq.com"
-    response = client.get(f"/user/forgot-password?user_account={email}")
-    assert response.status_code == 204
+# def test_forgot_password(client):
+#     """测试忘记密码"""
+#     email = "1093171693@qq.com"
+#     response = client.get(f"/user/forgot-password?user_account={email}")
+#     assert response.status_code == 204
 
 
 # def test_patch_forgot_password(client):

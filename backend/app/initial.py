@@ -12,5 +12,4 @@ async def init():
             path = BASE_DIR / value
             path.mkdir(exist_ok=True, parents=True)
             setattr(SETTING, key, path)
-            print(type(getattr(SETTING, key)))
             logger.debug(f"创建目录:{key}: {value}")

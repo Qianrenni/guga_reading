@@ -188,7 +188,6 @@ class AuthorBookService:
         title: str,
         content: str,
         sort_order: float,
-        user: FullUser,
         background_tasks: BackgroundTasks,
     ):
         """
@@ -201,12 +200,6 @@ class AuthorBookService:
         :param user:  当前用户
         :param background_tasks: 后台任务
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=book_id
-        )
-        if not is_own_book:
-            # 403 Forbidden
-            raise AppError(message="您没有权限创建此书籍", status_code=403)
         try:
             book_chapter_draft = BookChapterDraft(
                 book_id=book_id,
@@ -238,7 +231,6 @@ class AuthorBookService:
         title: str,
         is_draft: bool,
         sort_order: float,
-        user: FullUser,
         background_tasks: BackgroundTasks,
     ):
         """
@@ -251,12 +243,6 @@ class AuthorBookService:
         :param title:  标题
         :param user:  当前用户
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=book_id
-        )
-        if not is_own_book:
-            # 403 Forbidden
-            raise AppError(message="您没有权限创建此书籍", status_code=403)
         temp_book_chapter_id = -1
         success = False
         if is_draft:
@@ -318,7 +304,6 @@ class AuthorBookService:
         database: AsyncSession,
         book_id: int,
         sort_orders: list[float],
-        user: FullUser,
         is_draft: bool,
     ):
         """
@@ -328,12 +313,6 @@ class AuthorBookService:
         :param chapter_index:  章节索引
         :param user:  当前用户
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=book_id
-        )
-        if not is_own_book:
-            # 403 Forbidden
-            raise AppError(message="您没有权限删除此章节", status_code=403)
         if is_draft:
             try:
                 statement = (
@@ -412,7 +391,6 @@ class AuthorBookService:
         database: AsyncSession,
         book_id: int,
         sort_order: float,
-        user: FullUser,
         is_draft: bool,
     ):
         """
@@ -423,12 +401,6 @@ class AuthorBookService:
         :param user:  当前用户
         :param is_draft:  是否是草稿
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=book_id
-        )
-        if not is_own_book:
-            # 403 Forbidden
-            raise AppError(message="您没有权限获取此章节", status_code=403)
         if is_draft:
             statement = (
                 select(BookChapterDraft)
@@ -461,7 +433,7 @@ class AuthorBookService:
 
     @staticmethod
     async def get_author_book_chapter_draft_item(
-        database: AsyncSession, book_id: int, sort_order: float, user: FullUser
+        database: AsyncSession, book_id: int, sort_order: float
     ):
         """
         获取作者书籍章节草稿
@@ -470,13 +442,6 @@ class AuthorBookService:
         :param sort_order:  排序key
         :param user:  当前用户
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=book_id
-        )
-        if not is_own_book:
-            # 403 Forbidden
-            raise AppError(message="您没有权限获取此章节草稿", status_code=403)
-
         statement = (
             select(BookChapterDraft)
             .where(BookChapterDraft.book_id == book_id)
@@ -513,7 +478,7 @@ class AuthorBookService:
 
     @staticmethod
     async def submit_author_book_chapter(
-        database: AsyncSession, book_id: int, sort_order: float, user: FullUser
+        database: AsyncSession, book_id: int, sort_order: float
     ):
         """
         提交作者图书章节
@@ -522,12 +487,6 @@ class AuthorBookService:
         :param sort_order:  排序key
         :param user:  当前用户
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=book_id
-        )
-        if not is_own_book:
-            raise AppError(message="您没有权限提交此章节", status_code=403)
-
         statement = (
             update(BookChapterDraft)
             .where(BookChapterDraft.book_id == book_id)
@@ -546,18 +505,13 @@ class AuthorBookService:
             logger.error(e)
 
     @staticmethod
-    async def submit_author_book(database: AsyncSession, id: int, user: FullUser):
+    async def submit_author_book(database: AsyncSession, id: int):
         """
         提交作者图书
         :param database:  数据库连接
         :param id:  表Id
         :param user:  当前用户
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=id, is_draft=True
-        )
-        if not is_own_book:
-            raise AppError(message="您没有权限提交此图书", status_code=403)
         statement = (
             update(BookDraft)
             .where(BookDraft.id == id)
@@ -578,7 +532,6 @@ class AuthorBookService:
     async def delete_author_book_draft(
         database: AsyncSession,
         id: int,
-        user: FullUser,
         action: str,
     ):
         """
@@ -587,11 +540,6 @@ class AuthorBookService:
         :param id:  表Id
         :param user:  当前用户
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=id, is_draft=True
-        )
-        if not is_own_book:
-            raise AppError(message="您没有权限删除此图书草稿", status_code=403)
         statement = select(BookDraft).where(BookDraft.id == id)
         try:
             result = await database.exec(statement)
@@ -634,11 +582,6 @@ class AuthorBookService:
         :param is_draft: 是否为草稿
         :param user:  当前用户
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=id, is_draft=is_draft
-        )
-        if not is_own_book:
-            raise AppError(message="您没有权限更新此图书", status_code=403)
         if is_draft:
             statement = (
                 update(BookDraft)
@@ -702,7 +645,7 @@ class AuthorBookService:
         ignore_null=False,
     )
     async def get_author_book_statistics(
-        database: AsyncSession, book_id: int, user: FullUser, chapter_id: int = -1
+        database: AsyncSession, book_id: int, chapter_id: int = -1
     ):
         """
         获取作者图书统计信息
@@ -711,12 +654,6 @@ class AuthorBookService:
             book_id (int): 图书ID
             user (FullUser): 当前用户
         """
-        is_own_book = await AuthorBookService.is_own_book(
-            database=database, user=user, id=book_id
-        )
-        if not is_own_book:
-            raise AppError(message="您没有权限获取此图书统计信息", status_code=403)
-
         query = select(ChapterReadStatistics).where(
             ChapterReadStatistics.book_id == book_id
         )

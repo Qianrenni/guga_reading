@@ -1,4 +1,6 @@
-TOKEN = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ7XCJpZFwiOiAxLCBcInVzZXJuYW1lXCI6IFwicWlhbnJlbm5pXCIsIFwiZW1haWxcIjogXCIxMDkzMTcxNjkzQHFxLmNvbVwiLCBcImF2YXRhclwiOiBcIlwiLCBcImlzX2FjdGl2ZVwiOiB0cnVlLCBcInJpZ2h0XCI6IFszODIzXX0iLCJleHAiOjE3NjgxOTkzMzEuNjg3NjMxMX0.sT5X7vjKeGBLk44x72jn1CXsxqX7YotkTDIDGCRfh8I"
+from pathlib import Path
+
+TOKEN = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ7XCJpZFwiOiAxLCBcInVzZXJuYW1lXCI6IFwiUWlhbnJlbm5pXCIsIFwiZW1haWxcIjogXCIxMDkzMTcxNjkzQHFxLmNvbVwiLCBcImF2YXRhclwiOiBcIlwiLCBcImlzX2FjdGl2ZVwiOiB0cnVlLCBcInJpZ2h0XCI6IFsyMDddfSIsImV4cCI6MTc3NzIzOTk4My41MzMyMzl9.5ajNrnEwbADyuhaaBKl2oljZ1dkk90ZaUdi5suBH20Y"
 BASE_URL = "http://localhost:8000"
 headers = {
     "Accept": "application/json",
@@ -6,7 +8,5 @@ headers = {
     "Content-Type": "application/json",
 }
 headers_without_type = {"Accept": "application/json", "Authorization": TOKEN}
-REFRESH_TOKEN = "jI0FQ-73NmbMVoXttiPa-agtIujw2eb2_eQDF2aQiJi5XRl1Rf8MYcMNZwMLFTXysSu5es9Sbq9wnFa9hRNA2A"
-from pathlib import Path
-
+REFRESH_TOKEN = "E5MeCIZyPeqb_EFYpuotMeZI5B1kSxu7aWKNnZDymyaG7S4scBmuROiOnxjCktreC6AffoJ4GR32HXyG8sCg3g"
 BASE_DIR = Path(__file__).resolve().parent
