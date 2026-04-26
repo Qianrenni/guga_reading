@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
+from app.api.v1.admin import admin_router
 from app.api.v1.author import author_router
 from app.api.v1.book import book_router
 from app.api.v1.captcha import captcha_router
@@ -177,5 +178,7 @@ app.include_router(captcha_router)
 app.include_router(right_router)
 # 作者相关
 app.include_router(author_router)
-#
+# 作者数据相关
 app.include_router(statistic_router)
+# 管理相关
+app.include_router(admin_router)
