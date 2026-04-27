@@ -1,3 +1,4 @@
+import asyncio
 from re import compile
 
 from fastapi import BackgroundTasks
@@ -7,6 +8,7 @@ from sqlmodel import or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import SETTING
+from app.core.error_handler import AppError
 from app.models.sql.book import Book
 from app.models.sql.book_chapter import BookChapter, BookChapterBase, BookChapterDraft
 from app.schema.book import BookCatalogItemResponseModel
@@ -172,9 +174,9 @@ class BookService:
                 book.cover = f"{SETTING.SERVER_URL}/static/book/{book.id}/{book.cover}"
                 return book
             else:
-                raise ValueError("图书不存在")
+                raise AppError(message="图书不存在", status_code=404)
         except NoResultFound as e:
-            raise ValueError("图书不存在") from e
+            raise AppError(message="图书不存在", status_code=404) from e
 
     @staticmethod
     async def get_book_by_list(
@@ -192,20 +194,21 @@ class BookService:
             return []
         miss_book_ids = []
         book_list = []
-        for book_id in book_ids:
-            try:
-                result = await cache_get(
-                    args=[],
-                    kwargs={"book_id": book_id},
-                    key_prefix="get_book_by_id",
-                    codec=PydanticCodec(Book),
-                )
-                if result:
-                    book_list.append(result)
-                else:
-                    miss_book_ids.append(book_id)
-            except Exception as e:
-                raise ValueError("获取图书信息失败") from e
+        tasks = [
+            cache_get(
+                args=[],
+                kwargs={"book_id": book_id},
+                key_prefix="get_book_by_id",
+                codec=PydanticCodec(Book),
+            )
+            for book_id in book_ids
+        ]
+        results = await asyncio.gather(*tasks)
+        for book_id, result in zip(book_ids, results, strict=True):
+            if result:
+                book_list.append(result)
+            else:
+                miss_book_ids.append(book_id)
         if miss_book_ids:
             statement = select(Book).where(Book.id.in_(miss_book_ids))
             result = await database.exec(statement)
