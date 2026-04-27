@@ -1,74 +1,22 @@
-name: Docker Image CI Split
+name: Docker Image CI
 
 on:
   push:
-    branches:
-      - "qianrenni/test_backend"
-      - "qianrenni/test_frontend"
+    branches: [ "qianrenni/test_al_main" ]
+  pull_request:
+    branches: [ "qianrenni/test_al_main" ]
 
 jobs:
-  # 后端构建与部署任务
-  build-backend:
-    if: github.ref == 'refs/heads/qianrenni/test_backend' && github.event_name == 'push'
+  build:
     runs-on: ubuntu-latest
 
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  #  提前切到 Node 24
 
     steps:
+
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Build Backend Docker Image
-        run: |
-          docker build \
-            -t guga_backend \
-            -f ./backend/Dockerfile \
-            ./backend
-
-      - name: Save Backend Docker Image
-        run: |
-          docker save guga_backend -o ./guga_backend.tar
-          chmod 644 guga_backend.tar
-
-      - name: Copy Backend files to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: deployer
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          # 只传输后端镜像
-          source: "guga_backend.tar"
-          target: "/opt/online_reading"
-
-      - name: Deploy Backend via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: deployer
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /opt/online_reading
-            docker-compose down
-            docker rmi guga_backend || true
-            docker load -i guga_backend.tar
-            docker-compose up -d 
-            rm -f guga_backend.tar
-  # 前端构建与部署任务
-  build-frontend:
-    if: github.ref == 'refs/heads/qianrenni/test_frontend' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # 暂时先用 v4(目前最新稳定)
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -79,49 +27,55 @@ jobs:
         run: npm install -g pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: |
+          pnpm install
 
       - name: Build packages
-        run: pnpm run types
-
-      - name: Build Frontend
-        run: pnpm run build:all
-
-      - name: Build Frontend Docker Image
         run: |
+          pnpm run types
+
+      - name: Build frontend
+        run: |
+          pnpm run build:all
+
+      - name: Build the Docker image
+        run: |
+          docker build \
+            -t guga_backend \
+            -f ./backend/Dockerfile \
+            ./backend
           docker build \
             -t guga_frontend \
             -f ./Dockerfile \
             .
 
-      - name: Save Frontend Docker Image
+      - name: Save Docker images
         run: |
+          docker save guga_backend -o ./guga_backend.tar
           docker save guga_frontend -o ./guga_frontend.tar
-          chmod 644 guga_frontend.tar
+          chmod 644 *.tar
 
-      - name: Copy Frontend files to server
+      - name: Copy files to server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SERVER_HOST }}
+          host: 101.132.151.248
           username: deployer
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "guga_frontend.tar,user/dist,author/dist"
+          source: "guga_backend.tar,guga_frontend.tar,user/dist,author/dist"
           target: "/opt/online_reading"
-
-      - name: Deploy Frontend via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.SERVER_HOST }}
+          host: 101.132.151.248
           username: deployer
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /opt/online_reading
-            
             rm -rf user_dist author_dist
             mv user/dist user_dist
             mv author/dist author_dist
-            docker-compose down
-            docker rmi guga_frontend || true
+            docker compose down
+            docker rmi guga_frontend guga_backend || true
+            docker load -i guga_backend.tar
             docker load -i guga_frontend.tar
-            docker-compose up -d
-            rm -f guga_frontend.tar
+            docker compose up -d

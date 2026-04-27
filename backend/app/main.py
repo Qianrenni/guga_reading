@@ -74,6 +74,7 @@ else:
 DEV_ORIGINS = [
     "http://localhost",
     "http://100.64.81.35",
+    "http://101.132.151.248",
     "http://1.95.141.194",
     "http://localhost:8080",
 ]
