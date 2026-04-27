@@ -1,5 +1,5 @@
 import asyncio
-import time
+import json
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
+from app.api.v1.admin import admin_router
 from app.api.v1.author import author_router
 from app.api.v1.book import book_router
 from app.api.v1.captcha import captcha_router
@@ -95,22 +96,37 @@ if SETTING.IP_LIMIT_ENABLE != 0:
     )
 
 
-# allow_origin_regex=r'$http://localhost\.*^',
+if SETTING.ENV != "prod":
 
+    @app.middleware("http")
+    async def log_middleware(request: Request, call_next):
+        response = await call_next(request)
 
-@app.middleware("http")
-async def log_middleware(request: Request, call_next):
-    start_time = time.perf_counter()
-    response = await call_next(request)
-    process_time = time.perf_counter() - start_time
-    logger.info(
-        f"{request.client.host} {request.method} {request.url} {response.status_code} {process_time:.4f}s"
-    )
-    return response
+        logger.info(
+            f"{request.client.host} {request.method} {request.url} {response.status_code}"
+        )
+        return response
 
 
 @app.exception_handler(AppError)
-async def custom_exception_handler(_: Request, exc: AppError):
+async def custom_exception_handler(request: Request, exc: AppError):
+    logger.error(
+        json.dumps(
+            {
+                "AppError": f"{exc}",
+                "request": {
+                    "host": f"{request.client.host}",
+                    "method": f"{request.method}",
+                    "url": f"{request.url}",
+                    "headers": dict(request.headers),
+                    "query_params": f"{request.query_params}",
+                    "path_params": f"{request.path_params}",
+                },
+            },
+            ensure_ascii=False,
+            indent=4,
+        )
+    )
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -122,21 +138,53 @@ async def custom_exception_handler(_: Request, exc: AppError):
     )
 
 
-@app.exception_handler(Exception)
-async def exception_handler(_: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {type(exc).__name__} - {exc!s}")
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    logger.error(
+        json.dumps(
+            {
+                "valueError": f"{exc}",
+                "request": {
+                    "host": f"{request.client.host}",
+                    "method": f"{request.method}",
+                    "url": f"{request.url}",
+                    "headers": dict(request.headers),
+                    "query_params": f"{request.query_params}",
+                    "path_params": f"{request.path_params}",
+                },
+            },
+            ensure_ascii=False,
+            indent=4,
+        )
+    )
     return JSONResponse(
-        status_code=500,
+        status_code=400,
         content={"code": ResponseCode.ERROR, "message": str(exc), "data": None},
     )
 
 
-@app.exception_handler(ValueError)
-async def value_error_handler(_: Request, exc: ValueError):
-    logger.error(f"Unhandled ValueError: {type(exc).__name__}")
+@app.exception_handler(Exception)
+async def exception_handler(request: Request, exc: Exception):
+    logger.error(
+        json.dumps(
+            {
+                "exception": f"{exc}",
+                "request": {
+                    "host": f"{request.client.host}",
+                    "method": f"{request.method}",
+                    "url": f"{request.base_url}",
+                    "headers": dict(request.headers),
+                    "query_params": f"{request.query_params}",
+                    "path_params": f"{request.path_params}",
+                },
+            },
+            ensure_ascii=False,
+            indent=4,
+        )
+    )
     return JSONResponse(
-        status_code=400,
-        content={"code": ResponseCode.ERROR, "message": str(exc), "data": None},
+        status_code=500,
+        content={"code": ResponseCode.ERROR, "message": "服务器错误", "data": None},
     )
 
 
@@ -178,5 +226,7 @@ app.include_router(captcha_router)
 app.include_router(right_router)
 # 作者相关
 app.include_router(author_router)
-#
+# 作者数据相关
 app.include_router(statistic_router)
+# 管理相关
+app.include_router(admin_router)
