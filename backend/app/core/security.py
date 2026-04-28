@@ -11,7 +11,6 @@ from passlib.context import CryptContext
 
 from app.core.config import SETTING
 from app.core.error_handler import AppError
-from app.middleware.logging import logger
 from app.models.sql.user import FullUser
 
 # 解决bcrypt版本兼容性问题
@@ -89,7 +88,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Ful
             credentials_exception.message = "Token expired"
             raise credentials_exception
     except InvalidTokenError as e:
-        logger.error(f"Invalid token: {e}")
         credentials_exception.message = f"Invalid token: {e}"
         raise credentials_exception from e
 
