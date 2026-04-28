@@ -5,11 +5,12 @@ on:
     branches:
       - "qianrenni/test_backend"
       - "qianrenni/test_frontend"
+      - "qianrenni/test_main"
 
 jobs:
   # 后端构建与部署任务
   build-backend:
-    if: github.ref == 'refs/heads/qianrenni/test_backend' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/qianrenni/test_backend' && github.event_name == 'push') || (github.ref == 'refs/heads/qianrenni/test_main' && github.event_name == 'push')
     runs-on: ubuntu-latest
 
     env:
@@ -60,7 +61,7 @@ jobs:
             rm -f guga_backend.tar
   # 前端构建与部署任务
   build-frontend:
-    if: github.ref == 'refs/heads/qianrenni/test_frontend' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/qianrenni/test_frontend' && github.event_name == 'push') || (github.ref == 'refs/heads/qianrenni/test_main' && github.event_name == 'push')
     runs-on: ubuntu-latest
 
     env:

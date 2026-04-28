@@ -1,11 +1,7 @@
 <template>
-  <div>
-    <Header />
-    <router-view />
-  </div>
+  <router-view />
 </template>
 <script lang="ts" setup>
-import Header from '@/components/Header.vue';
 import { includePaths } from '@/config';
 import router from '@/route';
 import { useAuthStore } from '@/store';

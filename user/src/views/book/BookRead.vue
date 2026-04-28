@@ -2,12 +2,12 @@
   <div
     ref="bookReadContainer"
     class="container-w100 scroll-container"
-    style="height: calc(100vh - 3rem)"
+    style="height: 100vh"
   >
     <div class="book-read-container bg-card">
       <QLoading
         v-show="loading"
-        style="height: calc(100vh - 4rem); width: 100%"
+        style="height: 100vh; width: 100%"
         type="skeleton"
       />
       <div

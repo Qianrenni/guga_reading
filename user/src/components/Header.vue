@@ -8,6 +8,18 @@ defineOptions({
 });
 const bookSearchStore = useBookSearchStore();
 const debounceSearchBook = useDebounce(bookSearchStore.searchBook, 100);
+const toggleFullScreen = () => {
+  const doc = document.documentElement;
+  if (document.fullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  } else {
+    if (doc.requestFullscreen) {
+      doc.requestFullscreen();
+    }
+  }
+};
 </script>
 
 <template>
@@ -26,7 +38,7 @@ const debounceSearchBook = useDebounce(bookSearchStore.searchBook, 100);
       <div class="inner-container container-flex-1 container-flex-end">
         <router-link to="/" class="link-primary inner-container">
           <QIcon icon="House" size="16" />
-          <h4 class="hidden-768">首页</h4>
+          <h4 class="hidden-768">书城</h4>
         </router-link>
         <router-link to="/book-shelf" class="link-primary inner-container">
           <QIcon icon="Copy" size="16" />
@@ -40,7 +52,13 @@ const debounceSearchBook = useDebounce(bookSearchStore.searchBook, 100);
           <QIcon icon="User" size="16" />
           <h4 class="hidden-768">个人中心</h4>
         </router-link>
-        <QThemeToggle size="18" />
+        <QIcon
+          icon="FullScreen"
+          size="16"
+          @click="toggleFullScreen"
+          title="全屏模式"
+        />
+        <QThemeToggle size="18" title="切换日夜模式" />
       </div>
     </div>
   </header>
