@@ -2,10 +2,9 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "qianrenni/test_al_main" ]
+    branches: [ "qianrenni/test_al_frontend" ]
   pull_request:
-    branches: [ "qianrenni/test_al_main" ]
-
+    branches: [ "qianrenni/test_al_frontend" ]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,17 +40,12 @@ jobs:
       - name: Build the Docker image
         run: |
           docker build \
-            -t guga_backend \
-            -f ./backend/Dockerfile \
-            ./backend
-          docker build \
             -t guga_frontend \
             -f ./Dockerfile \
             .
 
       - name: Save Docker images
         run: |
-          docker save guga_backend -o ./guga_backend.tar
           docker save guga_frontend -o ./guga_frontend.tar
           chmod 644 *.tar
 
@@ -61,7 +55,7 @@ jobs:
           host: 101.132.151.248
           username: deployer
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "guga_backend.tar,guga_frontend.tar,user/dist,author/dist"
+          source: "guga_frontend.tar,user/dist,author/dist"
           target: "/opt/online_reading"
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -75,7 +69,6 @@ jobs:
             mv user/dist user_dist
             mv author/dist author_dist
             docker compose down
-            docker rmi guga_frontend guga_backend || true
-            docker load -i guga_backend.tar
+            docker rmi guga_frontend  || true
             docker load -i guga_frontend.tar
             docker compose up -d
