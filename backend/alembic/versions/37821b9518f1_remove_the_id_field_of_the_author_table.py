@@ -24,7 +24,14 @@ def upgrade() -> None:
     # 检查并删除外键约束
     conn = op.get_bind()
     inspector = sa.inspect(conn)
-
+    # 检查并删除 book_draft 表的外键约束
+    fk_constraints = inspector.get_foreign_keys("book_draft")
+    for fk in fk_constraints:
+        if fk.get("name") == "book_draft_ibfk_1":
+            op.drop_constraint(
+                op.f("book_draft_ibfk_1"), "book_draft", type_="foreignkey"
+            )
+            break
     # 检查 author_book 表的外键约束
     fk_constraints = inspector.get_foreign_keys("author_book")
     for fk in fk_constraints:
@@ -101,15 +108,6 @@ def upgrade() -> None:
         op.create_index(
             op.f("ix_book_draft_user_id"), "book_draft", ["user_id"], unique=False
         )
-
-    # 检查并删除 book_draft 表的外键约束
-    fk_constraints = inspector.get_foreign_keys("book_draft")
-    for fk in fk_constraints:
-        if fk.get("name") == "book_draft_ibfk_1":
-            op.drop_constraint(
-                op.f("book_draft_ibfk_1"), "book_draft", type_="foreignkey"
-            )
-            break
 
     # 检查并创建 book_draft 表的外键约束如果不存在
     fk_constraints = inspector.get_foreign_keys("book_draft")
