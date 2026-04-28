@@ -10,7 +10,7 @@ from app.core.database import get_session_context
 from app.core.error_handler import AppError
 from app.enum.enum import ActionEnum, BookDraftStatusEnum
 from app.middleware.logging import logger
-from app.models.sql.author import Author, AuthorBook
+from app.models.sql.author import AuthorBook
 from app.models.sql.book import BookDraft
 from app.models.sql.book_chapter import BookChapter, BookChapterDraft
 from app.models.sql.statistics import ChapterReadStatistics
@@ -87,11 +87,7 @@ class AuthorBookService:
         :param user: 用户
         :return:
         """
-        statement = (
-            select(AuthorBook.book_id)
-            .join(Author, AuthorBook.author_id == Author.id)
-            .where(Author.user_id == user.id)
-        )
+        statement = select(AuthorBook.book_id).where(AuthorBook.user_id == user.id)
         result = await database.exec(statement)
         book_ids = list(result)
         books = await BookService.get_book_by_list(
@@ -113,16 +109,14 @@ class AuthorBookService:
         """
         statement = (
             select(AuthorBook)
-            .join(Author, AuthorBook.author_id == Author.id)
-            .where(Author.user_id == user.id)
+            .where(AuthorBook.user_id == user.id)
             .where(AuthorBook.book_id == id)
         )
         if is_draft:
             statement = (
                 select(BookDraft)
-                .join(Author, Author.id == BookDraft.author_id)
+                .where(BookDraft.user_id == user.id)
                 .where(BookDraft.id == id)
-                .where(Author.user_id == user.id)
             )
         result = await database.exec(statement)
         return bool(result.first())
@@ -154,18 +148,13 @@ class AuthorBookService:
         """
 
         try:
-            statement = select(Author).where(Author.user_id == user.id)
-            result = await database.exec(statement)
-            author_model = result.first()
-            if not author_model:
-                raise AppError(message="作者不存在")
             draft_book = BookDraft(
                 name=name,
                 author=author,
                 description=description,
                 category=category,
                 tags=tags,
-                author_id=author_model.id,
+                user_id=user.id,
                 created_at=None,
                 updated_at=None,
             )
@@ -369,8 +358,7 @@ class AuthorBookService:
             statement = (
                 select(BookChapterDraft)
                 .join(AuthorBook, BookChapterDraft.book_id == AuthorBook.book_id)
-                .join(Author, AuthorBook.author_id == Author.id)
-                .where(Author.user_id == user.id)
+                .where(AuthorBook.user_id == user.id)
             )
             result = await database.exec(statement)
             return list(result.all())
@@ -463,11 +451,7 @@ class AuthorBookService:
         :param user:  当前用户
         :param id:  图书id
         """
-        statement = (
-            select(BookDraft)
-            .join(Author, BookDraft.author_id == Author.id)
-            .where(Author.user_id == user.id)
-        )
+        statement = select(BookDraft).where(BookDraft.user_id == user.id)
         if id != -1:
             statement = statement.where(BookDraft.id == id)
         result = await database.exec(statement)
@@ -609,16 +593,13 @@ class AuthorBookService:
                 logger.error(e)
                 raise AppError(message="更新失败", status_code=500) from e
         else:
-            statement = select(Author).where(Author.user_id == user.id)
-            result = await database.exec(statement)
-            author_model = result.first()
             book_draft = BookDraft(
                 name=name,
                 author=author,
                 description=description,
                 category=category,
                 tags=tags,
-                author_id=author_model.id,
+                user_id=user.id,
                 created_at=None,
                 updated_at=None,
                 action=ActionEnum.UPDATE,
