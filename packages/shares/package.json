@@ -12,7 +12,9 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
-    "@guga-reading/types": "workspace:*",
+    "@guga-reading/types": "workspace:*"
+  },
+  "devDependencies": {
     "vue-tsc": "^3.0.1"
   }
 }
