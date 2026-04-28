@@ -1,7 +1,15 @@
 <template>
-  <div>
-    <p>hello world</p>
+  <div class="container container-h100">
+    <aside v-show="!isMobile">
+      <SiderBar />
+    </aside>
+    <RouterView />
   </div>
 </template>
-<script setup lang="ts"></script>
-<style lang="css" scoped></style>
+<script lang="ts" setup>
+import { useScreenSize } from 'qyani-components';
+import SiderBar from '@/components/common/SiderBar.vue';
+defineOptions({ name: 'HomeView' });
+const isMobile = useScreenSize.getWidth(768);
+</script>
+<style scoped></style>

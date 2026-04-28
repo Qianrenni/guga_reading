@@ -33,6 +33,11 @@ def test_update_author_book_chapter(client):
     }
     response = client.patch("/author/chapter", json=data, headers=headers)
     assert response.status_code == 204
+    response = client.get(
+        f"/author/book-chapter/?book_id=1&is_draft=True&sort_order={order}",
+        headers=headers,
+    )
+    assert response.status_code == 200
     response = client.request(
         "DELETE",
         "/author/book-chapter/1?is_draft=True",

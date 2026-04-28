@@ -67,7 +67,7 @@ class BookDraft(BookBase, table=True):
         sa_column=Column(Enum(ActionEnum), server_default=ActionEnum.CREATE.value),
     )
     book_id: int | None = Field(index=True, foreign_key="book.id", default=None)
-    author_id: int = Field(index=True, foreign_key="author.id")
+    user_id: int = Field(index=True, foreign_key="user.id")
     status: BookDraftStatusEnum = Field(
         default=BookDraftStatusEnum.PENDING,
         sa_column=Column(
@@ -80,5 +80,5 @@ class BookDraft(BookBase, table=True):
     )
 
     __table_args__ = (
-        Index("idx_book_draft_unique", "name", "author_id", "action", unique=True),
+        Index("idx_book_draft_unique", "name", "user_id", "action", unique=True),
     )

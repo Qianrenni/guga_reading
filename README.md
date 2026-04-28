@@ -53,39 +53,64 @@ GUGA Reading
 guga_reading/
 ├── backend/                          # 后端服务 (FastAPI)
 │   ├── app/
-│   │   ├── api/                      # API 接口定义
+│   │   ├── api/v1/                   # API v1 接口定义
 │   │   ├── core/                     # 核心功能 (配置、数据库、安全)
-│   │   ├── models/                   # 数据模型
-│   │   ├── schema/                   # 数据验证模式
-│   │   ├── services/                 # 业务逻辑服务
+│   │   ├── models/                   # SQLAlchemy 数据模型
+│   │   ├── schema/                   # Pydantic 数据验证模式
+│   │   ├── services/                 # 业务逻辑服务层
 │   │   ├── algorithm/                # 推荐算法 (TF-IDF)
 │   │   ├── middleware/               # 中间件 (日志、限流)
-│   │   └── utils/                    # 工具函数
+│   │   ├── utils/                    # 工具函数
+│   │   └── enum/                     # 枚举定义
 │   ├── alembic/                      # 数据库迁移工具
 │   ├── static/                       # 静态资源 (书籍文件)
-│   ├── test/                         # 测试代码
+│   ├── store/                        # 数据存储目录
+│   ├── logs/                         # 日志文件
+│   ├── test/                         # 测试代码 (pytest)
+│   ├── scripts/                      # 脚本工具
 │   ├── requirements.txt              # Python 依赖
+│   ├── pyproject.toml                # Python 项目配置
 │   ├── docker-compose.yml            # Docker 编排
 │   └── run.py                        # 启动脚本
 │
-├── frontend/                         # 前端应用 (Vue 3 + TypeScript)
-│   ├── packages/                     # 共享包
-│   │   ├── shares/                   # 共享工具和常量
-│   │   └── types/                    # TypeScript 类型定义
-│   ├── author/                       # 作者端应用
-│   │   ├── src/
-│   │   │   ├── api/                  # API 接口封装
-│   │   │   ├── components/           # 公共组件
-│   │   │   ├── store/                # Pinia 状态管理
-│   │   │   ├── views/                # 页面视图
-│   │   │   └── utils/                # 工具函数
-│   │   ├── package.json
-│   │   └── vite.config.ts
-│   ├── user/                         # 用户端应用 (开发中)
-│   └── admin/                        # 管理后台 (开发中)
+├── author/                           # 作者端应用 (Vue 3)
+│   ├── src/
+│   │   ├── components/               # Vue 组件
+│   │   ├── views/                    # 页面视图
+│   │   ├── store/                    # Pinia 状态管理
+│   │   ├── config/                   # 配置文件
+│   │   └── route.ts                  # 路由配置
+│   ├── public/                       # 公共资源
+│   ├── package.json
+│   └── vite.config.ts
 │
-├── README.md                         # 项目说明文档
-└── .gitignore                        # Git 忽略配置
+├── user/                             # 用户端应用 (Vue 3)
+│   ├── src/
+│   │   ├── components/               # Vue 组件
+│   │   ├── views/                    # 页面视图
+│   │   ├── store/                    # Pinia 状态管理
+│   │   └── config/                   # 配置文件
+│   ├── public/                       # 公共资源
+│   └── package.json
+│
+├── admin/                            # 管理后台 (Vue 3)
+│   ├── src/
+│   │   └── views/                    # 页面视图
+│   ├── public/                       # 公共资源
+│   └── package.json
+│
+├── packages/                         # 共享包 (Monorepo)
+│   ├── eslint/                       # ESLint 配置
+│   ├── shares/                       # 共享工具和常量
+│   └── types/                        # TypeScript 类型定义
+│
+├── .husky/                           # Git Hooks 配置
+├── .github/                          # GitHub 工作流
+├── docker-compose.yml                # 根目录 Docker 编排
+├── nginx.conf                        # Nginx 配置
+├── package.json                      # 根目录 pnpm 配置
+├── pnpm-workspace.yaml               # pnpm 工作区配置
+└── README.md                         # 项目说明文档
 ```
 
 ## 🎯 功能模块
@@ -196,32 +221,59 @@ docker-compose up -d
 
 ### 前端部署
 
-#### 作者端应用
+#### Monorepo 统一管理
 
-1. **安装依赖**
+本项目采用 pnpm workspace 管理多个前端应用。
+
+**安装所有依赖**
 
 ```bash
-cd frontend/author
+# 在根目录执行
 pnpm install
 ```
 
-2. **启动开发服务器**
+**常用命令**
 
 ```bash
+# 启动作者端开发服务器
+pnpm dev:author
+
+# 启动用户端开发服务器
+pnpm dev:user
+
+# 启动管理端开发服务器
+pnpm dev:admin
+
+# 构建所有前端应用
+pnpm build:all
+
+# 代码格式化
+pnpm prettier
+```
+
+#### 单独运行某个应用
+
+**作者端应用**
+
+```bash
+cd author
+pnpm install
 pnpm dev
 # 访问 http://localhost:80
 ```
 
-3. **构建生产版本**
+**用户端应用**
 
 ```bash
-pnpm build
+cd user
+pnpm install
+pnpm dev
 ```
 
-#### 用户端/管理端
+**管理端应用**
 
 ```bash
-cd frontend/user    # 或 cd frontend/admin
+cd admin
 pnpm install
 pnpm dev
 ```
@@ -288,8 +340,12 @@ pytest test/api/v1/test_book.py
 ### 前端测试
 
 ```bash
-cd frontend/author
-pnpm run lint  # 代码检查
+# 代码检查和格式化（根目录）
+pnpm prettier
+
+# 单个应用检查
+cd author
+pnpm run lint
 ```
 
 ## 📦 部署架构
