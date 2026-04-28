@@ -9,6 +9,7 @@ import Header from '@/components/Header.vue';
 import { includePaths } from '@/config';
 import router from '@/route';
 import { useAuthStore } from '@/store';
+import { useTitle } from '@guga-reading/shares';
 const authStore = useAuthStore();
 /*
  * 路由守卫
@@ -29,6 +30,7 @@ router.beforeEach((to, _, next) => {
     authStore.setRedictUrl(to.fullPath);
     router.push('/login');
   }
+  useTitle(`${to.meta.title ?? '咕嘎阅读'}`);
   next();
 });
 </script>

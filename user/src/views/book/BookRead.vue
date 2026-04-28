@@ -179,11 +179,17 @@ import {
   onBeforeUnmount,
   ref,
   useTemplateRef,
+  watch,
 } from 'vue';
 import type { Book, Catalog, ReadSettings } from '@guga-reading/types';
 import { useBookStore } from '@/store';
 import router from '@/route';
-import { applySpacingToHtml, isHtml, useApiBooks } from '@guga-reading/shares';
+import {
+  applySpacingToHtml,
+  isHtml,
+  useApiBooks,
+  useTitle,
+} from '@guga-reading/shares';
 import { useScreenSize, useThrottle } from 'qyani-components';
 import { useReadingHistoryStore } from '@/store';
 import { QLoading, QIcon, QDrawer } from 'qyani-components';
@@ -207,8 +213,18 @@ const catalogAscOrder = ref(true);
 const currentContentId = ref<number>(-1);
 // 当前内容在目录中的索引
 const currentContentIndex = computed(() => {
-  return catalog.value.findIndex((item) => item.id === currentContentId.value);
+  const index = catalog.value.findIndex(
+    (item) => item.id === currentContentId.value,
+  );
+  return index;
 });
+// 监听当前内容索引,并更新标题
+watch(
+  () => currentContentIndex.value,
+  (index) => {
+    useTitle(catalog.value[index].title);
+  },
+);
 // 是否显示底部设置
 const shwoBottomSettings = ref<boolean>(false);
 // 是否可以显示底部设置

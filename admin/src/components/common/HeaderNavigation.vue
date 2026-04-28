@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-card container header-container">
+  <header class="bg-card header-container container">
     <QIcon
       v-show="isMobile"
       icon="Menu"
@@ -7,7 +7,7 @@
       @click="showMenu = !showMenu"
     />
     <div class="container-center">
-      <QAvatar url="/author/figure.webp" size="30px" />
+      <QAvatar url="/admin/figure.webp" size="30px" />
       <span>{{ userStore.getUser?.username || 'Author' }}</span>
       <QThemeToggle :size="24" />
     </div>

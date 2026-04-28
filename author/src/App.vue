@@ -5,6 +5,7 @@ import { router } from './route';
 import { watch } from 'vue';
 import { excludePaths } from '@/config';
 import { useAuthStore } from '@/store';
+import { useTitle } from '@guga-reading/shares';
 const authStore = useAuthStore();
 /*
  * 路由守卫
@@ -25,6 +26,7 @@ router.beforeEach((to, _, next) => {
     authStore.setRedictUrl(to.fullPath);
     router.push('/login');
   }
+  useTitle(`${to.meta.title ?? '咕嘎阅读'}`);
   next();
 });
 watch(
