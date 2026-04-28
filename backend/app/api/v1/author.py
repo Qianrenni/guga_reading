@@ -87,7 +87,6 @@ async def update_author_book_chapter(
     """
     await verify_author_book(
         id=book_id,
-        is_draft=False,
         current_user=current_user,
         database=database,
     )
@@ -451,7 +450,6 @@ async def get_author_book_chapter(
         id=book_id,
         current_user=current_user,
         database=database,
-        is_draft=is_draft,
     )
     result = await AuthorBookService.get_author_book_chapter(
         database=database,
