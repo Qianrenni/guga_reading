@@ -134,7 +134,7 @@ import {
   QTab,
   QTag,
 } from 'qyani-components';
-import { useApiBooks } from '@guga-reading/shares';
+import { useApiBooks, useTitle } from '@guga-reading/shares';
 import router from '@/route';
 defineOptions({
   name: 'BookInfo',
@@ -179,6 +179,7 @@ const initial = async (bookId: number) => {
     .then((result) => {
       relatedBooks.value = result.data!.filter((item) => item.id !== bookId);
     });
+  useTitle(rawbook.name);
 };
 onBeforeMount(() => {
   const bookId = parseInt(router.currentRoute.value.params.id as string);

@@ -11,7 +11,7 @@ const debounceSearchBook = useDebounce(bookSearchStore.searchBook, 100);
 </script>
 
 <template>
-  <div class="bg-card container header-container">
+  <header class="bg-card container header-container">
     <router-link to="/" class="link-primary hidden-768">
       <h3>咕嘎阅读</h3>
     </router-link>
@@ -43,7 +43,7 @@ const debounceSearchBook = useDebounce(bookSearchStore.searchBook, 100);
         <QThemeToggle size="18" />
       </div>
     </div>
-  </div>
+  </header>
 </template>
 
 <style scoped lang="css">

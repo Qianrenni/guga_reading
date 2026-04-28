@@ -1,5 +1,5 @@
 <template>
-  <div class="home-container container-h100">
+  <div class="container container-h100">
     <aside v-show="!isMobile">
       <SiderBar />
     </aside>
