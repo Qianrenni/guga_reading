@@ -152,12 +152,13 @@ importers:
       '@guga-reading/types':
         specifier: workspace:*
         version: link:../types
+    devDependencies:
       vue-tsc:
         specifier: ^3.0.1
         version: 3.2.7(typescript@5.9.3)
 
   packages/types:
-    dependencies:
+    devDependencies:
       vue-tsc:
         specifier: ^3.0.1
         version: 3.2.7(typescript@5.9.3)
