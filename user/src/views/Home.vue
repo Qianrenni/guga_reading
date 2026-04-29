@@ -39,13 +39,13 @@ onBeforeMount(async () => {
 onMounted(() => {
   refScrollContainer.value?.scrollTo({
     top: bookStore.scrollTo,
-    behavior: 'smooth',
+    behavior: 'instant',
   });
 });
 onActivated(() => {
   refScrollContainer.value?.scrollTo({
     top: bookStore.scrollTo,
-    behavior: 'smooth',
+    behavior: 'instant',
   });
 });
 </script>

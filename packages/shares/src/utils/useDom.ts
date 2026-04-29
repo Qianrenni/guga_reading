@@ -5,15 +5,29 @@
 export function useTitle(title: string) {
   document.title = title;
 }
-export function toggleFullScreen() {
-  const doc = document.documentElement;
-  if (document.fullscreenElement) {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
+/**
+ * 全屏切换
+ * @param onFullScreen 全屏时执行的函数
+ * @param offFullScreen 退出全屏时执行的函数
+ * @returns
+ */
+export function toggleFullScreen(
+  onFullScreen?: () => void,
+  offFullScreen?: () => void,
+) {
+  const run = () => {
+    const doc = document.documentElement;
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        offFullScreen?.();
+      }
+    } else {
+      if (doc.requestFullscreen) {
+        doc.requestFullscreen();
+        onFullScreen?.();
+      }
     }
-  } else {
-    if (doc.requestFullscreen) {
-      doc.requestFullscreen();
-    }
-  }
+  };
+  return run;
 }
