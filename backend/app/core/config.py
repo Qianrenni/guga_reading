@@ -78,6 +78,8 @@ class Config(BaseSettings):
     REDIS_CLIENT_POOL_SIZE: int = 50
     # redis连接满时等待时间
     REDIS_WAIT_TIMEOUT: int = 3
+    # 允许的源 ,分割
+    ALLOW_ORIGINS: str = "*"
 
     class Config:
         env_file = str(BASE_DIR / ".env")
