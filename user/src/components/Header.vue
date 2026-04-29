@@ -2,24 +2,12 @@
 import { QIcon, QThemeToggle, useDebounce, QSearch } from 'qyani-components';
 import router from '@/route';
 import { useBookSearchStore } from '@/store';
-
+import { toggleFullScreen } from '@guga-reading/shares';
 defineOptions({
   name: 'Header',
 });
 const bookSearchStore = useBookSearchStore();
 const debounceSearchBook = useDebounce(bookSearchStore.searchBook, 100);
-const toggleFullScreen = () => {
-  const doc = document.documentElement;
-  if (document.fullscreenElement) {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    }
-  } else {
-    if (doc.requestFullscreen) {
-      doc.requestFullscreen();
-    }
-  }
-};
 </script>
 
 <template>
