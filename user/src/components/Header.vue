@@ -8,6 +8,7 @@ defineOptions({
 });
 const bookSearchStore = useBookSearchStore();
 const debounceSearchBook = useDebounce(bookSearchStore.searchBook, 100);
+const run = toggleFullScreen();
 </script>
 
 <template>
@@ -40,12 +41,7 @@ const debounceSearchBook = useDebounce(bookSearchStore.searchBook, 100);
           <QIcon icon="User" size="16" />
           <h4 class="hidden-768">个人中心</h4>
         </router-link>
-        <QIcon
-          icon="FullScreen"
-          size="16"
-          @click="toggleFullScreen"
-          title="全屏模式"
-        />
+        <QIcon icon="FullScreen" size="16" @click="run" title="全屏模式" />
         <QThemeToggle size="18" title="切换日夜模式" />
       </div>
     </div>
