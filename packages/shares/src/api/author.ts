@@ -7,8 +7,10 @@ import type {
 } from '@guga-reading/types';
 export const useApiAuthor = {
   prefix: '/author',
-  getBook: async function () {
-    return await get<Book[]>(`${this.prefix}/book`);
+  getBook: async function (id: number = -1) {
+    return await get<Book[]>(
+      `${this.prefix}/book?${id != -1 ? `id=${id}` : ''}`,
+    );
   },
   /**
    * 获取书籍目录, 如果chapterId为-1则返回所有章节

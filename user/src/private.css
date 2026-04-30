@@ -64,3 +64,7 @@ body.dark-mode {
 .exit-button:hover {
   background-color: rgba(255, 0, 0, 0.7);
 }
+
+.overflow-hidden {
+  overflow: hidden;
+}

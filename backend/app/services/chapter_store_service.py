@@ -179,6 +179,9 @@ class ChapterStore:
 
         # 如果需要实时保存索引,也在锁内进行
         await self._save_index()
+        logger.debug(
+            f"Appended record for chapter book {self.book_id} chapter {chapter_id}"
+        )
 
     async def read_chapter(self, chapter_id: int) -> str:
         """

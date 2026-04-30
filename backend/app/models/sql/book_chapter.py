@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Index
+from sqlalchemy import Column
 from sqlmodel import DateTime, Enum, Field, SQLModel, func
 
 from app.enum.enum import BookStatusEnum
@@ -9,7 +9,6 @@ from app.enum.enum import BookStatusEnum
 class BookChapterBase(SQLModel):
     id: int = Field(default=None, primary_key=True)
     title: str = Field(default="")
-    sort_order: float = Field(index=True, nullable=False)
     word_count: int = Field(nullable=False)
     created_at: datetime
     updated_at: datetime
@@ -33,7 +32,3 @@ class BookChapter(BookChapterBase, table=True):
     )
     is_active: bool = Field(default=True)
     parent_id: int | None = Field(default=None, foreign_key="book_chapter.id")
-    # 添加联合唯一索引(防止同一本书章节排序重复)
-    __table_args__ = (
-        Index("index_book_sort_unique", "book_id", "sort_order", unique=True),
-    )

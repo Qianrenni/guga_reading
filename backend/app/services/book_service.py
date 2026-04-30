@@ -9,8 +9,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import SETTING
 from app.core.error_handler import AppError
+from app.enum.enum import BookStatusEnum
 from app.models.sql.book import Book
-from app.models.sql.book_chapter import BookChapter, BookChapterBase
+from app.models.sql.book_chapter import BookChapter
 from app.schema.book import BookCatalogItemResponseModel
 from app.services.cache_service import cache, cache_get, cache_set
 from app.services.chapter_store_service import ChapterStore
@@ -73,7 +74,9 @@ class BookService:
         :param chapter_id: 章节ID
         :param content: 章节内容
         """
-        temp_chapter_store = ChapterStore(book_id, SETTING.BOOK_DIR_PATH)
+        temp_chapter_store = ChapterStore(
+            book_id, SETTING.CONTENT_TEMP_DIR_PATH / "book"
+        )
         await temp_chapter_store._load_index()
         await temp_chapter_store.update_chapter(chapter_id, content)
 
@@ -128,7 +131,11 @@ class BookService:
         获取图书分类
         return: list[str]分类列表
         """
-        statement = select(Book.category).distinct()
+        statement = (
+            select(Book.category)
+            .where(Book.status == BookStatusEnum.PUBLISHED.value)
+            .distinct()
+        )
         result = await database.exec(statement)
         categories = result.all()
         return [str(category) for category in categories]
@@ -148,7 +155,11 @@ class BookService:
         :return:    图书信息
         """
         try:
-            statement = select(Book).where(Book.id == book_id)
+            statement = (
+                select(Book)
+                .where(Book.id == book_id)
+                .where(Book.status == BookStatusEnum.PUBLISHED.value)
+            )
             result = await database.exec(statement)
             book = result.one_or_none()
             if book:
@@ -191,7 +202,11 @@ class BookService:
             else:
                 miss_book_ids.append(book_id)
         if miss_book_ids:
-            statement = select(Book).where(Book.id.in_(miss_book_ids))
+            statement = (
+                select(Book)
+                .where(Book.id.in_(miss_book_ids))
+                .where(Book.status == BookStatusEnum.PUBLISHED.value)
+            )
             result = await database.exec(statement)
             books = result.all()
             for book in books:
@@ -217,17 +232,17 @@ class BookService:
         exclude_kwargs=["database"],
         codec=PydanticListCodec(BookCatalogItemResponseModel),
     )
-    async def get_book_toc_by_id(
-        book_id: int, database: AsyncSession
-    ) -> list[BookCatalogItemResponseModel]:
+    async def get_book_toc_by_id(book_id: int, database: AsyncSession):
         """
         获取图书目录
         :param book_id: 图书ID
         :param database:      数据库会话
         :return:       图书目录
         """
-        statement = select(BookChapter.id, BookChapter.title).where(
-            BookChapter.book_id == book_id
+        statement = (
+            select(BookChapter.id, BookChapter.title)
+            .where(BookChapter.book_id == book_id)
+            .where(BookChapter.status == BookStatusEnum.PUBLISHED.value)
         )
         result = await database.exec(statement)
         toc = result.all()
@@ -235,98 +250,6 @@ class BookService:
             BookCatalogItemResponseModel(id=chapter_id, title=title)
             for chapter_id, title in toc
         ]
-
-    @staticmethod
-    @cache(
-        expire=SETTING.BOOK_CACHE_EXPIRE,
-        exclude_kwargs=["database"],
-        codec=PydanticListCodec(BookChapterBase),
-    )
-    async def get_catelog_by_id(
-        book_id: int,
-        database: AsyncSession,
-        chapter_id: int = -1,
-    ) -> list[BookChapterBase]:
-        """
-        获取图书目录,如果chapter_id=-1则返回所有章节,否则返回指定章节
-        :param book_id: 图书ID
-        :param database:      数据库会话
-        :return:       list[BookChapter]
-        """
-        if chapter_id == -1:
-            statement = select(
-                BookChapter.id,
-                BookChapter.title,
-                BookChapter.sort_order,
-                BookChapter.word_count,
-                BookChapter.created_at,
-                BookChapter.updated_at,
-            ).where(BookChapter.book_id == book_id)
-        else:
-            statement = select(
-                BookChapter.id,
-                BookChapter.title,
-                BookChapter.sort_order,
-                BookChapter.word_count,
-                BookChapter.created_at,
-                BookChapter.updated_at,
-            ).where(BookChapter.id == chapter_id)
-        result = await database.exec(statement)
-        return [
-            BookChapterBase(
-                id=item[0],
-                title=item[1],
-                sort_order=item[2],
-                word_count=item[3],
-                created_at=item[4],
-                updated_at=item[5],
-            )
-            for item in result.all()
-        ]
-
-    @staticmethod
-    @cache(expire=SETTING.BOOK_CACHE_EXPIRE, exclude_kwargs=["database"])
-    async def get_book_chapter_by_id(chapter_id: int, database: AsyncSession) -> str:
-        """
-        获取图书章节内容
-
-        :param chapter_id:    章节ID
-        :param database:         数据库会话
-        :return:          章节内容
-        """
-        statement = select(BookChapter.content).where(BookChapter.id == chapter_id)
-        result = await database.exec(statement)
-        chapter = result.one_or_none()
-        return str(chapter)
-
-    @staticmethod
-    @cache(expire=SETTING.BOOK_CACHE_EXPIRE, exclude_kwargs=["database"])
-    async def get_book_chapter_by_index(
-        book_id: int,
-        chapter_index: int,
-        database: AsyncSession,
-    ) -> str:
-        """
-        获取图书章节内容
-        :param book_id:        图书ID
-        :param chapter_index:     章节索引,从1开始
-        :param database:             数据库会话
-        :return:             章节内容
-        """
-        statement = (
-            select(BookChapter.id)
-            .where(BookChapter.book_id == book_id)
-            .order_by(BookChapter.sort_order)
-            .limit(1)
-            .offset(chapter_index - 1)
-        )
-        result = await database.exec(statement)
-        chapter_id = result.one_or_none()
-        if chapter_id is not None:
-            return await BookService.book_chapter_read_from_file(
-                book_id=book_id, chapter_id=chapter_id
-            )
-        return ""
 
     @staticmethod
     @cache(expire=SETTING.BOOK_CACHE_EXPIRE, exclude_kwargs=["database"])
@@ -368,11 +291,15 @@ class BookService:
         pattern = f"{escaped_keyword}%"
 
         # 3. 使用参数化查询(SQLAlchemy 自动处理参数绑定)
-        statement = select(Book).where(
-            or_(
-                Book.name.like(pattern, escape="\\"),
-                Book.author.like(pattern, escape="\\"),
+        statement = (
+            select(Book)
+            .where(
+                or_(
+                    Book.name.like(pattern, escape="\\"),
+                    Book.author.like(pattern, escape="\\"),
+                )
             )
+            .where(Book.status == BookStatusEnum.PUBLISHED.value)
         )
 
         # 4. 执行查询
@@ -400,7 +327,11 @@ class BookService:
         :param category:         分类
         :return:               图书列表
         """
-        statement = select(Book).where(Book.category == category)
+        statement = (
+            select(Book)
+            .where(Book.category == category)
+            .where(Book.status == BookStatusEnum.PUBLISHED.value)
+        )
         result = await database.exec(statement)
         books = result.all()
         for book in books:

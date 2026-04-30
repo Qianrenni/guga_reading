@@ -35,7 +35,7 @@ async def get_author_book(
         ),
     ],
     database: Annotated[AsyncSession, Depends(get_session)],
-    id: Annotated[int, Query(ge=1)] = -1,
+    id: Annotated[int, Query(ge=-1)] = -1,
 ):
     """
     获取作者图书列表
@@ -157,6 +157,44 @@ async def update_author_book(
         book=book,
         cover=cover,
         id=id,
+        user=current_user,
+    )
+    return
+
+
+@author_router.delete("/book", status_code=204)
+async def delete_author_book(
+    current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.BOOK,
+                        action=ActionEnum.DELETE,
+                        scope=ScopeEnum.OWN,
+                    )
+                ]
+            )
+        ),
+    ],
+    id: Annotated[int, Query(ge=1)],
+    database: Annotated[AsyncSession, Depends(get_session)],
+    background_task: BackgroundTasks,
+):
+    """
+    删除作者图书
+    :param current_user:  当前用户
+    :param id:  图书id
+    :param database:  数据库连接
+    """
+    await verify_author_book(
+        id=id,
+        current_user=current_user,
+        database=database,
+    )
+    await AuthorBookService.delete_author_book(
+        database=database, id=id, background_task=background_task
     )
     return
 
@@ -177,12 +215,12 @@ async def get_author_book_chapter(
             )
         ),
     ],
-    book_id: Annotated[int, Query(ge=-1)],
+    book_id: Annotated[int, Query(ge=1)],
     database: Annotated[AsyncSession, Depends(get_session)],
     chapter_id: Annotated[int, Query(ge=-1)] = -1,
 ):
     """
-    获取作者图书章节,如果chapter_id为-1则返回所有章节,否则返回指定章节,如果book_id为-1则返回所有图书,否则返回指定图书
+    获取作者图书章节,如果chapter_id为-1则返回所有章节,否则返回指定章节
     :param current_user:  当前用户
     :param book_id:  图书id
     :param chapter_id:  章节id
@@ -198,54 +236,6 @@ async def get_author_book_chapter(
         database=database, book_id=book_id, user=current_user, chapter_id=chapter_id
     )
     return ResponseModel[list[BookChapter]](data=result)
-
-
-@author_router.post("/chapter", status_code=201)
-async def create_author_book_chapter(
-    current_user: Annotated[
-        FullUser,
-        Depends(
-            right_check(
-                [
-                    generate_permission_code(
-                        resource=ResourceTypeEnum.BOOK,
-                        action=ActionEnum.CREATE,
-                        scope=ScopeEnum.OWN,
-                    )
-                ]
-            )
-        ),
-    ],
-    book_id: Annotated[int, Body(embed=True)],
-    title: Annotated[str, Body(embed=True)],
-    content: Annotated[str, Body(embed=True)],
-    sort_order: Annotated[float, Body(embed=True)],
-    database: Annotated[AsyncSession, Depends(get_session)],
-    background_task: BackgroundTasks,
-):
-    """
-    创建作者图书章节
-    :param current_user:  当前用户
-    :param book_id:  图书id
-    :param sort_order: 排序key
-    :param title:  标题
-    :param content:  内容
-    :param database:  数据库连接
-    """
-    await verify_author_book(
-        id=book_id,
-        current_user=current_user,
-        database=database,
-    )
-    await AuthorBookService.create_author_book_chapter(
-        database=database,
-        book_id=book_id,
-        title=title,
-        content=content,
-        sort_order=sort_order,
-        background_tasks=background_task,
-    )
-    return
 
 
 @author_router.patch("/chapter", status_code=204)
@@ -265,7 +255,7 @@ async def update_author_book_chapter(
         ),
     ],
     book_id: Annotated[int, Body(embed=True)],
-    chapter_id: Annotated[int, Body(embed=True)],
+    chapter_id: Annotated[int | None, Body(embed=True)],
     content: Annotated[str, Body(embed=True)],
     title: Annotated[str, Body(embed=True)],
     database: Annotated[AsyncSession, Depends(get_session)],
@@ -296,8 +286,8 @@ async def update_author_book_chapter(
     return
 
 
-@author_router.patch("/status/book-chapter", status_code=204)
-async def submit_author_book_chapter(
+@author_router.delete("/chapter", status_code=204)
+async def delete_author_book_chapter(
     current_user: Annotated[
         FullUser,
         Depends(
@@ -305,22 +295,23 @@ async def submit_author_book_chapter(
                 [
                     generate_permission_code(
                         resource=ResourceTypeEnum.BOOK,
-                        action=ActionEnum.CREATE,
+                        action=ActionEnum.UPDATE,
                         scope=ScopeEnum.OWN,
                     )
                 ]
             )
         ),
     ],
-    book_id: Annotated[int, Query()],
-    sort_order: Annotated[float, Query()],
+    book_id: Annotated[int, Query(description="图书ID")],
+    chapter_id: Annotated[int, Query(description="章节ID")],
     database: Annotated[AsyncSession, Depends(get_session)],
+    background_task: BackgroundTasks,
 ):
     """
-    提交作者图书章节
+    删除作者图书章节
     :param current_user:  当前用户
     :param book_id:  图书id
-    :param sort_order:  排序key
+    :param chapter_id:  章节id
     :param database:  数据库连接
     """
     await verify_author_book(
@@ -328,42 +319,13 @@ async def submit_author_book_chapter(
         current_user=current_user,
         database=database,
     )
-    await AuthorBookService.submit_author_book_chapter(
-        database=database, book_id=book_id, sort_order=sort_order
-    )
-
-
-@author_router.patch("/status/book-draft", status_code=204)
-async def submit_author_book(
-    current_user: Annotated[
-        FullUser,
-        Depends(
-            right_check(
-                [
-                    generate_permission_code(
-                        resource=ResourceTypeEnum.BOOK,
-                        action=ActionEnum.CREATE,
-                        scope=ScopeEnum.OWN,
-                    )
-                ]
-            )
-        ),
-    ],
-    id: Annotated[int, Query(description="表ID")],
-    database: Annotated[AsyncSession, Depends(get_session)],
-):
-    """
-    提交作者图书
-    :param current_user:  当前用户
-    :param id:  图书id
-    :param database:  数据库连接
-    """
-    await verify_author_book(
-        id=id,
-        current_user=current_user,
+    await AuthorBookService.delete_author_book_chapter(
         database=database,
+        chapter_id=chapter_id,
+        background_tasks=background_task,
+        book_id=book_id,
     )
-    await AuthorBookService.submit_author_book(database=database, id=id)
+    return
 
 
 @author_router.get(

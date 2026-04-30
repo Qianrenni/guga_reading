@@ -2,12 +2,13 @@ import os
 
 import aiofiles
 from fastapi import BackgroundTasks, UploadFile
-from sqlmodel import select
+from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import SETTING
 from app.core.database import get_session_context
 from app.core.error_handler import AppError
+from app.enum.enum import BookStatusEnum
 from app.middleware.logging import logger
 from app.models.sql.author import AuthorBook
 from app.models.sql.book import Book
@@ -58,7 +59,7 @@ async def delete_book_cover(id: int):
     if cover_path.exists():
         cover_path.unlink()
         logger.info(f"删除书籍封面: {cover_path}")
-    if len(list(book_dir.iterdir())) == 0:
+    if book_dir.exists() and len(list(book_dir.iterdir())) == 0:
         os.removedirs(book_dir)
         logger.info(f"删除空目录{book_dir}")
 
@@ -106,7 +107,10 @@ class AuthorBookService:
         if id != -1:
             statement = statement.where(AuthorBook.book_id == id)
         result = await database.exec(statement)
-        return list(result.all())
+        books = list(result.all())
+        for book in books:
+            book.cover = f"{SETTING.SERVER_URL}/static/book/{book.id}/cover.webp"
+        return books
 
     @staticmethod
     async def create_author_book(
@@ -145,13 +149,13 @@ class AuthorBookService:
             database.add(book)
             await database.commit()
             await database.refresh(book)
+            background_tasks.add_task(save_book_cover, cover, book.id)
             author_book = AuthorBook(
                 user_id=user.id,
                 book_id=book.id,
             )
             database.add(author_book)
             await database.commit()
-            background_tasks.add_task(save_book_cover, cover, book.id, is_created=True)
             return True
         except Exception as e:
             logger.error(e)
@@ -165,6 +169,7 @@ class AuthorBookService:
         book: Book,
         background_task: BackgroundTasks,
         cover: UploadFile | None,
+        user: FullUser,
     ):
         """
         更新作者图书
@@ -177,89 +182,44 @@ class AuthorBookService:
             book.parent_id = id
             database.add(book)
             await database.commit()
+            await database.refresh(book)
             if cover:
                 background_task.add_task(save_book_cover, cover, book.id)
+            author_book = AuthorBook(
+                user_id=user.id,
+                book_id=book.id,
+            )
+            database.add(author_book)
+            await database.commit()
         except Exception as e:
             logger.error(e)
             await database.rollback()
             raise AppError(message="更新书籍失败") from e
 
     @staticmethod
-    async def create_author_book_chapter(
-        database: AsyncSession,
-        book_id: int,
-        title: str,
-        content: str,
-        sort_order: float,
-        background_tasks: BackgroundTasks,
+    async def delete_author_book(
+        database: AsyncSession, id: int, background_task: BackgroundTasks
     ):
         """
-        创建作者书籍章节
+        删除作者图书
         :param database:  数据库连接
-        :param book_id:  图书id
-        :param title:  标题
-        :param content:  内容
-        :param sort_order: 排序key
-        :param user:  当前用户
-        :param background_tasks: 后台任务
+        :param id:  图书id
         """
         try:
-            book_chapter = BookChapter(
-                book_id=book_id,
-                title=title,
-                sort_order=sort_order,
-                word_count=len(content),
+            statement = delete(AuthorBook).where(AuthorBook.book_id == id)
+            await database.exec(statement)
+            statement = (delete(Book).where(Book.id == id)).where(
+                Book.status.in_(
+                    [BookStatusEnum.REJECTED.value, BookStatusEnum.PENDING.value]
+                )
             )
-            database.add(book_chapter)
+            await database.exec(statement)
             await database.commit()
-            await database.refresh(book_chapter)
-            temp_book_chapter_id = book_chapter.id
-            background_tasks.add_task(
-                BookService.update_temp_book_chapter,
-                book_id,
-                temp_book_chapter_id,
-                content,
-            )
-            return True
+            background_task.add_task(delete_book_cover, id)
         except Exception as e:
             logger.error(e)
             await database.rollback()
-            raise AppError(message="创建书籍章节失败") from e
-
-    @staticmethod
-    async def update_author_book_chapter(
-        database: AsyncSession,
-        book_id: int,
-        content: str,
-        title: str,
-        chapter_id: int,
-        background_tasks: BackgroundTasks,
-    ):
-        """
-        更新作者书籍章节
-        :param database:  数据库连接
-        :param book_id:  图书id
-        :param sort_order: 排序key
-        :param content:  内容
-        :param is_draft: 是否为草稿
-        :param title:  标题
-        """
-        book_chapter = BookChapter(
-            title=title, word_count=len(content), parent_id=chapter_id
-        )
-        database.add(book_chapter)
-        try:
-            await database.commit()
-            background_tasks.add_task(
-                BookService.update_temp_book_chapter,
-                book_id,
-                book_chapter.id,
-                content,
-            )
-        except Exception as e:
-            logger.error(e)
-            await database.rollback()
-            raise AppError(message="更新书籍章节失败") from e
+            raise AppError(message="删除书籍失败") from e
 
     @staticmethod
     async def get_author_book_chapter(
@@ -278,12 +238,79 @@ class AuthorBookService:
             .join(AuthorBook, BookChapter.book_id == AuthorBook.book_id)
             .where(AuthorBook.user_id == user.id)
         )
-        if book_id != -1:
-            statement = statement.where(BookChapter.book_id == book_id)
+        statement = statement.where(BookChapter.book_id == book_id)
         if chapter_id != -1:
             statement = statement.where(BookChapter.id == chapter_id)
         result = await database.exec(statement)
         return list(result.all())
+
+    @staticmethod
+    async def update_author_book_chapter(
+        database: AsyncSession,
+        book_id: int,
+        content: str,
+        title: str,
+        chapter_id: int,
+        background_tasks: BackgroundTasks,
+    ):
+        """
+        更新作者书籍章节
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param content:  内容
+        :param is_draft: 是否为草稿
+        :param title:  标题
+        """
+        try:
+            book_chapter = BookChapter(
+                title=title,
+                word_count=len(content),
+                parent_id=chapter_id,
+                book_id=book_id,
+            )
+            database.add(book_chapter)
+            await database.commit()
+            await database.refresh(book_chapter)
+            background_tasks.add_task(
+                BookService.update_temp_book_chapter,
+                book_id,
+                book_chapter.id,
+                content,
+            )
+        except Exception as e:
+            logger.error(e)
+            await database.rollback()
+            raise AppError(message="更新书籍章节失败") from e
+
+    @staticmethod
+    async def delete_author_book_chapter(
+        database: AsyncSession,
+        chapter_id: int,
+        background_tasks: BackgroundTasks,
+        book_id: int,
+    ):
+        """
+        删除作者图书章节
+        :param database:  数据库连接
+        :param book_id:  图书id
+        :param chapter_id:  章节id
+        """
+        statement = delete(BookChapter).where(
+            BookChapter.id == chapter_id,
+            BookChapter.status.in_(
+                [BookStatusEnum.PENDING.value, BookStatusEnum.REJECTED.value]
+            ),
+        )
+        try:
+            await database.exec(statement)
+            await database.commit()
+            background_tasks.add_task(
+                BookService.delete_temp_book_chapter, book_id, chapter_id
+            )
+        except Exception as e:
+            logger.error(e)
+            await database.rollback()
+            raise AppError(message="删除书籍章节失败") from e
 
     @staticmethod
     @cache(
