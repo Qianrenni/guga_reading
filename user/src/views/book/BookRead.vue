@@ -67,11 +67,19 @@
           <QIcon icon="Book" size="24px" />
           <span class="text-08rem">书籍详情</span>
         </div>
+        <div
+          class="inner-container-column container-align-center"
+          @click="fullScreen"
+        >
+          <QIcon icon="FullScreen" size="24px" />
+          <span class="text-08rem">全屏</span>
+        </div>
       </div>
       <QDrawer
         v-model:visible="showCatalog"
         direction="left"
         :close-on-click-overlay="true"
+        :overlay="false"
       >
         <div class="book-read-catalog-container">
           <h3 class="text-one-line">
@@ -120,13 +128,14 @@
         direction="bottom"
         :close-on-click-overlay="true"
         @close="shwoBottomSettings = false"
+        :overlay="false"
       >
         <div
-          class="container-space-between container-wrap"
+          class="container-space-between container-wrap padding-fourth-rem"
           @click="shwoBottomSettings = false"
         >
           <div
-            class="container-column container-align-center"
+            class="inner-container-column container-align-center"
             @click="
               currentContentIndex > 0
                 ? run(computeCatalog[currentContentIndex - 1].id)
@@ -137,7 +146,7 @@
             <span class="text-08rem">上一章</span>
           </div>
           <div
-            class="container-column container-align-center"
+            class="inner-container-column container-align-center"
             @click="
               currentContentIndex < computeCatalog.length - 1
                 ? run(computeCatalog[currentContentIndex + 1].id)
@@ -148,22 +157,29 @@
             <span class="text-08rem">下一章</span>
           </div>
           <div
-            class="container-column container-align-center"
+            class="inner-container-column container-align-center"
             @click="showCatalog = true"
           >
             <QIcon icon="Catalog" size="24px" />
             <span class="text-08rem">目录</span>
           </div>
-          <div class="container-column container-align-center">
+          <div class="inner-container-column container-align-center">
             <QIcon icon="Setting" size="24px" />
             <span class="text-08rem">阅读设置</span>
           </div>
           <div
-            class="container-column container-align-center"
+            class="inner-container-column container-align-center"
             @click="router.push(`/book-detail/${book.id}`)"
           >
             <QIcon icon="Book" size="24px" />
             <span class="text-08rem">书籍详情</span>
+          </div>
+          <div
+            class="inner-container-column container-align-center"
+            @click="fullScreen"
+          >
+            <QIcon icon="FullScreen" size="24px" />
+            <span class="text-08rem">全屏</span>
           </div>
         </div>
       </QDrawer>
@@ -187,6 +203,7 @@ import router from '@/route';
 import {
   applySpacingToHtml,
   isHtml,
+  toggleFullScreen,
   useApiBooks,
   useTitle,
 } from '@guga-reading/shares';
@@ -194,7 +211,7 @@ import { useScreenSize, useThrottle } from 'qyani-components';
 import { useReadingHistoryStore } from '@/store';
 import { QLoading, QIcon, QDrawer } from 'qyani-components';
 import { useApiReport } from '@guga-reading/shares';
-
+const fullScreen = toggleFullScreen();
 // 用于切换时滚动到顶部
 const bookReadContainer = useTemplateRef<HTMLDivElement>('bookReadContainer');
 // 书籍信息
@@ -323,7 +340,7 @@ const run = async (chapterId: number) => {
   // 滚动到顶部
   bookReadContainer.value?.scrollTo({
     top: 0,
-    behavior: 'smooth',
+    behavior: 'instant',
   });
   loading.value = false;
 };
@@ -397,7 +414,6 @@ onBeforeUnmount(() => {
 
 .book-read-catalog-container {
   min-width: 480px;
-  padding: 0.5rem 1rem;
 }
 
 .book-read-catalog {
