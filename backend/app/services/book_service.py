@@ -10,7 +10,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.config import SETTING
 from app.core.error_handler import AppError
 from app.models.sql.book import Book
-from app.models.sql.book_chapter import BookChapter, BookChapterBase, BookChapterDraft
+from app.models.sql.book_chapter import BookChapter, BookChapterBase
 from app.schema.book import BookCatalogItemResponseModel
 from app.services.cache_service import cache, cache_get, cache_set
 from app.services.chapter_store_service import ChapterStore
@@ -62,23 +62,6 @@ def normalize_search_keyword(keyword: str, max_length: int = 50) -> str:
 
 class BookService:
     @staticmethod
-    async def write_temp_book_chapter(
-        book_id: int,
-        chapter_id: int,
-        content: str,
-    ):
-        """
-        :param book_id: 图书ID
-        :param chapter_id: 章节ID
-        :param content:章节内容
-        """
-        temp_chapter_store = ChapterStore(
-            book_id, SETTING.CONTENT_TEMP_DIR_PATH / "book"
-        )
-        await temp_chapter_store._load_index()
-        await temp_chapter_store.create_chapter(chapter_id, content)
-
-    @staticmethod
     async def update_temp_book_chapter(
         book_id: int,
         chapter_id: int,
@@ -90,9 +73,7 @@ class BookService:
         :param chapter_id: 章节ID
         :param content: 章节内容
         """
-        temp_chapter_store = ChapterStore(
-            book_id, SETTING.CONTENT_TEMP_DIR_PATH / "book"
-        )
+        temp_chapter_store = ChapterStore(book_id, SETTING.BOOK_DIR_PATH)
         await temp_chapter_store._load_index()
         await temp_chapter_store.update_chapter(chapter_id, content)
 
@@ -488,27 +469,3 @@ class BookService:
         result = await database.exec(statement)
         book_ids = result.one_or_none()
         return book_ids if book_ids else 0
-
-    @staticmethod
-    async def get_book_chapter_draft(
-        book_id: int, database: AsyncSession, chapter_id: int = -1
-    ) -> list[BookChapterDraft]:
-        """
-        获取图书章节草稿,如果chapter_id=-1则返回所有草稿
-        :param book_id:       图书ID
-        :param database:      数据库会话
-        :param chapter_id:     章节ID
-        :return:              图书章节草稿
-        """
-
-        if chapter_id != -1:
-            statement = select(BookChapterDraft).where(
-                BookChapterDraft.id == chapter_id
-            )
-        else:
-            statement = select(BookChapterDraft).where(
-                BookChapterDraft.book_id == book_id
-            )
-        result = await database.exec(statement)
-        book_chapter_drafts = result.all()
-        return list(book_chapter_drafts)

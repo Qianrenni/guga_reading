@@ -180,20 +180,6 @@ class ChapterStore:
         # 如果需要实时保存索引,也在锁内进行
         await self._save_index()
 
-    # ===== CRUD 接口 =====
-
-    async def create_chapter(self, chapter_id: int, content: str):
-        """
-        创建新章节。
-        若章节已存在且未被删除,则抛出异常(符合“创建”语义)。
-        """
-        if chapter_id in self._index and not self._index[chapter_id]["deleted"]:
-            raise AppError(
-                status_code=400,
-                message=f"Chapter {chapter_id} already exists in book {self.book_id}",
-            )
-        await self._append_record(chapter_id, content, deleted=False)
-
     async def read_chapter(self, chapter_id: int) -> str:
         """
         读取指定章节内容。
@@ -202,13 +188,6 @@ class ChapterStore:
         meta = self._index.get(chapter_id)
         if not meta or meta["deleted"]:
             raise AppError(message="Chapter not found", status_code=404)
-
-        # # 使用同步文件操作(更简单高效)
-        # with open(self.data_path, "rb") as f:
-        #     f.seek(meta["offset"])
-        #     raw_content = f.read(meta["size"])
-        #     return raw_content.decode(SETTING.CHAPTER_ENCODING)
-
         # 替代方案(全异步):
         async with aiofiles.open(self.data_path, "rb") as f:
             await f.seek(meta["offset"])
@@ -218,13 +197,7 @@ class ChapterStore:
     async def update_chapter(self, chapter_id: int, content: str):
         """
         更新现有章节内容。
-        要求章节必须存在且未被删除。
         """
-        if chapter_id not in self._index or self._index[chapter_id]["deleted"]:
-            raise AppError(
-                status_code=404,
-                message=f"Chapter {chapter_id} does not exist in book {self.book_id}",
-            )
         await self._append_record(chapter_id, content, deleted=False)
 
     async def delete_chapter(self, chapter_id: int):

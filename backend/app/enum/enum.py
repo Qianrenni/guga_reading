@@ -43,8 +43,8 @@ class RoleEnum(Enum):
     SUPER_ADMIN = "super_admin"  # 超级管理员
 
 
-class BookDraftStatusEnum(Enum):
-    # 搁置中
+class BookStatusEnum(Enum):
+    # 待处理
     PENDING = "pending"
     # 提交审核
     REVIEWING = "reviewing"
@@ -52,6 +52,8 @@ class BookDraftStatusEnum(Enum):
     APPROVED = "approved"
     # 审核拒绝
     REJECTED = "rejected"
+    # 发布
+    PUBLISHED = "published"
 
 
 class ReportEnum(Enum):
