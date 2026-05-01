@@ -38,9 +38,6 @@
           :options="[{ label: '记住我', value: 'remember' }]"
           style="padding: 0"
         />
-        <RouterLink to="/forget-password" class="link-primary">
-          忘记密码?
-        </RouterLink>
       </div>
       <QFormButton type="button" class="button-primary" @click="run">
         <QLoading v-if="loading" type="breathing" />

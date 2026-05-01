@@ -31,4 +31,4 @@ class BookChapter(BookChapterBase, table=True):
         ),
     )
     is_active: bool = Field(default=True)
-    parent_id: int | None = Field(default=None, foreign_key="book_chapter.id")
+    order: float = Field(default=0.0)

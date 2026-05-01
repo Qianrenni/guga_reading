@@ -16,12 +16,7 @@ import BookMeta from '@/components/book/BookMeta.vue';
 import { letIfNotNull, QFormButton, useMessage } from 'qyani-components';
 import { onBeforeMount, reactive, useTemplateRef } from 'vue';
 import { router } from '@/route';
-import type {
-  ActionEnum,
-  Book,
-  BookDraft,
-  BookMeta as BookMetaType,
-} from '@guga-reading/types';
+import type { Book, BookMeta as BookMetaType } from '@guga-reading/types';
 import { useApiAuthor, useApiBooks } from '@guga-reading/shares';
 import { useAuthStore } from '@/store';
 const props = reactive<BookMetaType>({
@@ -32,10 +27,6 @@ const props = reactive<BookMetaType>({
   tags: '',
 });
 const id = parseInt(router.currentRoute.value.query.id as string);
-const hasDraft = Boolean(
-  parseInt(router.currentRoute.value.query.hasDraft as string),
-);
-let action: ActionEnum = 'update';
 defineOptions({
   name: 'BookInfoEdit',
 });
@@ -68,8 +59,6 @@ const submit = () => {
         .split(' ')
         .filter((tag) => tag != '')
         .join(' '),
-      hasDraft,
-      action,
     )
     .then((res) => {
       if (res.success) {
@@ -81,29 +70,15 @@ const submit = () => {
     });
 };
 onBeforeMount(() => {
-  if (hasDraft) {
-    useApiAuthor.getBookDraft(id).then((res) => {
-      letIfNotNull<BookDraft[], void>(res.data, (data) => {
-        props.name = data[0]!.name;
-        props.cover = data[0]!.cover;
-        props.description = data[0]!.description;
-        props.category = data[0]!.category;
-        props.tags = data[0]!.tags;
-        action = data[0]!.action;
-      });
+  useApiBooks.getBookById(id).then((res) => {
+    letIfNotNull<Book, void>(res.data, (data) => {
+      props.name = data.name;
+      props.cover = data.cover;
+      props.description = data.description;
+      props.category = data.category;
+      props.tags = data.tags.split(',').join(' ');
     });
-  } else {
-    useApiBooks.getBookById(id).then((res) => {
-      letIfNotNull<Book, void>(res.data, (data) => {
-        props.name = data.name;
-        props.cover = data.cover;
-        props.description = data.description;
-        props.category = data.category;
-        props.tags = data.tags.split(',').join(' ');
-        action = 'update';
-      });
-    });
-  }
+  });
 });
 </script>
 <style lang="css" scoped></style>

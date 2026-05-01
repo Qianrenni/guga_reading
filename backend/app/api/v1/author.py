@@ -6,7 +6,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
 from app.depend.verify import verify_author_book
-from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
+from app.enum.enum import ActionEnum, BookStatusEnum, ResourceTypeEnum, ScopeEnum
 from app.models.response_model import ResponseModel
 from app.models.sql.book import Book
 from app.models.sql.book_chapter import BookChapter
@@ -194,7 +194,7 @@ async def delete_author_book(
         database=database,
     )
     await AuthorBookService.delete_author_book(
-        database=database, id=id, background_task=background_task
+        database=database, id=id, background_task=background_task, user=current_user
     )
     return
 
@@ -217,7 +217,7 @@ async def get_author_book_chapter(
     ],
     book_id: Annotated[int, Query(ge=1)],
     database: Annotated[AsyncSession, Depends(get_session)],
-    chapter_id: Annotated[int, Query(ge=-1)] = -1,
+    chapter_id: Annotated[list[int] | None, Query()] = None,
 ):
     """
     获取作者图书章节,如果chapter_id为-1则返回所有章节,否则返回指定章节
@@ -255,9 +255,9 @@ async def update_author_book_chapter(
         ),
     ],
     book_id: Annotated[int, Body(embed=True)],
-    chapter_id: Annotated[int | None, Body(embed=True)],
     content: Annotated[str, Body(embed=True)],
     title: Annotated[str, Body(embed=True)],
+    order: Annotated[float, Body(embed=True)],
     database: Annotated[AsyncSession, Depends(get_session)],
     background_task: BackgroundTasks,
 ):
@@ -280,7 +280,7 @@ async def update_author_book_chapter(
         book_id=book_id,
         content=content,
         title=title,
-        chapter_id=chapter_id,
+        order=order,
         background_tasks=background_task,
     )
     return
@@ -365,3 +365,139 @@ async def get_author_book_statistics(
         database=database, book_id=book_id, chapter_id=chapter_id
     )
     return ResponseModel[list[ChapterReadStatistics]](data=result)
+
+
+@author_router.get("/content", response_model=ResponseModel[list[str]])
+async def get_book_chapter_content(
+    current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.BOOK,
+                        action=ActionEnum.CREATE,
+                        scope=ScopeEnum.OWN,
+                    )
+                ]
+            )
+        ),
+    ],
+    book_id: Annotated[int, Query(description="图书ID")],
+    chapter_id: Annotated[list[int], Query(description="章节ID")],
+    database: Annotated[AsyncSession, Depends(get_session)],
+):
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+    )
+    result = await AuthorBookService.get_author_book_chapter_content(
+        database=database, book_id=book_id, chapter_id=chapter_id
+    )
+    return ResponseModel[list[str]](data=result)
+
+
+@author_router.get("/draft/chapter", response_model=ResponseModel[list[BookChapter]])
+async def get_author_book_draft_chapter(
+    current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.BOOK,
+                        action=ActionEnum.CREATE,
+                        scope=ScopeEnum.OWN,
+                    )
+                ]
+            )
+        ),
+    ],
+    database: Annotated[AsyncSession, Depends(get_session)],
+):
+    result = await AuthorBookService.get_author_book_draft_chapter(
+        database=database, user=current_user
+    )
+    return ResponseModel[list[BookChapter]](data=result)
+
+
+@author_router.patch("/status/chapter", status_code=204)
+async def update_author_book_chapter_status(
+    current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.BOOK,
+                        action=ActionEnum.UPDATE,
+                        scope=ScopeEnum.OWN,
+                    )
+                ]
+            )
+        ),
+    ],
+    book_id: Annotated[int, Body(description="图书ID")],
+    chapter_id: Annotated[int, Body(description="章节ID")],
+    status: Annotated[BookStatusEnum, Body(description="状态")],
+    database: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    更新作者图书章节状态
+    :param current_user:  当前用户
+    :param book_id:  图书id
+    :param chapter_id:  章节id
+    :param status:  状态
+    :param database:  数据库连接
+    """
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+    )
+    await AuthorBookService.update_author_book_chapter_status(
+        database=database,
+        book_id=book_id,
+        chapter_id=chapter_id,
+        status=status,
+    )
+
+
+@author_router.patch("/status/book", status_code=204)
+async def update_author_book_status(
+    current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.BOOK,
+                        action=ActionEnum.UPDATE,
+                        scope=ScopeEnum.OWN,
+                    )
+                ]
+            )
+        ),
+    ],
+    book_id: Annotated[int, Body(description="图书ID")],
+    status: Annotated[BookStatusEnum, Body(description="状态")],
+    database: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    更新作者图书状态
+    :param current_user:  当前用户
+    :param book_id:  图书id
+    :param status:  状态
+    :param database:  数据库连接
+    """
+    await verify_author_book(
+        id=book_id,
+        current_user=current_user,
+        database=database,
+    )
+    await AuthorBookService.update_author_book_status(
+        database=database,
+        book_id=book_id,
+        status=status,
+    )

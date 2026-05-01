@@ -112,7 +112,7 @@ class BookService:
 
     @staticmethod
     @cache(expire=SETTING.BOOK_CACHE_EXPIRE)
-    async def book_chapter_read_from_file(book_id: int, chapter_id: int) -> str:
+    async def book_chapter_read_from_file(book_id: int, chapter_id: int):
         """
         读取章节内容
         :param book_id: 图书ID

@@ -2,7 +2,7 @@ import os
 
 import aiofiles
 from fastapi import BackgroundTasks, UploadFile
-from sqlmodel import delete, select
+from sqlmodel import delete, or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import SETTING
@@ -109,7 +109,11 @@ class AuthorBookService:
         result = await database.exec(statement)
         books = list(result.all())
         for book in books:
-            book.cover = f"{SETTING.SERVER_URL}/static/book/{book.id}/cover.webp"
+            book.cover = (
+                f"{SETTING.SERVER_URL}/static/book/{book.id}/cover.webp"
+                if book.status == BookStatusEnum.PUBLISHED
+                else f"{SETTING.SERVER_URL}/static/temp/book/{book.id}/cover.webp"
+            )
         return books
 
     @staticmethod
@@ -198,7 +202,10 @@ class AuthorBookService:
 
     @staticmethod
     async def delete_author_book(
-        database: AsyncSession, id: int, background_task: BackgroundTasks
+        database: AsyncSession,
+        id: int,
+        background_task: BackgroundTasks,
+        user: FullUser,
     ):
         """
         删除作者图书
@@ -206,14 +213,29 @@ class AuthorBookService:
         :param id:  图书id
         """
         try:
-            statement = delete(AuthorBook).where(AuthorBook.book_id == id)
-            await database.exec(statement)
-            statement = (delete(Book).where(Book.id == id)).where(
-                Book.status.in_(
-                    [BookStatusEnum.REJECTED.value, BookStatusEnum.PENDING.value]
+            statement = (
+                select(Book)
+                .join(AuthorBook, AuthorBook.book_id == Book.id)
+                .where(AuthorBook.book_id == id)
+                .where(AuthorBook.user_id == user.id)
+                .where(
+                    or_(
+                        Book.status == BookStatusEnum.REJECTED,
+                        Book.status == BookStatusEnum.PENDING,
+                    )
                 )
             )
+            result = await database.exec(statement)
+            book = result.first()
+            if book is None:
+                raise AppError(message="违规操作")
+            statement = (
+                delete(AuthorBook)
+                .where(AuthorBook.book_id == id)
+                .where(AuthorBook.user_id == user.id)
+            )
             await database.exec(statement)
+            await database.delete(book)
             await database.commit()
             background_task.add_task(delete_book_cover, id)
         except Exception as e:
@@ -223,7 +245,10 @@ class AuthorBookService:
 
     @staticmethod
     async def get_author_book_chapter(
-        database: AsyncSession, book_id: int, user: FullUser, chapter_id: int = -1
+        database: AsyncSession,
+        book_id: int,
+        user: FullUser,
+        chapter_id: list[int] | None,
     ):
         """
         获取作者书籍章节草稿,如果chapter_id为-1则返回所有草稿
@@ -239,8 +264,8 @@ class AuthorBookService:
             .where(AuthorBook.user_id == user.id)
         )
         statement = statement.where(BookChapter.book_id == book_id)
-        if chapter_id != -1:
-            statement = statement.where(BookChapter.id == chapter_id)
+        if chapter_id is not None:
+            statement = statement.where(BookChapter.id.in_(chapter_id))
         result = await database.exec(statement)
         return list(result.all())
 
@@ -250,7 +275,7 @@ class AuthorBookService:
         book_id: int,
         content: str,
         title: str,
-        chapter_id: int,
+        order: float,
         background_tasks: BackgroundTasks,
     ):
         """
@@ -262,20 +287,33 @@ class AuthorBookService:
         :param title:  标题
         """
         try:
-            book_chapter = BookChapter(
-                title=title,
-                word_count=len(content),
-                parent_id=chapter_id,
-                book_id=book_id,
+            statement = (
+                select(BookChapter)
+                .where(BookChapter.book_id == book_id)
+                .where(BookChapter.order == order)
+                .where(
+                    or_(
+                        BookChapter.status == BookStatusEnum.PENDING,
+                        BookChapter.status == BookStatusEnum.REJECTED,
+                    )
+                )
             )
+            result = await database.exec(statement)
+            book_chapter = result.first()
+            if book_chapter is None:
+                book_chapter = BookChapter(
+                    title=title,
+                    word_count=len(content),
+                    order=order,
+                    book_id=book_id,
+                )
+            book_chapter.title = title
+            book_chapter.word_count = len(content)
             database.add(book_chapter)
             await database.commit()
             await database.refresh(book_chapter)
             background_tasks.add_task(
-                BookService.update_temp_book_chapter,
-                book_id,
-                book_chapter.id,
-                content,
+                BookService.update_temp_book_chapter, book_id, book_chapter.id, content
             )
         except Exception as e:
             logger.error(e)
@@ -295,11 +333,17 @@ class AuthorBookService:
         :param book_id:  图书id
         :param chapter_id:  章节id
         """
-        statement = delete(BookChapter).where(
-            BookChapter.id == chapter_id,
-            BookChapter.status.in_(
-                [BookStatusEnum.PENDING.value, BookStatusEnum.REJECTED.value]
-            ),
+        statement = (
+            delete(BookChapter)
+            .where(
+                BookChapter.id == chapter_id,
+            )
+            .where(
+                or_(
+                    BookChapter.status == BookStatusEnum.PENDING,
+                    BookChapter.status == BookStatusEnum.REJECTED,
+                )
+            )
         )
         try:
             await database.exec(statement)
@@ -335,3 +379,126 @@ class AuthorBookService:
             query = query.where(ChapterReadStatistics.chapter_id == chapter_id)
         result = await database.exec(query)
         return list(result.all())
+
+    @staticmethod
+    async def get_author_book_chapter_content(
+        database: AsyncSession, book_id: int, chapter_id: list[int]
+    ):
+        """
+        获取作者图书章节内容
+        Args:
+            database (AsyncSession): 数据库会话
+            book_id (int): 图书ID
+            chapter_id (list[int]): 章节ID
+        """
+        statement = (
+            select(BookChapter)
+            .where(BookChapter.book_id == book_id)
+            .where(BookChapter.id.in_(chapter_id))
+        )
+        result = await database.exec(statement)
+        chapters = result.all()
+        res = [""] * len(chapters)
+        for i, chapter in enumerate(chapters):
+            if chapter.status == BookStatusEnum.PUBLISHED:
+                res[i] = await BookService.book_chapter_read_from_file(
+                    book_id=book_id, chapter_id=chapter.id
+                )
+            else:
+                res[i] = await BookService.read_temp_book_chapter(
+                    book_id=book_id, chapter_id=chapter.id
+                )
+        return res
+
+    @staticmethod
+    async def get_author_book_draft_chapter(
+        database: AsyncSession,
+        user: FullUser,
+    ):
+        """
+        获取作者图书草稿章节
+        Args:
+            database (AsyncSession): 数据库会话
+        """
+        statement = (
+            select(BookChapter)
+            .join(AuthorBook, BookChapter.book_id == AuthorBook.book_id)
+            .where(AuthorBook.user_id == user.id)
+            .where(BookChapter.status != BookStatusEnum.PUBLISHED)
+        )
+        result = await database.exec(statement)
+        return list(result.all())
+
+    @staticmethod
+    async def update_author_book_chapter_status(
+        database: AsyncSession,
+        book_id: int,
+        chapter_id: int,
+        status: BookStatusEnum,
+    ):
+        """
+        更新作者图书章节状态
+        Args:
+            database (AsyncSession): 数据库会话
+            book_id (int): 图书ID
+            chapter_id (int): 章节ID
+            status (BookStatusEnum): 状态
+        """
+        p = {
+            BookStatusEnum.PENDING: BookStatusEnum.REVIEWING,
+            BookStatusEnum.REJECTED: BookStatusEnum.PENDING,
+        }
+        logger.debug(f"update_author_book_chapter_status: {status} -> {p[status]}")
+        if status not in p:
+            raise AppError(message="更新书籍章节状态错误", status_code=400)
+        statement = (
+            update(BookChapter)
+            .where(
+                BookChapter.book_id == book_id,
+                BookChapter.id == chapter_id,
+                BookChapter.status == status,
+            )
+            .values(status=p[status])
+        )
+        try:
+            await database.exec(statement)
+            await database.commit()
+        except Exception as e:
+            logger.error(e)
+            await database.rollback()
+            raise AppError(message="更新书籍章节状态失败") from e
+
+    @staticmethod
+    async def update_author_book_status(
+        database: AsyncSession,
+        book_id: int,
+        status: BookStatusEnum,
+    ):
+        """
+        更新作者图书状态
+        Args:
+            database (AsyncSession): 数据库会话
+            book_id (int): 图书ID
+            status (BookStatusEnum): 状态
+        """
+        p = {
+            BookStatusEnum.PENDING: BookStatusEnum.REVIEWING,
+            BookStatusEnum.REJECTED: BookStatusEnum.PENDING,
+        }
+        if status not in p:
+            raise AppError(message="更新书籍状态错误", status_code=400)
+        statement = (
+            update(Book)
+            .where(
+                Book.id == book_id,
+                Book.status == status,
+            )
+            .values(status=p[status])
+        )
+        try:
+            await database.exec(statement)
+            await database.commit()
+        except Exception as e:
+            logger.error(e)
+            await database.rollback()
+            raise AppError(message="更新书籍状态失败") from e

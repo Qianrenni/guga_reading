@@ -17,13 +17,10 @@
       <template #status="{ row }">
         {{ TranslationStatus[row.status as StatusEnum] }}
       </template>
-      <template #action="{ row }">
-        {{ TranslationAction[row.action as ActionEnum] }}
-      </template>
       <template #response="{ row }">
         <div class="container">
           <QIcon
-            v-if="['update', 'create'].includes(row.action as ActionEnum)"
+            v-if="['pending', 'rejected'].includes(row.status)"
             icon="Edit"
             size="16px"
             title="编辑"
@@ -34,9 +31,7 @@
                   name: 'BookEdit',
                   query: {
                     bookId: row.book_id,
-                    sortOrder: row.sort_order,
-                    hasDraft: 1,
-                    chapterId: -1,
+                    chapterId: row.id,
                   },
                 });
               }
@@ -50,11 +45,13 @@
             @click="
               () => {
                 useApiAuthor
-                  .submitBookChapter(row.book_id, row.sort_order)
+                  .updateStatusBookChapter(row.book_id, row.id, row.status)
                   .then((res) => {
                     if (res.success) {
                       useMessage.success('提交成功');
                       refresh();
+                    } else {
+                      useMessage.error(res.message || '提交失败');
                     }
                   });
               }
@@ -67,11 +64,13 @@
             @click="
               () => {
                 useApiAuthor
-                  .deleteBookChapter(row.book_id, [row.sort_order], true)
+                  .deleteBookChapter(row.book_id, row.id)
                   .then((res) => {
                     if (res.success) {
                       useMessage.success('撤销成功');
                       refresh();
+                    } else {
+                      useMessage.error(res.message || '撤销失败');
                     }
                   });
               }
@@ -89,33 +88,33 @@
           new UseTimeUtils(row.updated_at as string).format('YYYY年M月D日H时')
         }}</span>
       </template>
+      <template #action="{ row }">
+        <span>{{ row.order > 0 ? '创建' : '更新' }}</span>
+      </template>
     </QFormTable>
   </div>
 </template>
 <script lang="ts" setup>
 defineOptions({ name: 'BookChapterDraftManage' });
 import {
-  letIfNotNull,
   QFormTable,
   type TableColumn,
   QIcon,
-  useMessage,
   UseTimeUtils,
   QLoading,
+  useMessage,
 } from 'qyani-components';
 import {
-  TranslationAction,
   TranslationStatus,
-  type ActionEnum,
   type Book,
-  type BookChapterDraft,
+  type BookChapter,
   type StatusEnum,
 } from '@guga-reading/types';
 import { useApiAuthor } from '@guga-reading/shares';
 import { onBeforeMount, ref } from 'vue';
 import { router } from '@/route';
 const loading = ref(false);
-const bookChapterDrafts = ref<BookChapterDraft[]>([]);
+const bookChapterDrafts = ref<BookChapter[]>([]);
 const books: Map<number, Book> = new Map();
 const columns = [
   {
@@ -155,23 +154,17 @@ const columns = [
 const refresh = () => {
   loading.value = true;
   Promise.all([
-    useApiAuthor.getBook(),
-    useApiAuthor.getBookChapterDraft(-1, -1),
-  ])
-    .then(([res1, res2]) => {
-      letIfNotNull<Book[], void>(res1.data, (data) => {
-        data.forEach((book) => books.set(book.id, book));
-      });
-      letIfNotNull<BookChapterDraft[], void>(
-        res2.data as BookChapterDraft[],
-        (data) => {
-          bookChapterDrafts.value = data;
-        },
-      );
-    })
-    .finally(() => {
-      loading.value = false;
-    });
+    useApiAuthor.getBook().then((res) => {
+      for (const book of res.data) {
+        books.set(book.id, book);
+      }
+    }),
+    useApiAuthor.getAuthorDraftChapter().then((res) => {
+      bookChapterDrafts.value = res.data;
+    }),
+  ]).finally(() => {
+    loading.value = false;
+  });
 };
 onBeforeMount(() => {
   refresh();

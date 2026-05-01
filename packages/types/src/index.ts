@@ -1,3 +1,9 @@
+export type StatusEnum =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'reviewing'
+  | 'published';
 export interface ResponseModel<T> {
   code: number;
   data: T;
@@ -31,6 +37,8 @@ export interface Book {
   is_ended: boolean;
   words_cnt: number;
   updated_at: string;
+  parent_id: number | null;
+  status: StatusEnum;
 }
 
 /**
@@ -77,18 +85,12 @@ export interface Catalog {
   id: number;
   title: string;
   word_count: number;
-  sort_order: number;
+  order: number;
   created_at: string;
   updated_at: string;
 }
-/**
- * 目录草稿信息
- * @param status  状态
- * @param action  操作
- */
-export interface CatalogDraft extends Catalog {
+export interface BookChapter extends Catalog {
   status: StatusEnum;
-  action: ActionEnum;
 }
 /**
  * 阅读设置
@@ -141,12 +143,12 @@ export interface MenuItem {
     - rejected: 审核拒绝
     - reviewing: 审核中
  */
-export type StatusEnum = 'pending' | 'approved' | 'rejected' | 'reviewing';
 export const TranslationStatus: Record<StatusEnum, string> = {
   pending: '搁置',
   approved: '审核通过',
   rejected: '审核拒绝',
   reviewing: '审核中',
+  published: '已发布',
 };
 /**
  * 操作枚举
@@ -161,39 +163,6 @@ export const TranslationAction: Record<ActionEnum, string> = {
   delete: '删除',
   publish: '发布',
 };
-/**
- * 书籍章节草稿信息
- * @param book_id  书籍id
- */
-export interface BookChapterDraft extends CatalogDraft {
-  book_id: number;
-}
-
-/**
- * 书籍草稿信息
- * @param name  书籍名称
- * @param author  作者
- * @param cover  封面
- * @param description  描述
- * @param category  分类
- * @param tags  标签
- * @param action  操作
- * @param status  状态
- * @param created_at  创建时间
- * @param updated_at  更新时间
- */
-export interface BookDraft extends Book {
-  name: string;
-  author: string;
-  cover: string;
-  description: string;
-  category: string;
-  tags: string;
-  action: ActionEnum;
-  status: StatusEnum;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface ChapterReadStatistic {
   id: number;

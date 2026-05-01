@@ -2,17 +2,21 @@
   <div class="container-column container-w100">
     <div class="container-space-between">
       <BackButton>
-        <span>退出编辑</span>
+        <span class="hidden-768">退出编辑</span>
       </BackButton>
-      <div
-        class="container-align-center mouse-cursor hover-color-primary"
-        @click="saveChapter()"
-      >
-        <QIcon icon="Save" size="16px" title="保存" />
-        <span>保存</span>
+      <div class="inner-container">
+        <div>
+          <QFormSelect
+            placeholder="选择章节"
+            :options="options"
+            v-model="currentIndex"
+            style="width: 15rem"
+          />
+        </div>
+        <QIcon icon="Save" size="16px" title="保存" @click="saveChapter" />
       </div>
     </div>
-    <EditableTitle v-model="chapterItem.title" />
+    <EditableTitle v-model="title" />
     <ContentEditor
       v-model="content"
       class="container-flex-1"
@@ -21,67 +25,72 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { onBeforeMount } from 'vue';
 import { router } from '@/route';
 import ContentEditor from '@/components/common/ContentEditor.vue';
 import BackButton from '@/components/common/BackButton.vue';
-import {
-  QIcon,
-  letIfNotNull,
-  useMessage,
-  useShowLoading,
-} from 'qyani-components';
+import { QIcon, useMessage, UseTimeUtils } from 'qyani-components';
 import { useApiAuthor } from '@guga-reading/shares';
-import { type Catalog, type CatalogDraft } from '@guga-reading/types';
+import { TranslationStatus, type BookChapter } from '@guga-reading/types';
 import EditableTitle from '@/components/common/EditableTitle.vue';
-const content = ref('');
-const chapterItem = ref<Catalog>({} as Catalog);
+import { QFormSelect } from 'qyani-components';
 const bookId = parseInt(router.currentRoute.value.query.bookId as string);
-const sortOrder = parseFloat(
-  router.currentRoute.value.query.sortOrder as string,
+const chapterIds = Array.isArray(router.currentRoute.value.query.chapterId)
+  ? router.currentRoute.value.query.chapterId.map((id) =>
+      parseInt(id as string),
+    )
+  : [parseInt(router.currentRoute.value.query.chapterId as string)];
+const bookChapters = ref<BookChapter[]>([]);
+const chapterContents = ref<string[]>([]);
+const currentIndex = ref<number>(-1);
+const content = ref<string>('');
+const title = ref<string>('');
+const options = computed(() => {
+  return bookChapters.value.map((chapter, index) => ({
+    label: `${chapter.title}-${TranslationStatus[chapter.status]}-${new UseTimeUtils(chapter.created_at).format('M月D日H时m分')}`,
+    value: index,
+  }));
+});
+watch(
+  () => currentIndex.value,
+  () => {
+    content.value = chapterContents.value[currentIndex.value] || '';
+    title.value = bookChapters.value[currentIndex.value]?.title || '';
+  },
 );
-const hasDraft = Boolean(
-  parseInt(router.currentRoute.value.query.hasDraft as string),
-);
-const chapterId = parseInt(router.currentRoute.value.query.chapterId as string);
-
 const saveChapter = () => {
-  useShowLoading.show();
+  const item = bookChapters.value[currentIndex.value]!;
   useApiAuthor
-    .saveBookChapter(
+    .updateBookChapter(
       bookId,
-      sortOrder,
-      hasDraft,
-      content.value,
-      chapterItem.value.title,
+      title.value || '',
+      content.value || '',
+      item.status == 'published' ? -Math.abs(item.order) : item.order,
     )
     .then((res) => {
       if (res.success) {
         useMessage.success('保存成功');
+      } else {
+        useMessage.error(`${res.message || '保存失败'}`);
       }
-    })
-    .finally(() => {
-      useShowLoading.hide();
     });
 };
 onBeforeMount(() => {
-  useApiAuthor.getBookChapter(bookId, sortOrder, hasDraft).then((res) => {
-    letIfNotNull<string, void>(res.data, (data) => (content.value = data));
+  Promise.all([
+    useApiAuthor.getBookChapter(bookId, chapterIds).then((res) => {
+      if (res.success) {
+        bookChapters.value = res.data;
+      }
+    }),
+    useApiAuthor.getBookChapterContent(bookId, chapterIds).then((res) => {
+      if (res.success) {
+        chapterContents.value = res.data;
+      }
+    }),
+  ]).then(() => {
+    currentIndex.value = bookChapters.value.length - 1;
   });
-  if (hasDraft) {
-    useApiAuthor.getBookChapterDraftItem(bookId, sortOrder).then((res) => {
-      letIfNotNull<CatalogDraft, void>(res.data, (data) => {
-        chapterItem.value = data;
-      });
-    });
-  } else {
-    useApiAuthor.getBookCatalog(bookId, chapterId).then((res) => {
-      letIfNotNull<Catalog[], void>(res.data, (data) => {
-        chapterItem.value = data[0]!;
-      });
-    });
-  }
 });
 </script>
 <style scoped></style>
