@@ -204,7 +204,7 @@ async def verify_email_callback(token: Annotated[str, Query()]):
     html_content = """
     <html>
         <body>
-            <h2> 邮箱验证成功'!'/h2>
+            <h2>邮箱验证成功/h2>
             <p>您现在可以关闭此页面并返回应用,请在 5 分钟内完成注册</p>
         </body>
     </html>

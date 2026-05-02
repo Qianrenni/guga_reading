@@ -60,7 +60,7 @@ class UserService:
             db.add(db_user)
             await db.flush()
             await db.refresh(db_user)
-            await RightService.add_user_role(db_user.id, RoleEnum.USER.value)
+            await RightService.add_user_role(db_user.id, RoleEnum.USER, database=db)
             await db.commit()
         except IntegrityError as e:
             await db.rollback()

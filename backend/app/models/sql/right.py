@@ -47,7 +47,7 @@ class Role(SQLModel, table=True):
     __tablename__: str = "role"
     id: int = Field(primary_key=True, default=None)
     name: str = Field(max_length=50, unique=True)
-    code: str = Field(max_length=50, sa_column=Column(Enum(RoleEnum), unique=True))
+    code: RoleEnum = Field(max_length=50, sa_column=Column(Enum(RoleEnum), unique=True))
     description: str | None = Field(default=None)
     # created_at: 仅在插入时设为当前时间
     created_at: datetime = Field(sa_column=Column(DateTime, server_default=func.now()))
