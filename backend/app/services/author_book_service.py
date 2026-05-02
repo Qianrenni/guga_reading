@@ -15,6 +15,7 @@ from app.models.sql.book import Book
 from app.models.sql.book_chapter import BookChapter
 from app.models.sql.statistics import ChapterReadStatistics
 from app.models.sql.user import FullUser
+from app.services.audit_service import AuditService
 from app.services.book_service import BookService
 from app.services.cache_service import cache
 from app.utils.codec import PydanticListCodec
@@ -40,7 +41,7 @@ async def save_book_cover(cover_file: UploadFile | None, book_id: int):
             async with aiofiles.open(cover_path, "wb") as f:
                 await f.write(await cover_file.read())
                 logger.info(f"保存书籍封面成功: {cover_path}")
-            book.cover = f"{cover_path}"
+            book.cover = f"{cover_path.name}"
             database.add(book)
             await database.commit()
             logger.info("更新书籍封面成功")
@@ -309,6 +310,7 @@ class AuthorBookService:
                 )
             book_chapter.title = title
             book_chapter.word_count = len(content)
+            book_chapter.status = BookStatusEnum.PENDING
             database.add(book_chapter)
             await database.commit()
             await database.refresh(book_chapter)
@@ -446,11 +448,12 @@ class AuthorBookService:
         """
         p = {
             BookStatusEnum.PENDING: BookStatusEnum.REVIEWING,
-            BookStatusEnum.REJECTED: BookStatusEnum.PENDING,
         }
-        logger.debug(f"update_author_book_chapter_status: {status} -> {p[status]}")
         if status not in p:
             raise AppError(message="更新书籍章节状态错误", status_code=400)
+        auditor_user_id = await AuditService.check_book_auditor(
+            book_id=book_id, database=database
+        )
         statement = (
             update(BookChapter)
             .where(
@@ -463,6 +466,9 @@ class AuthorBookService:
         try:
             await database.exec(statement)
             await database.commit()
+            await AuditService.allocate_book_chapter_auditor(
+                chapter_id=chapter_id, user_id=auditor_user_id, database=database
+            )
         except Exception as e:
             logger.error(e)
             await database.rollback()
@@ -487,6 +493,7 @@ class AuthorBookService:
         }
         if status not in p:
             raise AppError(message="更新书籍状态错误", status_code=400)
+        await AuditService.check_book_auditor(book_id=book_id, database=database)
         statement = (
             update(Book)
             .where(
