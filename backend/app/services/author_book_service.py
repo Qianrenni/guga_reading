@@ -10,6 +10,7 @@ from app.core.database import get_session_context
 from app.core.error_handler import AppError
 from app.enum.enum import BookStatusEnum
 from app.middleware.logging import logger
+from app.models.sql.admin import AuditBookChapter
 from app.models.sql.author import AuthorBook
 from app.models.sql.book import Book
 from app.models.sql.book_chapter import BookChapter
@@ -18,6 +19,7 @@ from app.models.sql.user import FullUser
 from app.services.audit_service import AuditService
 from app.services.book_service import BookService
 from app.services.cache_service import cache
+from app.services.email_service import email_sender
 from app.utils.codec import PydanticListCodec
 
 
@@ -152,15 +154,16 @@ class AuthorBookService:
                 tags=tags,
             )
             database.add(book)
-            await database.commit()
+            await database.flush()
             await database.refresh(book)
-            background_tasks.add_task(save_book_cover, cover, book.id)
             author_book = AuthorBook(
                 user_id=user.id,
                 book_id=book.id,
             )
             database.add(author_book)
             await database.commit()
+            await database.refresh(book)
+            background_tasks.add_task(save_book_cover, cover, book.id)
             return True
         except Exception as e:
             logger.error(e)
@@ -186,16 +189,17 @@ class AuthorBookService:
         try:
             book.parent_id = id
             database.add(book)
-            await database.commit()
+            await database.flush()
             await database.refresh(book)
-            if cover:
-                background_task.add_task(save_book_cover, cover, book.id)
             author_book = AuthorBook(
                 user_id=user.id,
                 book_id=book.id,
             )
             database.add(author_book)
             await database.commit()
+            await database.refresh(book)
+            if cover:
+                background_task.add_task(save_book_cover, cover, book.id)
         except Exception as e:
             logger.error(e)
             await database.rollback()
@@ -312,6 +316,7 @@ class AuthorBookService:
             book_chapter.word_count = len(content)
             book_chapter.status = BookStatusEnum.PENDING
             database.add(book_chapter)
+            await database.flush()
             await database.commit()
             await database.refresh(book_chapter)
             background_tasks.add_task(
@@ -451,7 +456,7 @@ class AuthorBookService:
         }
         if status not in p:
             raise AppError(message="更新书籍章节状态错误", status_code=400)
-        auditor_user_id = await AuditService.check_book_auditor(
+        auditor_user = await AuditService.check_book_auditor(
             book_id=book_id, database=database
         )
         statement = (
@@ -465,9 +470,15 @@ class AuthorBookService:
         )
         try:
             await database.exec(statement)
+            audit_book_chapter = AuditBookChapter(
+                book_chapter_id=chapter_id, user_id=auditor_user.id
+            )
+            database.add(audit_book_chapter)
             await database.commit()
-            await AuditService.allocate_book_chapter_auditor(
-                chapter_id=chapter_id, user_id=auditor_user_id, database=database
+            email_sender.send_email(
+                to_emails=[auditor_user.email],
+                subject="[内容审核]章节更新",
+                body="请内容审核员对更新内容进行审核,并给出意见",
             )
         except Exception as e:
             logger.error(e)
@@ -493,7 +504,9 @@ class AuthorBookService:
         }
         if status not in p:
             raise AppError(message="更新书籍状态错误", status_code=400)
-        await AuditService.check_book_auditor(book_id=book_id, database=database)
+        auditor = await AuditService.check_book_auditor(
+            book_id=book_id, database=database
+        )
         statement = (
             update(Book)
             .where(
@@ -505,6 +518,11 @@ class AuthorBookService:
         try:
             await database.exec(statement)
             await database.commit()
+            email_sender.send_email(
+                to_emails=[auditor.email],
+                subject="[内容审核]新增书籍更新",
+                body="请内容审核员对更新内容进行审核,并给出意见",
+            )
         except Exception as e:
             logger.error(e)
             await database.rollback()
