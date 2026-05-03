@@ -58,9 +58,10 @@ class UserService:
 
         try:
             db.add(db_user)
-            await db.commit()
+            await db.flush()
             await db.refresh(db_user)
-            await RightService.add_user_role(db_user.id, RoleEnum.USER.value)
+            await RightService.add_user_role(db_user.id, RoleEnum.USER, database=db)
+            await db.commit()
         except IntegrityError as e:
             await db.rollback()
             raise AppError(
@@ -249,5 +250,4 @@ class UserService:
         user = await UserService.get_user_by_email(db, user_account)
         user.password = get_password_hash(new_password)
         await db.commit()
-        await db.refresh(user)
         return True

@@ -29,7 +29,6 @@
             name: 'BookInfoEdit',
             query: {
               id: book.id,
-              hasDraft: 0,
             },
           })
         "

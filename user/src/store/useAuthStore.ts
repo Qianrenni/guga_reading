@@ -58,8 +58,24 @@ export const useAuthStore = defineStore('auth', {
           this.setUser(data.user);
           axios.defaults.headers.common['Authorization'] =
             `${this.getTokenType} ${this.getAccessToken!}`;
+          return true;
         }
-        return success;
+        const result = await useApiAuth.refreshToken(
+          this.getTokenType!,
+          this.getRefreshToken!,
+        );
+        if (result.success) {
+          this.setToken(
+            result.data!.access_token,
+            result.data!.refresh_token,
+            result.data!.token_type,
+          );
+          this.setUser(result.data!.user);
+          axios.defaults.headers.common['Authorization'] =
+            `${this.getTokenType} ${this.getAccessToken!}`;
+          return true;
+        }
+        return false;
       }
       return false;
     },

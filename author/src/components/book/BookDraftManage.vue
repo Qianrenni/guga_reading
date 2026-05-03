@@ -18,7 +18,7 @@
         {{ TranslationStatus[row.status as StatusEnum] }}
       </template>
       <template #action="{ row }">
-        {{ TranslationAction[row.action as ActionEnum] }}
+        {{ row.parent_id === null ? '创建' : '更新' }}
       </template>
       <template #cover="{ row }">
         <QLazyImage :src="row.cover" :height="128" :width="72" />
@@ -64,7 +64,6 @@
                   name: 'BookInfoEdit',
                   query: {
                     id: row.id,
-                    hasDraft: 1,
                   },
                 });
               }
@@ -77,12 +76,16 @@
             class="hover-color-primary"
             @click="
               () => {
-                useApiAuthor.submitBookDraft(row.id).then((res) => {
-                  if (res.success) {
-                    useMessage.success('提交成功');
-                    refresh();
-                  }
-                });
+                useApiAuthor
+                  .updateStatusBook(row.id, row.status)
+                  .then((res) => {
+                    if (res.success) {
+                      useMessage.success('提交成功');
+                      refresh();
+                    } else {
+                      useMessage.error(res.message || '提交失败');
+                    }
+                  });
               }
             "
           />
@@ -90,16 +93,7 @@
             icon="Trash"
             size="16px"
             title="撤销改动"
-            @click="
-              () => {
-                useApiAuthor.deleteBookDraft(row.id, row.action).then((res) => {
-                  if (res.success) {
-                    useMessage.success('撤销成功');
-                    refresh();
-                  }
-                });
-              }
-            "
+            @click="cancelChange(row as unknown as Book)"
           />
         </div>
       </template>
@@ -109,7 +103,6 @@
 <script lang="ts" setup>
 defineOptions({ name: 'BookChapterDraftManage' });
 import {
-  letIfNotNull,
   QFormTable,
   type TableColumn,
   QIcon,
@@ -121,15 +114,14 @@ import {
 import { useApiAuthor } from '@guga-reading/shares';
 import { onBeforeMount, ref } from 'vue';
 import {
-  TranslationAction,
   TranslationStatus,
   type ActionEnum,
-  type BookDraft,
+  type Book,
   type StatusEnum,
 } from '@guga-reading/types';
 import { router } from '@/route';
 const loading = ref(false);
-const bookDrafts = ref<BookDraft[]>([]);
+const bookDrafts = ref<Book[]>([]);
 const columns = [
   {
     value: 'name',
@@ -172,15 +164,28 @@ const columns = [
     label: '操作',
   },
 ] satisfies TableColumn[];
-
+const cancelChange = (book: Book) => {
+  useApiAuthor.deleteBook(book.id).then((res) => {
+    if (res.success) {
+      useMessage.success('撤销成功');
+      refresh();
+    } else {
+      useMessage.error(res.message || '撤销失败');
+    }
+  });
+};
 const refresh = () => {
   loading.value = true;
   useApiAuthor
-    .getBookDraft()
+    .getBook()
     .then((res) => {
-      letIfNotNull<BookDraft[], void>(res.data, (data) => {
-        bookDrafts.value = data;
-      });
+      const temp = [];
+      for (const book of res.data) {
+        if (book.status !== 'published') {
+          temp.push(book);
+        }
+      }
+      bookDrafts.value = temp;
     })
     .finally(() => {
       loading.value = false;

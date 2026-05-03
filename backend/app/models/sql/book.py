@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, Enum, Text
 from sqlmodel import DateTime, Field, Index, SQLModel, func
 
-from app.enum.enum import ActionEnum, BookDraftStatusEnum
+from app.enum.enum import BookStatusEnum
 
 
 class BookBase(SQLModel):
@@ -40,6 +40,14 @@ class Book(BookBase, table=True):
     words_cnt: int = Field(default=0, index=True)
     # 是否已完结
     is_ended: bool = Field(default=False, index=True)
+    status: BookStatusEnum = Field(
+        default=BookStatusEnum.PENDING,
+        sa_column=Column(
+            Enum(BookStatusEnum), server_default=BookStatusEnum.PENDING.value
+        ),
+    )
+    is_active: bool = Field(default=True)
+    parent_id: int | None = Field(default=None, foreign_key="book.id")
     __table_args__ = (
         Index("idx_category_is_ended", "category", "is_ended"),
         Index("idx_category_words", "category", "words_cnt"),
@@ -56,29 +64,3 @@ class Book(BookBase, table=True):
             "words_cnt",
             "is_ended",
         ]
-
-
-class BookDraft(BookBase, table=True):
-    __tablename__: str = "book_draft"
-    id: int = Field(default=None, primary_key=True)
-    # 特有字段
-    action: ActionEnum = Field(
-        default=ActionEnum.CREATE,
-        sa_column=Column(Enum(ActionEnum), server_default=ActionEnum.CREATE.value),
-    )
-    book_id: int | None = Field(index=True, foreign_key="book.id", default=None)
-    user_id: int = Field(index=True, foreign_key="user.id")
-    status: BookDraftStatusEnum = Field(
-        default=BookDraftStatusEnum.PENDING,
-        sa_column=Column(
-            Enum(BookDraftStatusEnum), server_default=BookDraftStatusEnum.PENDING.value
-        ),
-    )
-    created_at: datetime = Field(sa_column=Column(DateTime, server_default=func.now()))
-    updated_at: datetime = Field(
-        sa_column=Column(DateTime, server_default=func.now(), onupdate=func.now())
-    )
-
-    __table_args__ = (
-        Index("idx_book_draft_unique", "name", "user_id", "action", unique=True),
-    )

@@ -33,6 +33,8 @@ from app.models.response_model import ResponseCode
 from app.services.recommend_service import book_recommend_service
 from app.services.right_service import RightService
 
+logger.debug(f"Setting: {SETTING.model_dump_json(indent=4)}")
+
 
 @asynccontextmanager
 async def life_span(_app: FastAPI):
@@ -71,17 +73,11 @@ if STATIC_DIR.exists():
 else:
     logger.warning(f"Static directory '{STATIC_DIR}' not found. Skipping static mount.")
 
-# 开发环境允许的源(包括本地)
-DEV_ORIGINS = [
-    "http://localhost",
-    "http://100.64.81.35",
-    "http://101.132.151.248",
-    "http://1.95.141.194",
-    "http://localhost:8080",
-]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=DEV_ORIGINS,
+    allow_origins=[
+        x.strip() for x in SETTING.ALLOW_ORIGINS.split(",") if x.strip() != ""
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -100,7 +100,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue';
 import type { Book } from '@guga-reading/types';
-import { useApiBooks } from '@guga-reading/shares';
+import { useApiAuthor } from '@guga-reading/shares';
 import { QLazyImage, useScreenSize, QIcon } from 'qyani-components';
 import Tag from '../common/Tag.vue';
 defineOptions({
@@ -124,8 +124,10 @@ const isMobile = useScreenSize.getWidth(768);
 const width = computed(() => (isMobile.value ? 96 : 168));
 const height = computed(() => (isMobile.value ? 128 : 224));
 onBeforeMount(() => {
-  useApiBooks.getBookById(props.bookId).then((res) => {
-    book.value = res.data;
+  useApiAuthor.getBook(props.bookId).then((res) => {
+    if (res.success) {
+      book.value = res.data[0]!;
+    }
   });
 });
 </script>

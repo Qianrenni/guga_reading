@@ -42,7 +42,7 @@
           忘记密码?
         </RouterLink>
       </div>
-      <QFormButton type="button" class="button-primary" @click="() => run()">
+      <QFormButton type="button" class="button-primary" @click="run">
         <QLoading v-if="loading" type="breathing" />
         <span v-else>登录</span>
       </QFormButton>
@@ -82,7 +82,7 @@ const form = ref({
   password: '',
   captcha: '',
   x_captcha_id: '',
-  remember: [],
+  remember: ['remember'],
 });
 const loading = ref(false);
 const refreshCaptcha = async () => {
@@ -136,16 +136,23 @@ watch(
     }
   },
 );
+const globalKeyUp = (event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    run();
+  }
+};
 onBeforeMount(() => {
   authStore.initial();
 });
 onMounted(async () => {
   refreshCaptcha();
+  document.addEventListener('keyup', globalKeyUp);
 });
 onBeforeUnmount(() => {
   if (image.value) {
     URL.revokeObjectURL(image.value);
   }
+  document.removeEventListener('keyup', globalKeyUp);
 });
 </script>
 

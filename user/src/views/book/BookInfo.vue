@@ -12,7 +12,7 @@
             </div>
             <div class="container-align-center">
               <QIcon icon="Calender" size="16px" />
-              <h5>{{ book.created_at.split('T')[0] }}</h5>
+              <h5>{{ book.created_at?.split('T')[0] }}</h5>
             </div>
           </div>
           <p

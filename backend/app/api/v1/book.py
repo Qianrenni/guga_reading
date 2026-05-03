@@ -38,6 +38,17 @@ async def get_book_category_count(
     return ResponseModel[CountResponseModel](data=CountResponseModel(count=result))
 
 
+@book_router.get("/category", response_model=ResponseModel[list[str]])
+async def get_book_category(database: Annotated[AsyncSession, Depends(get_session)]):
+    """
+    获取图书分类
+    :param database:    数据库会话
+    :return:    分类列表
+    """
+    result = await BookService.get_category(database=database)
+    return ResponseModel[list[str]](data=result)
+
+
 @book_router.get("/recommend", response_model=ResponseModel[list[Book]])
 async def recommend_book(
     database: Annotated[AsyncSession, Depends(get_session)],
@@ -92,17 +103,6 @@ async def get_books_total_count(
     """
     result = await BookService.get_books_total_count(database=database)
     return ResponseModel[CountResponseModel](data=CountResponseModel(count=result))
-
-
-@book_router.get("/category", response_model=ResponseModel[list[str]])
-async def get_book_category(database: Annotated[AsyncSession, Depends(get_session)]):
-    """
-    获取图书分类
-    :param database:    数据库会话
-    :return:    分类列表
-    """
-    result = await BookService.get_category(database=database)
-    return ResponseModel[list[str]](data=result)
 
 
 @book_router.get("/select", response_model=ResponseModel[list[Book]])
@@ -227,30 +227,5 @@ async def get_book_chapter(
     result = await BookService.book_chapter_read_from_file(
         book_id=book_id,
         chapter_id=chapter_id,
-    )
-    return ResponseModel[str](data=result)
-
-
-@book_router.get(
-    "/chapter/{book_id}/{chapter_index}",
-    dependencies=[Depends(get_current_user)],
-    response_model=ResponseModel[str],
-)
-async def get_book_chapter_by_index(
-    database: Annotated[AsyncSession, Depends(get_session)],
-    book_id: int = Path(..., title="book_id", description="book_id", gt=0),
-    chapter_index: int = Path(
-        ..., title="chapter_index", description="chapter_index", gt=0
-    ),
-):
-    """
-    获取图书章节
-    :param database:         数据库会话
-    :param book_id:              图书ID
-    :param chapter_index:         章节索引
-    :return:                  章节内容
-    """
-    result = await BookService.get_book_chapter_by_index(
-        book_id=book_id, chapter_index=chapter_index, database=database
     )
     return ResponseModel[str](data=result)

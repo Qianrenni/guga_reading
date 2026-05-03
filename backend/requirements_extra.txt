@@ -2,4 +2,3 @@ ruff
 pytest
 pytest-asyncio
 alembic~=1.17.0
-EbookLib==0.19

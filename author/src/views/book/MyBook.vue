@@ -43,7 +43,9 @@ onBeforeMount(() => {
   useApiAuthor
     .getBook()
     .then((res) => {
-      bookItems.value.push(...(res.data ?? []));
+      bookItems.value.push(
+        ...(res.data.filter((book) => book.status === 'published') ?? []),
+      );
     })
     .finally(() => {
       loading.value = false;

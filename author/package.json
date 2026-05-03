@@ -12,7 +12,7 @@
     "@guga-reading/types": "workspace:*",
     "echarts": "^6.0.0",
     "pinia": "^3.0.4",  
-    "qyani-components": "^1.5.7",
+    "qyani-components": "^1.5.8",
     "vue": "^3.5.18",
     "vue-router": "^4.6.4"
   },

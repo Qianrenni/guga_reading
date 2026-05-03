@@ -29,7 +29,7 @@ token_router = APIRouter(prefix="/token", tags=["token"])
 class TokenData(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"
+    token_type: str = "Bearer"
     user: dict[str, Any]
 
 
@@ -204,7 +204,7 @@ async def verify_email_callback(token: Annotated[str, Query()]):
     html_content = """
     <html>
         <body>
-            <h2> 邮箱验证成功'!'/h2>
+            <h2>邮箱验证成功/h2>
             <p>您现在可以关闭此页面并返回应用,请在 5 分钟内完成注册</p>
         </body>
     </html>
@@ -214,7 +214,7 @@ async def verify_email_callback(token: Annotated[str, Query()]):
 
 @token_router.get("/auth/me", response_model=ResponseModel)
 async def get_me(
-    Authorization: Annotated[str, Header(name="Authorization")],
+    Authorization: Annotated[str, Header(name="Authorization")],  # noqa: ARG001, N803
     current_user: Annotated[FullUser, Depends(get_current_user)],
 ):
     """

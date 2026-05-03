@@ -16,7 +16,7 @@ export const useBookStore = defineStore('book', {
     books: new Map<number, Book>(),
     cursors: new Map<string, number>(),
     categoryOvers: new Map<string, boolean>(),
-    limit: 20,
+    limit: 25,
     loading: false,
     scrollTo: 0,
     categories: [] as string[],

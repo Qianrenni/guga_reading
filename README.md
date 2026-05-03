@@ -340,7 +340,7 @@ pytest test/api/v1/test_book.py
 ### 前端测试
 
 ```bash
-# 代码检查和格式化（根目录）
+# 代码检查和格式化根目录）
 pnpm prettier
 
 # 单个应用检查

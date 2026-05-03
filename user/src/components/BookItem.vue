@@ -18,21 +18,20 @@ const router = useRouter();
 
 <template>
   <div
-    class="container mouse-cursor"
+    class="inner-container mouse-cursor"
     @click="() => router.push(`/book-detail/${book.id}`)"
   >
-    <QLazyImage class=" " :src="book.cover" :height="height" :width="width" />
-    <div class="container-column container-flex-1 container-h100">
+    <QLazyImage :src="book.cover" :height="height" :width="width" />
+    <div
+      class="container-flex-1 inner-container-column container-h100 overflow-hidden"
+    >
       <h4>{{ book.name }}</h4>
       <h6>作者: {{ book.author }}</h6>
       <p
-        class="container-flex-1 text-muted text-08rem text-overflow"
-        :title="book.description"
+        class="inner-container-column container-flex-1 text-muted text-08rem text-overflow"
       >
         {{ book.description }}
       </p>
     </div>
   </div>
 </template>
-
-<style scoped lang="css"></style>

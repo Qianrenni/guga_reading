@@ -8,7 +8,7 @@ from app.core.config import SETTING
 from app.core.database import get_session_context
 from app.core.error_handler import AppError
 from app.core.security import get_current_user
-from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
+from app.enum.enum import ActionEnum, ResourceTypeEnum, RoleEnum, ScopeEnum
 from app.middleware.logging import logger
 from app.models.sql.right import (
     Permission,
@@ -296,7 +296,9 @@ class RightService:
         return True
 
     @classmethod
-    async def add_user_role(cls, user_id: int, role_code: str):
+    async def add_user_role(
+        cls, user_id: int, role_code: RoleEnum, database: AsyncSession
+    ):
         """
         为用户添加角色
         :param user_id: 用户ID
@@ -306,16 +308,13 @@ class RightService:
         :raise: 异常
         """
         for role in cls.role_dict.values():
+            logger.debug(
+                f"add user role user:id:{user_id} role:{role.code.name}:{role.code.value} need role:{role_code.name}:{role_code.value}"
+            )
             if role.code == role_code:
-                async with get_session_context() as database:
-                    try:
-                        user_role = UserRole(user_id=user_id, role_id=role.id)
-                        database.add(user_role)
-                        await database.commit()
-                        return True
-                    except Exception as e:
-                        await database.rollback()
-                        raise e
+                user_role = UserRole(user_id=user_id, role_id=role.id)
+                database.add(user_role)
+                return True
         return False
 
     @classmethod
