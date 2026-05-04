@@ -18,7 +18,7 @@
         {{ TranslationStatus[row.status as StatusEnum] }}
       </template>
       <template #response="{ row }">
-        <div class="container">
+        <div class="inner-container">
           <QIcon
             v-if="['pending', 'rejected'].includes(row.status)"
             icon="Edit"

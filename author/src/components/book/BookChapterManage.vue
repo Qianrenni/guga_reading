@@ -50,7 +50,7 @@
         <span>{{ getLinkChildren(row.id).length > 1 ? '更新中' : '' }}</span>
       </template>
       <template #action="{ row }">
-        <div class="container">
+        <div class="inner-container">
           <QIcon
             icon="Edit"
             size="16px"

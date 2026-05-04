@@ -51,7 +51,7 @@
         }}</span>
       </template>
       <template #response="{ row }">
-        <div class="container">
+        <div class="inner-container">
           <QIcon
             v-if="['update', 'create'].includes(row.action as ActionEnum)"
             icon="Edit"

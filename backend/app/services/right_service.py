@@ -1,3 +1,4 @@
+import json
 from typing import Annotated
 
 from fastapi import Depends, status
@@ -201,7 +202,7 @@ class RightService:
                 f"{p.resource_type}:{p.action}:{p.scope}": p.bit_position
                 for p in permissions
             }
-
+            logger.debug(f"权限字典: {json.dumps(cls.permission_code_map, indent=4)}")
             # 构建角色字典
             cls.role_dict = {r.id: r for r in role_result.all()}
             # 构建角色权限位图
@@ -274,9 +275,11 @@ class RightService:
         """
         # 1. 转换权限编码为 bit_position
         required_bits = []
+        logger.debug(f"required_permission_codes: {required_permission_codes}")
         for code in required_permission_codes:
             bit_pos = cls.permission_code_map.get(code)
             if bit_pos is None:
+                logger.warning(f"Unknown permission code: {code}")
                 return False  # 未知权限,拒绝访问
             required_bits.append(bit_pos)
 
@@ -290,7 +293,8 @@ class RightService:
         )
 
         # 4. 逐段检查是否满足所有权限
-        for req_seg, user_seg in zip(require_bitmap, user_bitmap_padded, strict=True):
+        for index in range(len(require_bitmap)):
+            req_seg, user_seg = require_bitmap[index], user_bitmap_padded[index]
             if (user_seg & req_seg) != req_seg:
                 return False
         return True
@@ -366,13 +370,7 @@ def generate_permission_code(
     :param scope: 范围
     :return: 权限编码
     """
-    if resource not in ResourceTypeEnum.__members__.values():
-        raise ValueError("Invalid resource")
-    if action not in ActionEnum.__members__.values():
-        raise ValueError("Invalid action")
-    if scope not in ScopeEnum.__members__.values():
-        raise ValueError("Invalid scope")
-    return f"{resource.value}:{action.value}:{scope.value}"
+    return f"{resource}:{action}:{scope}"
 
 
 def right_check(permission_codes: list[str]):

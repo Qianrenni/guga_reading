@@ -11,7 +11,7 @@ from sqlmodel import (
     func,
 )
 
-from app.enum.enum import RoleEnum
+from app.enum.enum import ActionEnum, ResourceTypeEnum, RoleEnum, ScopeEnum
 
 
 class Permission(SQLModel, table=True):
@@ -23,9 +23,21 @@ class Permission(SQLModel, table=True):
 
     id: int = Field(primary_key=True, default=None)
     name: str = Field(max_length=100, unique=True, description="权限名称(中文描述)")
-    resource_type: str = Field(max_length=50, description="资源类型")
-    action: str = Field(max_length=30, description="操作类型")
-    scope: str = Field(max_length=30, description="作用范围")
+    resource_type: str = Field(
+        max_length=50,
+        description="资源类型",
+        sa_column=Column(Enum(ResourceTypeEnum)),
+    )
+    action: str = Field(
+        max_length=30,
+        description="操作类型",
+        sa_column=Column(Enum(ActionEnum)),
+    )
+    scope: str = Field(
+        max_length=30,
+        description="作用范围",
+        sa_column=Column(Enum(ScopeEnum)),
+    )
     bit_position: int = Field(unique=True, description="在位图中的位置(用于高性能判断)")
     # created_at: 仅在插入时设为当前时间
     created_at: datetime = Field(sa_column=Column(DateTime, server_default=func.now()))

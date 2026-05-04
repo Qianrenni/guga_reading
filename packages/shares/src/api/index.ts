@@ -7,3 +7,4 @@ export * from './statistic';
 export * from './bookReadingProgress';
 export * from './report';
 export * from './bookShelf';
+export * from './admin';
