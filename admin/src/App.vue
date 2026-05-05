@@ -42,7 +42,9 @@ watch(
 );
 </script>
 <template>
-  <header-navigation />
-  <router-view />
+  <div class="inner-container-column container-flex-1">
+    <header-navigation />
+    <router-view class="container-flex-1" />
+  </div>
 </template>
 <style lang="css" scoped></style>

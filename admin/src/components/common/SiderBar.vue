@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-card content-height padding-vetical">
+  <div class="bg-card padding-vetical container-h100">
     <div
       v-for="item in menuStore.menuItems"
       :key="item.name"

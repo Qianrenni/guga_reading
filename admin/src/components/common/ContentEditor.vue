@@ -196,7 +196,7 @@ defineExpose({
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.15),
     inset 0 0 0 1px rgba(139, 69, 19, 0.1);
-  padding: 2rem;
+  padding: 1rem;
   padding-bottom: 1rem;
   font-family:
     'Songti SC', 'SimSun', 'STSong', serif, Georgia, 'Times New Roman';
@@ -244,6 +244,9 @@ defineExpose({
   .writing-area {
     font-size: 1.1rem;
     line-height: 2.1rem;
+  }
+  .writing-editor {
+    padding: 0.5rem;
   }
 }
 </style>

@@ -3,19 +3,27 @@
     <div class="show-768">
       <QFormSelect v-model="select" :options="options" />
     </div>
-    <div class="inner-container">
+    <div class="inner-container container-flex-1">
       <div
-        class="inner-container-column container-flex-1"
+        class="inner-container-column container-flex-1 container-h100"
         v-if="isUpdate && !isMobile"
       >
         <p v-if="isUpdate && !isMobile">修改前</p>
         <EditableTitle v-model="srcChapter.title" :disabled="true" />
-        <ContentEditor v-model="srcContent" :disabled="true" />
+        <ContentEditor
+          v-model="srcContent"
+          :disabled="true"
+          content-height="calc(100vh - 15.5rem)"
+        />
       </div>
-      <div class="inner-container-column container-flex-1">
+      <div class="inner-container-column container-flex-1 container-h100">
         <p v-if="isUpdate && !isMobile">修改后</p>
         <EditableTitle v-model="chapter.title" :disabled="true" />
-        <ContentEditor v-model="content" :disabled="true" />
+        <ContentEditor
+          v-model="content"
+          :disabled="true"
+          content-height="calc(100vh - 15.5rem)"
+        />
       </div>
     </div>
     <div class="inner-container container-flex-end">
@@ -28,7 +36,7 @@
 import router from '@/route';
 import { useApiAudit, useApiBooks } from '@guga-reading/shares';
 import type { BookChapter } from '@guga-reading/types';
-import { onBeforeMount, ref } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
 import ContentEditor from '@/components/common/ContentEditor.vue';
 import EditableTitle from '@/components/common/EditableTitle.vue';
 import { QFormButton, useScreenSize, QFormSelect } from 'qyani-components';
@@ -52,15 +60,32 @@ const content = ref<string>('');
 const isUpdate = ref<boolean>(false);
 const srcChapter = ref<BookChapter>({} as BookChapter);
 const srcContent = ref<string>('');
+const latestContent = ref<string>('');
+const latestChapter = ref<BookChapter>({} as BookChapter);
+watch(
+  () => select.value,
+  (val) => {
+    if (!isUpdate) {
+      return;
+    }
+    if (val === 'before') {
+      content.value = srcContent.value;
+      chapter.value = srcChapter.value;
+    } else {
+      content.value = latestContent.value;
+      chapter.value = latestChapter.value;
+    }
+  },
+);
 onBeforeMount(() => {
   useApiAudit
     .getAuditBookChapter([chapterId])
     .then((res) => {
       chapter.value = res.data[0] as BookChapter;
+      latestChapter.value = res.data[0] as BookChapter;
       return chapter.value;
     })
     .then((res) => {
-      console.log(res);
       if (res.order < 0) {
         isUpdate.value = true;
         useApiBooks
@@ -77,6 +102,7 @@ onBeforeMount(() => {
     });
   useApiAudit.getChapterContent(chapterId).then((res) => {
     content.value = res.data;
+    latestContent.value = res.data;
   });
 });
 </script>
