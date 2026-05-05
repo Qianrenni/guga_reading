@@ -296,12 +296,6 @@ class AuthorBookService:
                 select(BookChapter)
                 .where(BookChapter.book_id == book_id)
                 .where(BookChapter.order == order)
-                .where(
-                    or_(
-                        BookChapter.status == BookStatusEnum.PENDING,
-                        BookChapter.status == BookStatusEnum.REJECTED,
-                    )
-                )
             )
             result = await database.exec(statement)
             book_chapter = result.first()
@@ -312,6 +306,11 @@ class AuthorBookService:
                     order=order,
                     book_id=book_id,
                 )
+            if book_chapter.status not in [
+                BookStatusEnum.PENDING,
+                BookStatusEnum.REJECTED,
+            ]:
+                raise AppError(message="违规操作", status_code=400)
             book_chapter.title = title
             book_chapter.word_count = len(content)
             book_chapter.status = BookStatusEnum.PENDING

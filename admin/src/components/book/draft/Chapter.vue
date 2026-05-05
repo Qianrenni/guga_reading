@@ -2,10 +2,10 @@
   <div class="container-column container-wrap">
     <QFormTable :columns="columns" :data="bookchapters" size="small">
       <template #name="{ row }">
-        {{ bookMap.get(row.book_id)?.name || '--' }}
+        {{ bookMap[row.book_id]?.name || '--' }}
       </template>
       <template #author="{ row }">
-        {{ bookMap.get(row.book_id)?.author || '--' }}
+        {{ bookMap[row.book_id]?.author || '--' }}
       </template>
       <template #status="{ row }">
         {{ TranslationStatus[row.status as StatusEnum] }}
@@ -30,19 +30,28 @@
       <template #operation="{ row }">
         <div class="inner-container">
           <QIcon
-            icon="Edit"
+            icon="EyeOpen"
             size="16px"
-            title="编辑"
+            title="查看"
             class="hover-color-primary"
-            @click=""
+            @click="
+              () => {
+                router.push({
+                  path: `/chapter-audit`,
+                  query: {
+                    chapter_id: row.id,
+                  },
+                });
+              }
+            "
           />
-          <QIcon icon="Trash" size="16px" title="删除" />
         </div>
       </template>
     </QFormTable>
   </div>
 </template>
 <script lang="ts" setup>
+import router from '@/route';
 import { useApiAudit } from '@guga-reading/shares';
 import {
   TranslationStatus,
@@ -55,6 +64,7 @@ import {
   type TableColumn,
   QIcon,
   UseTimeUtils,
+  useShowLoading,
 } from 'qyani-components';
 import { onBeforeMount, ref } from 'vue';
 const bookchapters = ref<BookChapter[]>([]);
@@ -96,15 +106,20 @@ const columns: TableColumn[] = [
     value: 'operation',
   },
 ];
-const bookMap = new Map<number, Book>();
+const bookMap = ref<Record<number, Book>>({});
 onBeforeMount(() => {
-  useApiAudit.getAuditBookChapter().then((res) => {
-    bookchapters.value = res.data;
-  });
-  useApiAudit.getAuditBook().then((res) => {
-    for (const book of res.data) {
-      bookMap.set(book.id, book);
-    }
+  useShowLoading.show();
+  Promise.all([
+    useApiAudit.getAuditBookChapter().then((res) => {
+      bookchapters.value = res.data;
+    }),
+    useApiAudit.getAuditBook().then((res) => {
+      for (const book of res.data) {
+        bookMap.value[book.id] = book;
+      }
+    }),
+  ]).finally(() => {
+    useShowLoading.hide();
   });
 });
 </script>

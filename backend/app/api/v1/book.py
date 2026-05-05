@@ -9,6 +9,7 @@ from app.core.database import get_session
 from app.core.security import get_current_user
 from app.models.response_model import ResponseModel
 from app.models.sql.book import Book
+from app.models.sql.book_chapter import BookChapter
 from app.schema.book import BookCatalogItemResponseModel
 from app.schema.common import CountResponseModel
 from app.services.book_service import BookService
@@ -177,7 +178,7 @@ async def get_book_list(
 @book_router.get("/{book_id}", response_model=ResponseModel[Book])
 async def get_book(
     database: Annotated[AsyncSession, Depends(get_session)],
-    book_id: int = Path(..., title="book_id", description="book_id", gt=0),
+    book_id: Annotated[int, Path(title="book_id", description="book_id", gt=0)],
 ):
     """
     获取图书信息
@@ -194,7 +195,7 @@ async def get_book(
 )
 async def get_book_toc(
     database: Annotated[AsyncSession, Depends(get_session)],
-    book_id: int = Path(..., title="book_id", description="book_id", gt=0),
+    book_id: Annotated[int, Path(title="book_id", description="book_id", gt=0)],
 ):
     """
     获取图书目录
@@ -206,6 +207,18 @@ async def get_book_toc(
     return ResponseModel[list[BookCatalogItemResponseModel]](data=result)
 
 
+@book_router.get("/chapter-order", response_model=ResponseModel[BookChapter])
+async def get_book_chapter_by_order(
+    database: Annotated[AsyncSession, Depends(get_session)],
+    book_id: Annotated[int, Query(title="book_id", description="book_id", gt=0)],
+    order: Annotated[float, Query(title="order", description="order", gt=0)],
+):
+    result = await BookService.get_book_chapter_by_order(
+        book_id=book_id, order=order, database=database
+    )
+    return ResponseModel[BookChapter](data=result)
+
+
 @book_router.get(
     "/chapter/{chapter_id}",
     dependencies=[Depends(get_current_user)],
@@ -213,7 +226,7 @@ async def get_book_toc(
 )
 async def get_book_chapter(
     chapter_id: Annotated[
-        int, Path(..., title="chapter_id", description="chapter_id", gt=0)
+        int, Path(title="chapter_id", description="chapter_id", gt=0)
     ],
     book_id: Annotated[int, Query(..., title="book_id", description="book_id", gt=0)],
 ):
@@ -227,5 +240,22 @@ async def get_book_chapter(
     result = await BookService.book_chapter_read_from_file(
         book_id=book_id,
         chapter_id=chapter_id,
+    )
+    return ResponseModel[str](data=result)
+
+
+@book_router.get("/content/chapter", response_model=ResponseModel[str])
+async def get_book_chapter_content(
+    database: Annotated[AsyncSession, Depends(get_session)],
+    book_id: Annotated[int, Query(title="book_id", description="book_id", gt=0)],
+    chapter_id: Annotated[
+        int | None, Query(title="chapter_id", description="chapter_id", gt=0)
+    ] = None,
+    order: Annotated[
+        float | None, Query(title="order", description="order", gt=0)
+    ] = None,
+):
+    result = await BookService.get_book_chapter_content(
+        book_id=book_id, chapter_id=chapter_id, order=order, database=database
     )
     return ResponseModel[str](data=result)

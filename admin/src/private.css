@@ -100,3 +100,25 @@ body {
   color: white;
   border-radius: 0.5rem;
 }
+
+.content-editor-like {
+  font-family:
+    'Songti SC', 'SimSun', 'STSong', serif, Georgia, 'Times New Roman',
+    sans-serif;
+  font-size: 1.25rem;
+  line-height: 2.4rem;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.15),
+    inset 0 0 0 1px rgba(139, 69, 19, 0.1);
+  /* eslint-disable-next-line css/no-invalid-properties */
+  background: var(--content-editor-background-color);
+  /* eslint-disable-next-line css/no-invalid-properties */
+  color: var(--content-editor-color); /* 深墨色 */
+  outline: none;
+  border: none;
+  /* eslint-disable-next-line css/no-invalid-properties */
+  caret-color: var(--content-editor-pointer-color); /* 棕褐色光标 */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  line-break: anywhere;
+}

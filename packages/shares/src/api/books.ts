@@ -40,4 +40,18 @@ export const useApiBooks = {
   getRecommendBook: async function (tags: string) {
     return await get<Book[]>(`${this.prefix}/recommend?query=${tags}`);
   },
+  getBookChapterByOrder: async function (bookId: number, order: number) {
+    return await get<string>(
+      `${this.prefix}/chapter-order?book_id=${bookId}&order=${order}`,
+    );
+  },
+  getBookChapterContentByOrder: async function (
+    bookId: number,
+    order?: number,
+    chapterId?: number,
+  ) {
+    return await get<string>(
+      `${this.prefix}/chapter-order?book_id=${bookId}${order ? `&order=${order}` : ''}${chapterId ? `&chapter_id=${chapterId}` : ''}`,
+    );
+  },
 };

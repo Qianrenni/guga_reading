@@ -4,12 +4,13 @@
       :list="tabs.map((item) => item.name)"
       @select="(index) => (selectedIndex = index)"
     />
-    <component :is="tabs[selectedIndex]?.component" />
+    <RouterView />
   </div>
 </template>
 <script lang="ts" setup>
-import { defineAsyncComponent, ref } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
 import { QTab } from 'qyani-components';
+import router from '@/route';
 defineOptions({
   name: 'DraftManage',
 });
@@ -17,15 +18,24 @@ const selectedIndex = ref(0);
 const tabs = [
   {
     name: '章节变动',
-    component: defineAsyncComponent(
-      () => import('@/components/book/draft/Chapter.vue'),
-    ),
+    pathName: 'DraftManageChapter',
   },
   {
     name: '书籍变动',
-    component: defineAsyncComponent(
-      () => import('@/components/book/draft/Book.vue'),
-    ),
+    pathName: 'DraftManageBook',
   },
 ];
+watch(
+  () => selectedIndex.value,
+  () => {
+    router.replace({
+      name: tabs[selectedIndex.value]?.pathName,
+    });
+  },
+);
+onBeforeMount(() => {
+  router.replace({
+    name: 'DraftManageChapter',
+  });
+});
 </script>

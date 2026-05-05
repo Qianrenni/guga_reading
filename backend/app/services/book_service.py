@@ -400,3 +400,48 @@ class BookService:
         result = await database.exec(statement)
         book_ids = result.one_or_none()
         return book_ids if book_ids else 0
+
+    @staticmethod
+    async def get_book_chapter_by_order(
+        database: AsyncSession,
+        book_id: int,
+        order: float,
+    ):
+        statement = (
+            select(BookChapter)
+            .where(BookChapter.book_id == book_id)
+            .where(BookChapter.order == order)
+            .where(BookChapter.status == BookStatusEnum.PUBLISHED)
+        )
+        result = await database.exec(statement)
+        book_chapter = result.first()
+        if book_chapter:
+            raise AppError(message="Book chapter not found", status_code=400)
+        return book_chapter
+
+    @staticmethod
+    async def get_book_chapter_content(
+        database: AsyncSession,
+        order: float | None,
+        book_id: int,
+        chapter_id: int | None,
+    ):
+        if order is None and chapter_id is None:
+            raise AppError(
+                message="Either order or chapter_id must be provided", status_code=400
+            )
+        statement = (
+            select(BookChapter)
+            .where(BookChapter.book_id == book_id)
+            .where(BookChapter.status == BookStatusEnum.PUBLISHED)
+        )
+        if chapter_id is not None:
+            statement = statement.where(BookChapter.id == chapter_id)
+        if order is not None:
+            statement = statement.where(BookChapter.order == order)
+        result = await database.exec(statement)
+        book_chapter = result.first()
+        if book_chapter:
+            raise AppError(message="Book chapter not found", status_code=400)
+        content = await BookService.book_chapter_read_from_file(book_chapter.id)
+        return content

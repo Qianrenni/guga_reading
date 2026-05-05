@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
@@ -34,8 +34,11 @@ async def get_audit_book(
         ),
     ],
     database: Annotated[AsyncSession, Depends(get_session)],
+    book_ids: Annotated[list[int] | None, Query()] = None,
 ):
-    result = await AdminService.get_audit_book(database=database, user=current_user)
+    result = await AdminService.get_audit_book(
+        database=database, user=current_user, book_ids=book_ids
+    )
     return ResponseModel[list[Book]](data=result)
 
 
@@ -56,8 +59,34 @@ async def get_audit_book_chapter(
         ),
     ],
     database: Annotated[AsyncSession, Depends(get_session)],
+    chapter_ids: Annotated[list[int] | None, Query()] = None,
 ):
     result = await AdminService.get_audit_book_chapter(
-        database=database, user=current_user
+        database=database, user=current_user, chapter_ids=chapter_ids
     )
     return ResponseModel[list[BookChapter]](data=result)
+
+
+@admin_router.get("/content/chapter", response_model=ResponseModel[str])
+async def get_audit_book_chapter_content(
+    current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.BOOK,
+                        action=ActionEnum.AUDIT,
+                        scope=ScopeEnum.ALL,
+                    )
+                ]
+            )
+        ),
+    ],
+    database: Annotated[AsyncSession, Depends(get_session)],
+    chapter_id: Annotated[int, Query()],
+):
+    result = await AdminService.get_audit_book_chapter_content(
+        database=database, user=current_user, chapter_id=chapter_id
+    )
+    return ResponseModel[str](data=result)

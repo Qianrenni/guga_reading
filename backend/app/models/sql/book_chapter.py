@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column
-from sqlmodel import DateTime, Enum, Field, SQLModel, func
+from sqlmodel import DateTime, Enum, Field, Index, SQLModel, func
 
 from app.enum.enum import BookStatusEnum
 
@@ -32,3 +32,7 @@ class BookChapter(BookChapterBase, table=True):
     )
     is_active: bool = Field(default=True)
     order: float = Field(default=0.0)
+    __table_args__ = (
+        # 索引
+        Index("idx_book_chapter_book_id_order", "book_id", "order", unique=True),
+    )

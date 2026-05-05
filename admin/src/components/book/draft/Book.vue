@@ -1,18 +1,92 @@
 <template>
-  <div class="container-column"></div>
+  <div class="container-column container-wrap">
+    <QFormTable :columns="columns" :data="books" size="small">
+      <template #status="{ row }">
+        {{ TranslationStatus[row.status as StatusEnum] }}
+      </template>
+      <template #type="{ row }">
+        {{ row.parent_id }}
+      </template>
+      <template #created_at="{ row }">
+        <span>
+          {{
+            new UseTimeUtils(row.created_at as string).format('YYYY年M月D日H时')
+          }}
+        </span>
+      </template>
+      <template #updated_at="{ row }">
+        <span>
+          {{
+            new UseTimeUtils(row.updated_at as string).format('YYYY年M月D日H时')
+          }}
+        </span>
+      </template>
+      <template #operation="{ row }">
+        <div class="inner-container">
+          <QIcon
+            icon="EyeOpen"
+            size="16px"
+            title="查看"
+            class="hover-color-primary"
+            @click=""
+          />
+        </div>
+      </template>
+    </QFormTable>
+  </div>
 </template>
 <script lang="ts" setup>
 import { useApiAudit } from '@guga-reading/shares';
-import type { Book, BookChapter } from '@guga-reading/types';
+import {
+  TranslationStatus,
+  type Book,
+  type StatusEnum,
+} from '@guga-reading/types';
+import {
+  QFormTable,
+  type TableColumn,
+  QIcon,
+  UseTimeUtils,
+} from 'qyani-components';
 import { onBeforeMount, ref } from 'vue';
 const books = ref<Book[]>([]);
-const bookchapters = ref<BookChapter[]>([]);
+const columns: TableColumn[] = [
+  {
+    label: '书名',
+    value: 'name',
+  },
+  {
+    label: '作者',
+    value: 'author',
+  },
+  {
+    label: '字数',
+    value: 'words_cnt',
+  },
+  {
+    label: '创建时间',
+    value: 'created_at',
+  },
+  {
+    label: '更新时间',
+    value: 'updated_at',
+  },
+  {
+    label: '状态',
+    value: 'status',
+  },
+  {
+    label: '类型',
+    value: 'type',
+  },
+  {
+    label: '操作',
+    value: 'operation',
+  },
+];
 onBeforeMount(() => {
-  useApiAudit.getAuditBookChapter().then((res) => {
-    bookchapters.value = res.data;
-  });
   useApiAudit.getAuditBook().then((res) => {
-    books.value = res.data;
+    books.value = res.data.filter((item) => item.status !== 'published');
   });
 });
 </script>
