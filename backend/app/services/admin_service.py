@@ -3,6 +3,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import SETTING
 from app.core.error_handler import AppError
+from app.middleware.logging import logger
 from app.models.sql.admin import AuditBook, AuditBookChapter
 from app.models.sql.book import Book
 from app.models.sql.book_chapter import BookChapter
@@ -48,6 +49,7 @@ class AdminService:
         Returns:
             list[BookChapter]: 书章节列表
         """
+        logger.info("get_audit_book_chapter", chapter_ids)
         statement = (
             select(BookChapter)
             .join(AuditBookChapter, BookChapter.id == AuditBookChapter.book_chapter_id)

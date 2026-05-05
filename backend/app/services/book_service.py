@@ -415,7 +415,7 @@ class BookService:
         )
         result = await database.exec(statement)
         book_chapter = result.first()
-        if book_chapter:
+        if book_chapter is None:
             raise AppError(message="Book chapter not found", status_code=400)
         return book_chapter
 
@@ -441,7 +441,9 @@ class BookService:
             statement = statement.where(BookChapter.order == order)
         result = await database.exec(statement)
         book_chapter = result.first()
-        if book_chapter:
+        if book_chapter is None:
             raise AppError(message="Book chapter not found", status_code=400)
-        content = await BookService.book_chapter_read_from_file(book_chapter.id)
+        content = await BookService.book_chapter_read_from_file(
+            book_id=book_id, chapter_id=book_chapter.id
+        )
         return content

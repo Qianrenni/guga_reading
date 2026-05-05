@@ -5,7 +5,7 @@ export const useApiAudit = {
   prefix: '/admin',
   getAuditBookChapter: async function (chapterIds?: number[]) {
     return await get<BookChapter[]>(
-      `${this.prefix}/chapter?${chapterIds ? `chapter_id=${chapterIds.join('&chapter_id=')}` : ''}`,
+      `${this.prefix}/chapter?${chapterIds ? `chapter_ids=${chapterIds.join('&chapter_ids=')}` : ''}`,
     );
   },
   getAuditBook: async function (bookIds?: number[]) {

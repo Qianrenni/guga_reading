@@ -175,21 +175,6 @@ async def get_book_list(
     return ResponseModel[list[Book]](data=result)
 
 
-@book_router.get("/{book_id}", response_model=ResponseModel[Book])
-async def get_book(
-    database: Annotated[AsyncSession, Depends(get_session)],
-    book_id: Annotated[int, Path(title="book_id", description="book_id", gt=0)],
-):
-    """
-    获取图书信息
-    :param database:     数据库会话
-    :param book_id:       图书ID
-    :return:      图书信息
-    """
-    result = await BookService.get_book_by_id(book_id=book_id, database=database)
-    return ResponseModel[Book](data=result)
-
-
 @book_router.get(
     "/toc/{book_id}", response_model=ResponseModel[list[BookCatalogItemResponseModel]]
 )
@@ -259,3 +244,18 @@ async def get_book_chapter_content(
         book_id=book_id, chapter_id=chapter_id, order=order, database=database
     )
     return ResponseModel[str](data=result)
+
+
+@book_router.get("/{book_id}", response_model=ResponseModel[Book])
+async def get_book(
+    database: Annotated[AsyncSession, Depends(get_session)],
+    book_id: Annotated[int, Path(title="book_id", description="book_id", gt=0)],
+):
+    """
+    获取图书信息
+    :param database:     数据库会话
+    :param book_id:       图书ID
+    :return:      图书信息
+    """
+    result = await BookService.get_book_by_id(book_id=book_id, database=database)
+    return ResponseModel[Book](data=result)
