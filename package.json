@@ -13,7 +13,8 @@
         "dev:admin": "pnpm --filter @guga-reading/admin run dev",
         "build:author": "pnpm --filter @guga-reading/author run build",
         "build:user": "pnpm --filter @guga-reading/user run build",
-        "build:all": "pnpm --filter @guga-reading/author run build && pnpm --filter @guga-reading/user run build",
+        "build:admin": "pnpm --filter @guga-reading/admin run build",
+        "build:all": "pnpm --filter @guga-reading/author run build && pnpm --filter @guga-reading/user run build && pnpm --filter @guga-reading/admin run build",
         "prettier": "npx prettier --write \"*/**/*.{js,ts,vue,css,md}\"",
         "prepare": "husky install"
     },
