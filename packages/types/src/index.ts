@@ -91,6 +91,7 @@ export interface Catalog {
 }
 export interface BookChapter extends Catalog {
   status: StatusEnum;
+  book_id: number;
 }
 /**
  * 阅读设置
