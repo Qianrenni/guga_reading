@@ -122,7 +122,7 @@ onBeforeMount(() => {
       latestChapter.value = res.data[0] as BookChapter;
       return chapter.value;
     })
-    .then((res) => {
+    .then((res: BookChapter) => {
       if (res.order < 0) {
         isUpdate.value = true;
         useApiBooks
