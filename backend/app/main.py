@@ -44,6 +44,11 @@ async def life_span(_app: FastAPI):
         SystemTask.collect_chapter_read_statistics,
         "5 * * * *",
     )
+    scheduler.set_interval(
+        SystemTask.publish_approved_content.__name__,
+        SystemTask.publish_approved_content,
+        seconds=1800,  # 30分钟 = 1800秒
+    )
     await asyncio.gather(
         book_recommend_service.load_model(),
         init_redis(),

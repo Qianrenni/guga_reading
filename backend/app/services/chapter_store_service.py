@@ -58,7 +58,7 @@ class ChapterStore:
         # 内存索引:chapter_id -> {offset, size, deleted, timestamp}
         # 注意:该索引在 _load_index() 中初始化
         self._index: dict[int, dict[str, any]] = {}
-        logger.debug(f"Initialized ChapterStore for book {book_id}")
+        logger.debug(f"Initialized ChapterStore for book {self.data_path}")
 
     async def _save_index(self):
         """
@@ -180,7 +180,7 @@ class ChapterStore:
         # 如果需要实时保存索引,也在锁内进行
         await self._save_index()
         logger.debug(
-            f"Appended record for chapter book {self.book_id} chapter {chapter_id}"
+            f"Appended record for chapter book{self.data_path} {self.book_id} chapter {chapter_id}"
         )
 
     async def read_chapter(self, chapter_id: int) -> str:

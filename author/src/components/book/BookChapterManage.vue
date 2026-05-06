@@ -168,7 +168,7 @@ const run = async () => {
       for (const item of res.data) {
         if (item.order >= 0) {
           temp.push(item);
-        } else {
+        } else if (item.status !== 'published') {
           tempUpdate.push(item);
         }
       }

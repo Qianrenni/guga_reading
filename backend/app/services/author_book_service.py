@@ -306,10 +306,7 @@ class AuthorBookService:
                     order=order,
                     book_id=book_id,
                 )
-            if book_chapter.status not in [
-                BookStatusEnum.PENDING,
-                BookStatusEnum.REJECTED,
-            ]:
+            if book_chapter.status in [BookStatusEnum.APPROVED]:
                 raise AppError(message="违规操作", status_code=400)
             book_chapter.title = title
             book_chapter.word_count = len(content)
@@ -469,10 +466,17 @@ class AuthorBookService:
         )
         try:
             await database.exec(statement)
-            audit_book_chapter = AuditBookChapter(
-                book_chapter_id=chapter_id, user_id=auditor_user.id
+            statement = (
+                select(AuditBookChapter)
+                .where(AuditBookChapter.book_chapter_id == chapter_id)
+                .where(AuditBookChapter.user_id == auditor_user.id)
             )
-            database.add(audit_book_chapter)
+            result = await database.exec(statement)
+            if result.first() is None:
+                audit_book_chapter = AuditBookChapter(
+                    book_chapter_id=chapter_id, user_id=auditor_user.id
+                )
+                database.add(audit_book_chapter)
             await database.commit()
             email_sender.send_email(
                 to_emails=[auditor_user.email],
