@@ -42,6 +42,31 @@ async def get_audit_book(
     return ResponseModel[list[Book]](data=result)
 
 
+@admin_router.patch("/book", status_code=204)
+async def update_book(
+    current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.BOOK,
+                        action=ActionEnum.AUDIT,
+                        scope=ScopeEnum.ALL,
+                    )
+                ]
+            )
+        ),
+    ],
+    database: Annotated[AsyncSession, Depends(get_session)],
+    book_id: Annotated[int, Query(ge=1)],
+    is_pass: Annotated[bool, Query()],
+):
+    await AdminService.update_book(
+        database=database, user=current_user, book_id=book_id, is_pass=is_pass
+    )
+
+
 @admin_router.get("/chapter", response_model=ResponseModel[list[BookChapter]])
 async def get_audit_book_chapter(
     current_user: Annotated[

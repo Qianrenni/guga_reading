@@ -5,7 +5,7 @@
         {{ TranslationStatus[row.status as StatusEnum] }}
       </template>
       <template #type="{ row }">
-        {{ row.parent_id }}
+        {{ row.parent_id != null ? '更新' : '创建' }}
       </template>
       <template #created_at="{ row }">
         <span>
@@ -28,7 +28,16 @@
             size="16px"
             title="查看"
             class="hover-color-primary"
-            @click=""
+            @click="
+              () => {
+                router.push({
+                  path: `/book-audit`,
+                  query: {
+                    book_id: row.id,
+                  },
+                });
+              }
+            "
           />
         </div>
       </template>
@@ -36,6 +45,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+import router from '@/route';
 import { useApiAudit } from '@guga-reading/shares';
 import {
   TranslationStatus,
@@ -58,10 +68,6 @@ const columns: TableColumn[] = [
   {
     label: '作者',
     value: 'author',
-  },
-  {
-    label: '字数',
-    value: 'words_cnt',
   },
   {
     label: '创建时间',

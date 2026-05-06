@@ -35,8 +35,42 @@ class AdminService:
         result = await database.exec(statement)
         books = list(result.all())
         for book in books:
-            book.cover = f"{SETTING.SERVER_URL}/static/book/{book.id}/{book.cover}"
+            book.cover = (
+                f"{SETTING.SERVER_URL}/static/temp/book/{book.id}/{book.cover}"
+                if book.status != BookStatusEnum.PUBLISHED
+                else f"{SETTING.SERVER_URL}/static/book/{book.id}/{book.cover}"
+            )
         return books
+
+    @staticmethod
+    async def update_book(
+        database: AsyncSession, user: FullUser, book_id: int, is_pass: bool
+    ):
+        """
+        更新书审核状态
+        Args:
+            database: 数据库会话
+            user: 用户信息
+            book_id: 书ID
+            is_pass: 是否通过审核
+        """
+        statement = (
+            select(Book)
+            .join(AuditBook, Book.id == AuditBook.book_id)
+            .where(AuditBook.user_id == user.id)
+            .where(Book.id == book_id)
+            .where(Book.status == BookStatusEnum.REVIEWING)
+        )
+        result = await database.exec(statement)
+        book = result.first()
+        if book:
+            book.status = (
+                BookStatusEnum.APPROVED if is_pass else BookStatusEnum.REJECTED
+            )
+            database.add(book)
+            await database.commit()
+        else:
+            raise AppError(message="书不存在", status_code=400)
 
     @staticmethod
     async def get_audit_book_chapter(

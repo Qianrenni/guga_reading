@@ -10,7 +10,12 @@ export const useApiAudit = {
   },
   getAuditBook: async function (bookIds?: number[]) {
     return await get<Book[]>(
-      `${this.prefix}/book?${bookIds ? `book_id=${bookIds.join('&book_id=')}` : ''}`,
+      `${this.prefix}/book?${bookIds ? `book_ids=${bookIds.join('&book_ids=')}` : ''}`,
+    );
+  },
+  patchAuditBook: async function (bookId: number, isPass: boolean) {
+    return await patch(
+      `${this.prefix}/book?book_id=${bookId}&is_pass=${isPass}`,
     );
   },
   getChapterContent: async function (chapterId: number) {
