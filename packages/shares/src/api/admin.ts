@@ -1,4 +1,4 @@
-import { get } from '../utils';
+import { get, patch } from '../utils';
 import { Book, BookChapter } from '@guga-reading/types';
 
 export const useApiAudit = {
@@ -16,6 +16,11 @@ export const useApiAudit = {
   getChapterContent: async function (chapterId: number) {
     return await get<string>(
       `${this.prefix}/content/chapter?chapter_id=${chapterId}`,
+    );
+  },
+  updateChapter: async function (chapterId: number, isPass: boolean) {
+    return await patch(
+      `${this.prefix}/chapter?chapter_id=${chapterId}&is_pass=${isPass}`,
     );
   },
 };

@@ -27,8 +27,40 @@
       </div>
     </div>
     <div class="inner-container container-flex-end">
-      <QFormButton><span>通过</span></QFormButton>
-      <QFormButton><span>驳回</span></QFormButton>
+      <QFormButton
+        @click="
+          () => {
+            useApiAudit.updateChapter(chapter.id, true).then((res) => {
+              if (res.success) {
+                useMessage.success('审批通过');
+                router.replace({
+                  path: '/draft-manage',
+                });
+              } else {
+                useMessage.error(`驳回失败-${res.message}`);
+              }
+            });
+          }
+        "
+        ><span>通过</span></QFormButton
+      >
+      <QFormButton
+        @click="
+          () => {
+            useApiAudit.updateChapter(chapter.id, false).then((res) => {
+              if (res.success) {
+                useMessage.success('成功驳回');
+                router.replace({
+                  path: '/draft-manage',
+                });
+              } else {
+                useMessage.error(`驳回失败-${res.message}`);
+              }
+            });
+          }
+        "
+        ><span>驳回</span></QFormButton
+      >
     </div>
   </div>
 </template>
@@ -39,7 +71,12 @@ import type { BookChapter } from '@guga-reading/types';
 import { onBeforeMount, ref, watch } from 'vue';
 import ContentEditor from '@/components/common/ContentEditor.vue';
 import EditableTitle from '@/components/common/EditableTitle.vue';
-import { QFormButton, useScreenSize, QFormSelect } from 'qyani-components';
+import {
+  QFormButton,
+  useScreenSize,
+  QFormSelect,
+  useMessage,
+} from 'qyani-components';
 const chapter = ref<BookChapter>({} as BookChapter);
 const chapterId = parseInt(
   router.currentRoute.value.query.chapter_id as string,

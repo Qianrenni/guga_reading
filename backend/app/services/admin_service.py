@@ -3,6 +3,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import SETTING
 from app.core.error_handler import AppError
+from app.enum.enum import BookStatusEnum
 from app.middleware.logging import logger
 from app.models.sql.admin import AuditBook, AuditBookChapter
 from app.models.sql.book import Book
@@ -59,6 +60,36 @@ class AdminService:
             statement = statement.where(BookChapter.id.in_(chapter_ids))
         result = await database.exec(statement)
         return list(result.all())
+
+    @staticmethod
+    async def update_book_chapter(
+        database: AsyncSession, user: FullUser, chapter_id: int, is_pass: bool
+    ):
+        """
+        更新书章节审核状态
+        Args:
+            database: 数据库会话
+            user: 用户信息
+            chapter_id: 书章节ID
+            is_pass: 是否通过审核
+        """
+        statement = (
+            select(BookChapter)
+            .join(AuditBookChapter, BookChapter.id == AuditBookChapter.book_chapter_id)
+            .where(AuditBookChapter.user_id == user.id)
+            .where(BookChapter.id == chapter_id)
+            .where(BookChapter.status == BookStatusEnum.REVIEWING)
+        )
+        result = await database.exec(statement)
+        book_chapter = result.first()
+        if book_chapter:
+            book_chapter.status = (
+                BookStatusEnum.APPROVED if is_pass else BookStatusEnum.REJECTED
+            )
+            database.add(book_chapter)
+            await database.commit()
+        else:
+            raise AppError(message="章节不存在", status_code=400)
 
     @staticmethod
     async def get_audit_book_chapter_content(
