@@ -1,54 +1,43 @@
-import re
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, Query, status
-from pydantic import BaseModel, Field, field_validator
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
 from app.core.error_handler import AppError
+from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
+from app.models.domain.user import FullUser, UserPasswordUpdate, UserRegister
+from app.schemas.common import CountResponseModel
+from app.schemas.response_model import ResponseModel
 from app.services.cache_service import cache_delete, cache_get
 from app.services.captcha_service import CaptchaService
 from app.services.email_service import email_sender
+from app.services.right_service import generate_permission_code, right_check
 from app.services.user_service import UserService
 
 user_router = APIRouter(prefix="/user", tags=["user"])
 
 
-class UserRegister(BaseModel):
-    username: str
-    password: str
-    email: str = Field(..., pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-    avatar: str = ""
-
-    @field_validator("username")
-    @classmethod
-    def validate_username(cls, username: str):
-        if len(username) < 3:
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message="用户名长度至少为3个字符",
+@user_router.get("/count", response_model=ResponseModel[CountResponseModel])
+async def get_user_count(
+    _current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.PERMISSION,
+                        action=ActionEnum.READ,
+                        scope=ScopeEnum.ALL,
+                    )
+                ]
             )
-        if len(username) > 20:
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message="用户名长度不能超过20个字符",
-            )
-        if not re.match(r"^[a-zA-Z0-9_\u4e00-\u9fa5]+$", username):
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                message="用户名只能包含字母、数字、下划线和中文字符",
-            )
-        return username
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, password: str):
-        if len(password) < 6:
-            raise AppError(
-                status_code=status.HTTP_400_BAD_REQUEST, message="密码长度至少为6个字符"
-            )
-        return password
+        ),
+    ],
+    database: Annotated[AsyncSession, Depends(get_session)],
+):
+    result = await UserService.get_user_count(db=database)
+    return ResponseModel[CountResponseModel](data=CountResponseModel(count=result))
 
 
 @user_router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -85,19 +74,6 @@ async def register(
     )
     await cache_delete(key_prefix=key_prefix)
     return
-
-
-class UserPasswordUpdate(BaseModel):
-    """
-    用户密码更新模型
-    - **username**: 邮箱地址
-    - **password**: 当前密码
-    - **new_password**: 新密码
-    """
-
-    username: str
-    old_password: str
-    new_password: str
 
 
 @user_router.patch("/update-password", status_code=status.HTTP_204_NO_CONTENT)

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Header
 
 from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
 from app.models.database.right import Permission, Role
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
 from app.schemas.response_model import ResponseModel
 from app.services.right_service import (
     RightService,

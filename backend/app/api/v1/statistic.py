@@ -5,7 +5,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
 from app.enum.enum import ActionEnum, ReportEnum, ResourceTypeEnum, ScopeEnum
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
 from app.services.right_service import generate_permission_code, right_check
 from app.services.statistic_service import StatisticService
 

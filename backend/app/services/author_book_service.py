@@ -2,7 +2,7 @@ import os
 
 import aiofiles
 from fastapi import BackgroundTasks, UploadFile
-from sqlmodel import delete, or_, select, update
+from sqlmodel import delete, func, or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import SETTING
@@ -11,11 +11,11 @@ from app.core.error_handler import AppError
 from app.enum.enum import BookStatusEnum
 from app.middleware.logging import logger
 from app.models.database.admin import AuditBookChapter
-from app.models.database.author import AuthorBook
+from app.models.database.author import Author, AuthorBook
 from app.models.database.book import Book
 from app.models.database.book_chapter import BookChapter
 from app.models.database.statistics import ChapterReadStatistics
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
 from app.services.audit_service import AuditService
 from app.services.book_service import BookService
 from app.services.cache_service import cache
@@ -68,6 +68,20 @@ async def delete_book_cover(id: int):
 
 
 class AuthorBookService:
+    @staticmethod
+    @cache(exclude_kwargs=["database"])
+    async def count_author(
+        database: AsyncSession,
+    ) -> int:
+        """
+        获取作者数量
+        :param database: 数据库会话
+        :return: int
+        """
+        statement = select(func.count()).select_from(Author)
+        result = await database.exec(statement)
+        return result.one_or_none() or 0
+
     @staticmethod
     async def is_own_book(
         database: AsyncSession,

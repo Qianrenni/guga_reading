@@ -2,13 +2,15 @@ from typing import Any
 
 from fastapi import status
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import select
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.error_handler import AppError
 from app.core.security import get_password_hash, verify_password
 from app.enum.enum import RoleEnum
-from app.models.database.user import FullUser, User
+from app.models.database.user import User
+from app.models.domain.user import FullUser
+from app.services.cache_service import cache
 from app.services.captcha_service import CaptchaService
 from app.services.right_service import RightService
 
@@ -17,6 +19,15 @@ class UserService:
     """
     用户服务类,处理用户相关的业务逻辑
     """
+
+    @staticmethod
+    @cache(exclude_kwargs=["db"])
+    async def get_user_count(
+        db: AsyncSession,
+    ) -> int:
+        statement = select(func.count()).select_from(User)
+        result = await db.exec(statement)
+        return result.one_or_none() or 0
 
     @staticmethod
     async def create_user(

@@ -10,7 +10,7 @@ from app.core.error_handler import AppError
 from app.enum.enum import ReportEnum
 from app.middleware.logging import logger
 from app.models.database.statistics import ChapterReadStatistics, UserReadEvent
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
 
 
 class StatisticService:

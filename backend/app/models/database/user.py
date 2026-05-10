@@ -1,6 +1,5 @@
 import datetime
 
-from pydantic import BaseModel
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
 
@@ -19,15 +18,3 @@ class User(SQLModel, table=True):
     created_at: datetime.datetime = Field(
         sa_column=Column(DateTime, server_default=func.now())
     )
-
-
-class FullUser(BaseModel):
-    id: int
-    username: str
-    password: str | None = None
-    email: str
-    is_active: bool
-    avatar: str
-    created_at: datetime.datetime | None = None
-    # 权限
-    right: list[int]

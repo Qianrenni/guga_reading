@@ -11,7 +11,7 @@ from passlib.context import CryptContext
 
 from app.core.config import SETTING
 from app.core.error_handler import AppError
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
 
 # 解决bcrypt版本兼容性问题
 

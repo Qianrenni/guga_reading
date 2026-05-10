@@ -125,6 +125,18 @@ class BookService:
         return content
 
     @staticmethod
+    @cache(exclude_kwargs=["database"])
+    async def get_book_count(database: AsyncSession) -> int:
+        """
+        获取图书数量
+        :param database:    数据库会话
+        :return:    图书数量
+        """
+        statement = select(count()).select_from(Book)
+        result = await database.exec(statement)
+        return result.one_or_none() or 0
+
+    @staticmethod
     @cache(expire=SETTING.BOOK_CACHE_EXPIRE, exclude_kwargs=["database"])
     async def get_category(database: AsyncSession) -> list[str]:
         """

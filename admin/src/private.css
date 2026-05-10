@@ -9,10 +9,10 @@ body {
 }
 :root {
   --banner-width: 1200px;
-  --primary-color: #ea580c;
-  --primary-hover: #dc5005;
-  --primary-light: #f97316;
-  --link-hover: #dc5005;
+  --primary-color: #1d4ed8;
+  --primary-hover: #15399a;
+  --primary-light: #4e7dff;
+  --link-hover: #0240ed;
   --shadow-element: rgba(0, 0, 0, 0.1);
   --content-height-without-header: calc(100vh - 3.2rem);
   --content-editor-background-color: #f8f3e9;
@@ -22,6 +22,10 @@ body {
 }
 
 body.dark-mode {
+  --primary-color: #1d4ed8;
+  --primary-hover: #15399a;
+  --primary-light: #4e7dff;
+  --link-hover: #0240ed;
   --content-editor-background-color: var(--card-bg);
   --content-editor-color: var(--text-color);
   --content-editor-pointer-color: var(--text-color);
@@ -41,9 +45,6 @@ body.dark-mode {
 }
 
 body.dark-mode {
-  --primary-color: #ea580c;
-  --primary-hover: #dc5005;
-  --primary-light: #f97316;
   --shadow-element: rgba(255, 255, 255, 0.3);
 }
 

@@ -10,12 +10,41 @@ from app.enum.enum import ActionEnum, BookStatusEnum, ResourceTypeEnum, ScopeEnu
 from app.models.database.book import Book
 from app.models.database.book_chapter import BookChapter
 from app.models.database.statistics import ChapterReadStatistics
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
+from app.schemas.common import CountResponseModel
 from app.schemas.response_model import ResponseModel
 from app.services.author_book_service import AuthorBookService
 from app.services.right_service import generate_permission_code, right_check
 
-author_router = APIRouter(prefix="/author", tags=["作者"])
+author_router = APIRouter(prefix="/author", tags=["author"])
+
+
+@author_router.get("/count", response_model=ResponseModel[CountResponseModel])
+async def get_author_book_count(
+    _current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.PERMISSION,
+                        action=ActionEnum.READ,
+                        scope=ScopeEnum.ALL,
+                    )
+                ]
+            )
+        ),
+    ],
+    database: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    获取作者数量
+    :param current_user:  当前用户
+    :param database:  数据库连接
+    :return:  ResponseModel[int]
+    """
+    data = await AuthorBookService.count_author(database=database)
+    return ResponseModel[CountResponseModel](data=CountResponseModel(count=data))
 
 
 @author_router.get("/book", response_model=ResponseModel[list[Book]])

@@ -8,7 +8,7 @@ from app.middleware.logging import logger
 from app.models.database.admin import AuditBook, AuditBookChapter
 from app.models.database.book import Book
 from app.models.database.book_chapter import BookChapter
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
 from app.services.book_service import BookService
 
 

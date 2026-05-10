@@ -1,10 +1,10 @@
 import asyncio
 import json
 from re import match
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, Query, status
-from pydantic import BaseModel, Field
+from pydantic import Field
 from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.responses import HTMLResponse
 
@@ -16,7 +16,8 @@ from app.core.security import (
     create_refresh_token,
     get_current_user,
 )
-from app.models.database.user import FullUser
+from app.models.domain.token import Token, TokenData
+from app.models.domain.user import FullUser
 from app.schemas.response_model import ResponseModel
 from app.services.cache_service import cache_delete, cache_get, cache_set
 from app.services.captcha_service import CaptchaService
@@ -24,24 +25,6 @@ from app.services.email_service import email_sender
 from app.services.user_service import UserService
 
 token_router = APIRouter(prefix="/token", tags=["token"])
-
-
-class TokenData(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "Bearer"
-    user: dict[str, Any]
-
-
-class Token(ResponseModel):
-    """
-    令牌模型
-    - data
-    - - access_token (str): 访问令牌
-    - - token_type (str): 令牌类型
-    """
-
-    data: TokenData | None = None
 
 
 @token_router.post("/get", response_model=Token)

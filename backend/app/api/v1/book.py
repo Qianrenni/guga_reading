@@ -7,16 +7,46 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import get_current_user
+from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
 from app.models.database.book import Book
 from app.models.database.book_chapter import BookChapter
+from app.models.domain.user import FullUser
 from app.schemas.book import BookCatalogItemResponseModel
 from app.schemas.common import CountResponseModel
 from app.schemas.response_model import ResponseModel
 from app.services.book_service import BookService
 from app.services.recommend_service import book_recommend_service
+from app.services.right_service import generate_permission_code, right_check
 from app.utils.sort import SortItem
 
 book_router = APIRouter(prefix="/book", tags=["book"])
+
+
+@book_router.get("/count", response_model=ResponseModel[CountResponseModel])
+async def get_book_count(
+    _current_user: Annotated[
+        FullUser,
+        Depends(
+            right_check(
+                [
+                    generate_permission_code(
+                        resource=ResourceTypeEnum.PERMISSION,
+                        action=ActionEnum.READ,
+                        scope=ScopeEnum.ALL,
+                    )
+                ]
+            )
+        ),
+    ],
+    database: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    获取图书数量
+    :param database:    数据库会话
+    :return:            图书数量
+    """
+    result = await BookService.get_book_count(database=database)
+    return ResponseModel[CountResponseModel](data=CountResponseModel(count=result))
 
 
 @book_router.get("/category/count", response_model=ResponseModel[CountResponseModel])

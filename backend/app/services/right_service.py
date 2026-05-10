@@ -18,7 +18,7 @@ from app.models.database.right import (
     RolePermission,
     UserRole,
 )
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
 from app.services.cache_service import cache
 from app.utils.codec import PydanticListCodec
 

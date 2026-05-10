@@ -5,7 +5,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import get_current_user
-from app.models.database.user import FullUser
+from app.models.domain.user import FullUser
 from app.schemas.response_model import ResponseCode, ResponseModel
 from app.services.shelf_service import ShelfService
 
