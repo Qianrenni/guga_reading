@@ -20,7 +20,7 @@ author_router = APIRouter(prefix="/author", tags=["author"])
 
 
 @author_router.get("/count", response_model=ResponseModel[CountResponseModel])
-async def get_author_book_count(
+async def get_author_count(
     _current_user: Annotated[
         FullUser,
         Depends(
@@ -39,9 +39,13 @@ async def get_author_book_count(
 ):
     """
     获取作者数量
-    :param current_user:  当前用户
-    :param database:  数据库连接
-    :return:  ResponseModel[int]
+
+    Args:
+        - _current_user (FullUser): 当前用户
+        - database (AsyncSession): 数据库连接
+
+    Returns:
+        - ResponseModel[CountResponseModel]: 响应数据
     """
     data = await AuthorBookService.count_author(database=database)
     return ResponseModel[CountResponseModel](data=CountResponseModel(count=data))

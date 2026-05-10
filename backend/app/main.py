@@ -18,6 +18,7 @@ from app.api.v1.captcha import captcha_router
 from app.api.v1.right import right_router
 from app.api.v1.shelf import shelf_router
 from app.api.v1.statistic import statistic_router
+from app.api.v1.system import system_router
 from app.api.v1.token import token_router
 from app.api.v1.user import user_router
 from app.api.v1.user_reading_progress import user_reading_progress_router
@@ -231,3 +232,5 @@ app.include_router(author_router)
 app.include_router(statistic_router)
 # 管理相关
 app.include_router(admin_router)
+# 系统相关
+app.include_router(system_router)

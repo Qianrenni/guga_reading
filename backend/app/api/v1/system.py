@@ -1,6 +1,5 @@
 from typing import Annotated
 
-from backend.app.services.system_service import SystemService
 from fastapi import APIRouter, Depends
 
 from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
@@ -8,6 +7,7 @@ from app.models.domain.system import SystemStatus
 from app.models.domain.user import FullUser
 from app.schemas.response_model import ResponseModel
 from app.services.right_service import generate_permission_code, right_check
+from app.services.system_service import SystemService
 
 system_router = APIRouter(prefix="/system", tags=["system"])
 
@@ -22,7 +22,7 @@ async def system_info(
                     generate_permission_code(
                         resource=ResourceTypeEnum.PERMISSION,
                         action=ActionEnum.READ,
-                        scope=ScopeEnum.all,
+                        scope=ScopeEnum.ALL,
                     )
                 ]
             )
