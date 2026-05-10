@@ -24,14 +24,14 @@ from app.api.v1.user_reading_progress import user_reading_progress_router
 from app.core.config import BASE_DIR, SETTING
 from app.core.database import close_database, close_redis, init_redis
 from app.core.error_handler import AppError
-from app.core.scheduler import Scheduler
-from app.core.task import SystemTask
-from app.initial import init
 from app.middleware.logging import logger
 from app.middleware.rate_limit import RateLimitMiddleware
-from app.models.response_model import ResponseCode
+from app.prepare import init
+from app.schemas.response_model import ResponseCode
 from app.services.recommend_service import book_recommend_service
 from app.services.right_service import RightService
+from app.workers.scheduler import Scheduler
+from app.workers.task import SystemTask
 
 logger.debug(f"Setting: {SETTING.model_dump_json(indent=4)}")
 

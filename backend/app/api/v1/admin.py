@@ -7,10 +7,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
 from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
-from app.models.response_model import ResponseModel
-from app.models.sql.book import Book
-from app.models.sql.book_chapter import BookChapter
-from app.models.sql.user import FullUser
+from app.models.database.book import Book
+from app.models.database.book_chapter import BookChapter
+from app.models.database.user import FullUser
+from app.schemas.response_model import ResponseModel
 from app.services.admin_service import AdminService
 from app.services.right_service import generate_permission_code, right_check
 

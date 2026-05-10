@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.error_handler import AppError
 from app.core.security import get_password_hash, verify_password
 from app.enum.enum import RoleEnum
-from app.models.sql.user import FullUser, User
+from app.models.database.user import FullUser, User
 from app.services.captcha_service import CaptchaService
 from app.services.right_service import RightService
 

@@ -7,8 +7,8 @@ from app.core.config import SETTING
 from app.core.database import get_session_context
 from app.enum.enum import BookStatusEnum
 from app.middleware.logging import logger
-from app.models.sql.book import Book
-from app.models.sql.book_chapter import BookChapter
+from app.models.database.book import Book
+from app.models.database.book_chapter import BookChapter
 from app.services.chapter_store_service import ChapterStore
 
 

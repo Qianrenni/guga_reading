@@ -11,7 +11,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.algorithm.tfidf_vectorizer import LightweightTfidfVectorizer, cosine_similarity
 from app.core.config import BASE_DIR, SETTING
 from app.middleware.logging import logger
-from app.models.sql.book import Book
+from app.models.database.book import Book
 from app.services.cache_service import cache
 from app.utils.distribute_lock import DistributedLock
 

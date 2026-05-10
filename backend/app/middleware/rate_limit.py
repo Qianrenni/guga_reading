@@ -4,7 +4,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from app.core.database import get_redis
-from app.models.response_model import ResponseCode
+from app.schemas.response_model import ResponseCode
 
 
 def get_client_ip(request: Request) -> str:

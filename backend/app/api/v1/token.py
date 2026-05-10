@@ -16,8 +16,8 @@ from app.core.security import (
     create_refresh_token,
     get_current_user,
 )
-from app.models.response_model import ResponseModel
-from app.models.sql.user import FullUser
+from app.models.database.user import FullUser
+from app.schemas.response_model import ResponseModel
 from app.services.cache_service import cache_delete, cache_get, cache_set
 from app.services.captcha_service import CaptchaService
 from app.services.email_service import email_sender

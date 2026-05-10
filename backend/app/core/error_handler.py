@@ -5,7 +5,7 @@ from starlette import status
 from starlette.responses import JSONResponse
 
 from app.middleware.logging import logger
-from app.models.response_model import ResponseCode
+from app.schemas.response_model import ResponseCode
 
 
 class AppError(Exception):

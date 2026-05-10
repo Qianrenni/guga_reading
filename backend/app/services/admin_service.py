@@ -5,10 +5,10 @@ from app.core.config import SETTING
 from app.core.error_handler import AppError
 from app.enum.enum import BookStatusEnum
 from app.middleware.logging import logger
-from app.models.sql.admin import AuditBook, AuditBookChapter
-from app.models.sql.book import Book
-from app.models.sql.book_chapter import BookChapter
-from app.models.sql.user import FullUser
+from app.models.database.admin import AuditBook, AuditBookChapter
+from app.models.database.book import Book
+from app.models.database.book_chapter import BookChapter
+from app.models.database.user import FullUser
 from app.services.book_service import BookService
 
 

@@ -1,7 +1,7 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.sql.user_reading_progress import UserReadingProgress
+from app.models.database.user_reading_progress import UserReadingProgress
 
 
 class UserReadingProgressService:

@@ -2,7 +2,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.error_handler import AppError
 from app.middleware.logging import logger
-from app.models.sql.user import FullUser
+from app.models.database.user import FullUser
 from app.services.author_book_service import AuthorBookService
 
 

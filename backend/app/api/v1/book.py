@@ -7,11 +7,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import get_current_user
-from app.models.response_model import ResponseModel
-from app.models.sql.book import Book
-from app.models.sql.book_chapter import BookChapter
-from app.schema.book import BookCatalogItemResponseModel
-from app.schema.common import CountResponseModel
+from app.models.database.book import Book
+from app.models.database.book_chapter import BookChapter
+from app.schemas.book import BookCatalogItemResponseModel
+from app.schemas.common import CountResponseModel
+from app.schemas.response_model import ResponseModel
 from app.services.book_service import BookService
 from app.services.recommend_service import book_recommend_service
 from app.utils.sort import SortItem

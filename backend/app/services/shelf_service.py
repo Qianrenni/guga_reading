@@ -1,7 +1,7 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.sql.shelf import Shelf
+from app.models.database.shelf import Shelf
 
 
 class ShelfService:

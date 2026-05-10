@@ -3,9 +3,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.error_handler import AppError
 from app.enum.enum import RoleEnum
-from app.models.sql.admin import AuditBook
-from app.models.sql.right import Role, UserRole
-from app.models.sql.user import User
+from app.models.database.admin import AuditBook
+from app.models.database.right import Role, UserRole
+from app.models.database.user import User
 
 
 class AuditService:

@@ -5,13 +5,13 @@ from fastapi.background import BackgroundTasks
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
-from app.depend.verify import verify_author_book
+from app.dependencies.verify import verify_author_book
 from app.enum.enum import ActionEnum, BookStatusEnum, ResourceTypeEnum, ScopeEnum
-from app.models.response_model import ResponseModel
-from app.models.sql.book import Book
-from app.models.sql.book_chapter import BookChapter
-from app.models.sql.statistics import ChapterReadStatistics
-from app.models.sql.user import FullUser
+from app.models.database.book import Book
+from app.models.database.book_chapter import BookChapter
+from app.models.database.statistics import ChapterReadStatistics
+from app.models.database.user import FullUser
+from app.schemas.response_model import ResponseModel
 from app.services.author_book_service import AuthorBookService
 from app.services.right_service import generate_permission_code, right_check
 

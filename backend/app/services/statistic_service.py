@@ -9,8 +9,8 @@ from app.core.database import get_session_context
 from app.core.error_handler import AppError
 from app.enum.enum import ReportEnum
 from app.middleware.logging import logger
-from app.models.sql.statistics import ChapterReadStatistics, UserReadEvent
-from app.models.sql.user import FullUser
+from app.models.database.statistics import ChapterReadStatistics, UserReadEvent
+from app.models.database.user import FullUser
 
 
 class StatisticService:

@@ -4,15 +4,15 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-from app.models.sql.admin import *  # noqa: F403
-from app.models.sql.author import *  # noqa: F403
-from app.models.sql.book import *  # noqa: F403
-from app.models.sql.book_chapter import *  # noqa: F403
-from app.models.sql.right import *  # noqa: F403
-from app.models.sql.shelf import *  # noqa: F403
-from app.models.sql.statistics import *  # noqa: F403
-from app.models.sql.user import *  # noqa: F403
-from app.models.sql.user_reading_progress import *  # noqa: F403
+from app.models.database.admin import *  # noqa: F403
+from app.models.database.author import *  # noqa: F403
+from app.models.database.book import *  # noqa: F403
+from app.models.database.book_chapter import *  # noqa: F403
+from app.models.database.right import *  # noqa: F403
+from app.models.database.shelf import *  # noqa: F403
+from app.models.database.statistics import *  # noqa: F403
+from app.models.database.user import *  # noqa: F403
+from app.models.database.user_reading_progress import *  # noqa: F403
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

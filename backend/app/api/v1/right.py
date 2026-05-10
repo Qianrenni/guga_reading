@@ -3,9 +3,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header
 
 from app.enum.enum import ActionEnum, ResourceTypeEnum, ScopeEnum
-from app.models.response_model import ResponseModel
-from app.models.sql.right import Permission, Role
-from app.models.sql.user import FullUser
+from app.models.database.right import Permission, Role
+from app.models.database.user import FullUser
+from app.schemas.response_model import ResponseModel
 from app.services.right_service import (
     RightService,
     generate_permission_code,
@@ -17,7 +17,7 @@ right_router = APIRouter(prefix="/right", tags=["right"])
 
 @right_router.get("/permission", response_model=ResponseModel[list[Permission]])
 async def get_permission(
-    Authorization: Annotated[str, Header(name="Authorization")],
+    Authorization: Annotated[str, Header(name="Authorization")],  # noqa: ARG001, N803
     _: Annotated[
         FullUser,
         Depends(

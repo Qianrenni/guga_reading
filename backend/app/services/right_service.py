@@ -11,14 +11,14 @@ from app.core.error_handler import AppError
 from app.core.security import get_current_user
 from app.enum.enum import ActionEnum, ResourceTypeEnum, RoleEnum, ScopeEnum
 from app.middleware.logging import logger
-from app.models.sql.right import (
+from app.models.database.right import (
     Permission,
     Role,
     RoleInheritance,
     RolePermission,
     UserRole,
 )
-from app.models.sql.user import FullUser
+from app.models.database.user import FullUser
 from app.services.cache_service import cache
 from app.utils.codec import PydanticListCodec
 

@@ -1,4 +1,4 @@
-from app.models.sql.book import Book
+from app.models.database.book import Book
 
 
 class Reverse:

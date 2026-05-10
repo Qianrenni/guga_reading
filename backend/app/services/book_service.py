@@ -10,9 +10,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.config import SETTING
 from app.core.error_handler import AppError
 from app.enum.enum import BookStatusEnum
-from app.models.sql.book import Book
-from app.models.sql.book_chapter import BookChapter
-from app.schema.book import BookCatalogItemResponseModel
+from app.models.database.book import Book
+from app.models.database.book_chapter import BookChapter
+from app.schemas.book import BookCatalogItemResponseModel
 from app.services.cache_service import cache, cache_get, cache_set
 from app.services.chapter_store_service import ChapterStore
 from app.utils.codec import PydanticCodec, PydanticListCodec
