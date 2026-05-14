@@ -15,7 +15,7 @@ jobs:
 
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
+      PNPM_ONLY_BUILT_DEPENDENCIES: "esbuild"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,7 +66,7 @@ jobs:
 
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
+      PNPM_ONLY_BUILT_DEPENDENCIES: "esbuild"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -37,8 +37,5 @@
             "ruff check --fix --config backend/pyproject.toml",
             "ruff format --config backend/pyproject.toml"
         ]
-    },
-    "pnpm": {
-        "onlyBuiltDependencies": ["esbuild"]
     }
 }
