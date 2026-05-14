@@ -79,8 +79,15 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
+      - name: Clean pnpm store
+        run: pnpm store prune || true
+
       - name: Install dependencies
-        run: pnpm install
+        run: |
+          # 删除本地 node_modules 和锁文件，强制重新解析
+          rm -rf node_modules pnpm-lock.yaml
+          # 使用 --force 或 --fresh 确保完全重新安装
+          pnpm install --frozen-lockfile=false
 
       - name: Build packages
         run: pnpm run types
