@@ -2,21 +2,21 @@
   <div class="container-column">
     <p class="text-08rem text-right">每3秒更新一次</p>
     <div class="inner-container container-w100 container-space-evenly">
-      <div class="inner-container-column bg-card">
-        <p>作者数量</p>
-        <p>{{ authorCount }}</p>
+      <div class="inner-container-column bg-card padding-rem radius-half-rem">
+        <h4>作者数量</h4>
+        <p class="text-center">{{ authorCount }}位</p>
       </div>
-      <div class="inner-container-column bg-card">
-        <p>图书数量</p>
-        <p>{{ bookCount }}</p>
+      <div class="inner-container-column bg-card padding-rem radius-half-rem">
+        <h4>图书数量</h4>
+        <p class="text-center">{{ bookCount }}本</p>
       </div>
-      <div class="inner-container-column bg-card">
-        <p>用户数量</p>
-        <p>{{ userCount }}</p>
+      <div class="inner-container-column bg-card padding-rem radius-half-rem">
+        <h4>用户数量</h4>
+        <p class="text-center">{{ userCount }}位</p>
       </div>
-      <div class="inner-container-column bg-card">
-        <p>CPU使用率</p>
-        <p>{{ systemInfo.cpu_percent }}</p>
+      <div class="inner-container-column bg-card padding-rem radius-half-rem">
+        <h4>CPU使用率</h4>
+        <p class="text-center">{{ systemInfo.cpu_percent }}%</p>
       </div>
     </div>
   </div>
