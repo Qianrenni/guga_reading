@@ -68,3 +68,6 @@ body.dark-mode {
 .overflow-hidden {
   overflow: hidden;
 }
+.text-read-indent {
+  text-indent: 2em;
+}

@@ -4,7 +4,12 @@
     class="container-w100 scroll-container"
     style="height: 100vh"
   >
-    <div class="book-read-container bg-card">
+    <div
+      class="book-read-container"
+      :style="{
+        backgroundColor: useReadingSetting.readSettings.backgroundColor,
+      }"
+    >
       <QLoading
         v-show="loading"
         style="height: 100vh; width: 100%"
@@ -14,12 +19,11 @@
         v-show="!loading"
         class="book-read-content"
         :style="{
-          fontSize: readSettings.fontSize,
-          fontFamily: readSettings.fontFamily,
-          lineHeight: readSettings.lineHeight,
-          letterSpacing: readSettings.letterSpacing,
-          color: readSettings.color,
-          backgroundColor: readSettings.backgroundColor,
+          fontSize: `${useReadingSetting.readSettings.fontSize}px`,
+          fontFamily: useReadingSetting.readSettings.fontFamily,
+          lineHeight: `${useReadingSetting.readSettings.lineHeight}px`,
+          letterSpacing: `${useReadingSetting.readSettings.letterSpacing}px`,
+          color: useReadingSetting.readSettings.color,
         }"
         @click="shwoBottomSettings = true"
         v-html="content"
@@ -56,6 +60,7 @@
         </div>
         <div
           class="inner-container-column container-align-center bg-hover-secondary"
+          @click="showReadSettings = true"
         >
           <QIcon icon="Setting" size="24px" />
           <span class="text-08rem">阅读设置</span>
@@ -163,7 +168,10 @@
             <QIcon icon="Catalog" size="24px" />
             <span class="text-08rem">目录</span>
           </div>
-          <div class="inner-container-column container-align-center">
+          <div
+            class="inner-container-column container-align-center"
+            @click="showReadSettings = true"
+          >
             <QIcon icon="Setting" size="24px" />
             <span class="text-08rem">阅读设置</span>
           </div>
@@ -183,6 +191,15 @@
           </div>
         </div>
       </QDrawer>
+      <QDrawer
+        v-model:visible="showReadSettings"
+        direction="left"
+        :close-on-click-overlay="true"
+        :overlay="false"
+        @close="showReadSettings = false"
+      >
+        <ReadSetting />
+      </QDrawer>
     </div>
   </div>
 </template>
@@ -197,8 +214,8 @@ import {
   useTemplateRef,
   watch,
 } from 'vue';
-import type { Book, Catalog, ReadSettings } from '@guga-reading/types';
-import { useBookStore } from '@/store';
+import type { Book, Catalog } from '@guga-reading/types';
+import { useBookStore, useReadSettingStore } from '@/store';
 import router from '@/route';
 import {
   applySpacingToHtml,
@@ -211,6 +228,7 @@ import { useScreenSize, useThrottle } from 'qyani-components';
 import { useReadingHistoryStore } from '@/store';
 import { QLoading, QIcon, QDrawer } from 'qyani-components';
 import { useApiReport } from '@guga-reading/shares';
+import ReadSetting from '@/components/ReadSetting.vue';
 const fullScreen = toggleFullScreen();
 // 用于切换时滚动到顶部
 const bookReadContainer = useTemplateRef<HTMLDivElement>('bookReadContainer');
@@ -244,6 +262,8 @@ watch(
 );
 // 是否显示底部设置
 const shwoBottomSettings = ref<boolean>(false);
+// 是否显示阅读设置
+const showReadSettings = ref<boolean>(false);
 // 是否可以显示底部设置
 const isCanShowBottomSettings = useScreenSize.getWidth(768);
 // 阅读历史存储
@@ -256,17 +276,7 @@ const computeCatalog = computed(() => {
     return [...catalog.value].reverse();
   }
 });
-// 阅读设置
-/* Songti SC, SimSun; */
-const readSettings = ref<ReadSettings>({
-  fontSize: '1rem',
-  lineHeight: '3.5rem',
-  letterSpacing: '0.1rem',
-  fontFamily:
-    'Arial, PingFangSC-Regular, Microsoft Yahei, "Source Han Serif SC", SimSun',
-  color: 'var(--text-color)',
-  backgroundColor: 'var(--card-bg)',
-});
+const useReadingSetting = useReadSettingStore();
 const heartBeat = {
   interval: 10000,
   timer: -1,
@@ -324,7 +334,7 @@ const run = async (chapterId: number) => {
     ? rawContent
     : rawContent
         .split('\n')
-        .map((item) => `<p>&nbsp;&nbsp;&nbsp;&nbsp;${item}</p>`)
+        .map((item) => `<p class='text-read-indent'>${item}</p>`)
         .join('');
   // 更新实际显示内容
   content.value = applySpacingToHtml(processedContent);
@@ -394,7 +404,6 @@ onBeforeUnmount(() => {
 
 <style scoped lang="css">
 .book-read-container {
-  max-width: 900px;
   margin: 0 auto;
   padding: 0 1rem 1rem 1rem;
   display: flex;
