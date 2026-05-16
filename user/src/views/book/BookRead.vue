@@ -441,8 +441,7 @@ onBeforeUnmount(() => {
   }
 
   .book-read-catalog-container {
-    min-width: unset;
-    max-width: 70vw;
+    width: 70vw;
   }
 }
 </style>
