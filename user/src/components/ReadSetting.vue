@@ -44,8 +44,8 @@
     />
     <QFormRangeSlider
       v-model="readSettings.lineHeight"
-      :min="36"
-      :max="64"
+      :min="readSettings.fontSize"
+      :max="readSettings.fontSize * 3"
       label="行高"
       direction="vertical"
     />
@@ -82,8 +82,15 @@ const reset = () => {
 
 watch(
   () => readSettings.value,
-  (settings) => {
-    useReadingSetting.updateReadSettings(settings);
+  (newSettings) => {
+    useReadingSetting.updateReadSettings(newSettings);
+  },
+  { deep: true },
+);
+watch(
+  () => readSettings.value.fontSize,
+  (newFontSize, oldFontSize) => {
+    readSettings.value.lineHeight += newFontSize - oldFontSize;
   },
   { deep: true },
 );

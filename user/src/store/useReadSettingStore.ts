@@ -2,7 +2,7 @@ import type { ReadSettings } from '@/types';
 import { defineStore } from 'pinia';
 const defaultReadSettings: ReadSettings = {
   fontSize: 16,
-  lineHeight: 54,
+  lineHeight: 32,
   letterSpacing: 2,
   fontFamily: 'Arial, PingFangSC-Regular, Microsoft Yahei, SimSun',
   color: '#333333',
