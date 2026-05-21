@@ -13,9 +13,22 @@ const run = toggleFullScreen();
 
 <template>
   <header class="bg-card container header-container">
-    <router-link to="/" class="link-primary hidden-768">
-      <h3>咕嘎阅读</h3>
-    </router-link>
+    <div class="inner-container">
+      <router-link to="/" class="link-primary hidden-768">
+        <h3>咕嘎阅读</h3>
+      </router-link>
+      <a
+        href="http://49.235.107.221:8000/static/guga.apk"
+        download
+        target="_blank"
+        class="link-primary"
+      >
+        <div class="inner-container">
+          <QIcon icon="Mobile" size="24" class="mr-4" />
+          <span class="hidden-768">移动端app</span>
+        </div>
+      </a>
+    </div>
     <div class="inner-container container-768-w100">
       <div>
         <QSearch
