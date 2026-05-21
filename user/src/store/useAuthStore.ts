@@ -55,7 +55,7 @@ export const useAuthStore = defineStore('auth', {
           this.getAccessToken!,
         );
         if (success) {
-          this.setUser(data.user);
+          this.setUser(data!.user);
           axios.defaults.headers.common['Authorization'] =
             `${this.getTokenType} ${this.getAccessToken!}`;
           return true;
