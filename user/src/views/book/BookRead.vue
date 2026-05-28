@@ -219,6 +219,7 @@ import { useBookStore, useReadSettingStore } from '@/store';
 import router from '@/route';
 import {
   applySpacingToHtml,
+  indexToCN,
   isHtml,
   toggleFullScreen,
   useApiBooks,
@@ -372,7 +373,10 @@ onBeforeMount(async () => {
         run(contentId),
       ]);
       book.value = rawBook;
-      catalog.value = rawCatalog;
+      catalog.value = rawCatalog.map((item, index) => ({
+        ...item,
+        title: `第${indexToCN(index + 1)}章 ${item.title}`,
+      }));
     } else {
       //获取书籍信息和目录,然后获取第一个目录的内容
       const [rawBook, rawCatalog] = await Promise.all([

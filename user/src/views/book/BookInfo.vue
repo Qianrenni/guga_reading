@@ -44,7 +44,6 @@
           class="container-w100 radius-rem"
           @select="(index) => (tabIndex = index)"
         >
-          bottom
         </QTab>
         <div v-if="tabIndex === 0" class="text-secondary">
           <p class="padding-rem text-muted">
@@ -134,7 +133,7 @@ import {
   QTab,
   QTag,
 } from 'qyani-components';
-import { useApiBooks, useTitle } from '@guga-reading/shares';
+import { indexToCN, useApiBooks, useTitle } from '@guga-reading/shares';
 import router from '@/route';
 defineOptions({
   name: 'BookInfo',
@@ -173,7 +172,10 @@ const initial = async (bookId: number) => {
     bookStore.getCatalogById(bookId),
   ]);
   book.value = rawbook;
-  catalog.value = rawcatalog;
+  catalog.value = rawcatalog.map((item, index) => ({
+    ...item,
+    title: `第${indexToCN(index + 1)}章 ${item.title}`,
+  }));
   useApiBooks
     .getRecommendBook(book.value.tags.split(',').join(' '))
     .then((result) => {
