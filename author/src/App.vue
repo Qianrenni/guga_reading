@@ -6,7 +6,9 @@ import { watch } from 'vue';
 import { excludePaths } from '@/config';
 import { useAuthStore } from '@/store';
 import { useTitle } from '@guga-reading/shares';
+import { IconConfig } from 'qyani-components';
 const authStore = useAuthStore();
+IconConfig.setBase('/author');
 /*
  * 路由守卫
  * params:

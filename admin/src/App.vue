@@ -5,7 +5,10 @@ import { watch } from 'vue';
 import { excludePaths } from '@/config';
 import { useAuthStore } from '@/store';
 import HeaderNavigation from './components/common/HeaderNavigation.vue';
+import { IconConfig } from 'qyani-components';
 const authStore = useAuthStore();
+IconConfig.setBase('/admin');
+
 /*
  * 路由守卫
  * params:
