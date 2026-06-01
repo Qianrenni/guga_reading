@@ -53,9 +53,9 @@ dependencies {
     // JWT 认证
     implementation(libs.jwt.api)
 
-    // 密码哈希 (BCrypt)
+    // 密码哈希 (Bcrypt)
     implementation(libs.bcrypt)
-
+    implementation("com.github.penggle:kaptcha:2.3.2")
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }

@@ -3,6 +3,8 @@ package com.qianrenni.plugins
 import com.qianrenni.schemas.ResponseModel
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.ContentTransformationException
+import io.ktor.server.plugins.MissingRequestParameterException
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 
@@ -12,11 +14,15 @@ import io.ktor.server.response.*
  */
 fun Application.configureStatusPages() {
     install(StatusPages) {
-        // 处理自定义应用异常
-        // 处理值错误
+
         exception<IllegalArgumentException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ResponseModel.Error(message = cause.message ?: "参数错误"))
         }
-
+        exception<MissingRequestParameterException> { call, cause ->
+            call.respond(HttpStatusCode.BadRequest, message = ResponseModel.Error(message = "缺少header[${cause.parameterName}]"))
+        }
+        exception<ContentTransformationException> { call, cause ->
+            call.respond(HttpStatusCode.BadRequest, message = ResponseModel.Error(message = cause.message?:"数据格式错误"))
+        }
     }
 }
