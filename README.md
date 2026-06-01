@@ -1,34 +1,36 @@
-# GUGA Reading - 在线阅读平台
+# GUGA Reading - Online Reading Platform
 
 [![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![Vue](https://img.shields.io/badge/vue-3.5+-brightgreen.svg)](https://vuejs.org/)
 [![FastAPI](https://img.shields.io/badge/fastapi-0.119+-teal.svg)](https://fastapi.tiangolo.com/)
 
-一个基于 **FastAPI + Vue 3** 的多角色在线阅读平台，支持用户、作者和管理员三种角色的完整功能。
+An online reading platform with multiple roles based on **FastAPI + Vue 3**, supporting full functionality for users, authors, and administrators.
 
-## 📖 项目概述
+English | [中文版](./README.zh-CN.md)
 
-GUGA Reading 是一个现代化的在线阅读系统，提供小说/书籍的在线阅读、创作和管理功能。系统采用前后端分离架构，支持跨平台访问。
+## 📖 Project Overview
 
-### 🌐 在线预览
+GUGA Reading is a modern online reading system that provides reading, creation, and management features for novels/books. The system adopts a frontend-backend separation architecture and supports cross-platform access.
 
-- **[用户端](http://49.235.107.221)** - 读者浏览和阅读平台
-- **[作者端](http://49.235.107.221/author/#)** - 作者创作和管理平台
-- **[管理端](http://49.235.107.221/admin/#)** - 管理员后台管理系统
-- **[安卓端](http://49.235.107.221:8000/static/guga.apk)**
-- **[安卓项目地址](https://github.com/Qianrenni/guga-android)**
+### 🌐 Live Previews
 
-### ✨ 核心特性
+- **[User Client](http://49.235.107.221)** – Reading and browsing platform for readers
+- **[Author Client](http://49.235.107.221/author/#)** – Creation and management platform for authors
+- **[Admin Panel](http://49.235.107.221/admin/#)** – Backend management system for administrators
+- **[Android APK](http://49.235.107.221:8000/static/guga.apk)**
+- **[Android Repository](https://github.com/Qianrenni/guga-android)**
 
-- **🎭 多角色支持**: 用户、作者、管理员三种角色，权限分离
-- **🤖 个性化推荐**: 基于 TF-IDF 算法的个性化书籍推荐
-- **📱 实时阅读进度**: 支持断点续读，多设备同步
-- **💬 丰富的互动功能**: 收藏、评论、点赞等社交功能
-- **📝 完善的内容管理**: 从创作到发布的全流程管理
-- **⚡ 高并发设计**: 支持单机上百用户同时访问，首屏加载 < 1s
+### ✨ Key Features
 
-## 🏗️ 系统架构
+- **🎭 Multi‑role Support**: Separate permissions for users, authors, and administrators
+- **🤖 Personalized Recommendations**: TF‑IDF based book recommendation engine
+- **📱 Real‑time Reading Progress**: Resume reading across multiple devices
+- **💬 Rich Interactions**: Favorites, comments, likes, and other social features
+- **📝 Complete Content Management**: Full workflow from creation to publication
+- **⚡ High‑concurrency Design**: Supports hundreds of concurrent users on a single machine, first‑screen loading < 1s
+
+## 🏗️ System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -57,244 +59,244 @@ GUGA Reading 是一个现代化的在线阅读系统，提供小说/书籍的在
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 技术架构图说明
+### Architecture Diagram Notes
 
-- **前端层**: 三个独立的 Vue 3 应用，分别服务于不同角色
-- **后端层**: FastAPI 提供 RESTful API，包含多个微服务模块
-- **数据层**: MySQL 持久化存储，Redis 缓存加速，对象存储管理文件
+- **Frontend Layer**: Three independent Vue 3 applications, each serving a different role
+- **Backend Layer**: FastAPI providing RESTful APIs, including multiple microservice modules
+- **Data Layer**: MySQL for persistent storage, Redis for caching acceleration, object storage for file management
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
 guga_reading/
-├── backend/                          # 后端服务 (FastAPI)
+├── backend/                          # Backend service (FastAPI)
 │   ├── app/
-│   │   ├── api/v1/                   # API v1 接口定义
-│   │   ├── core/                     # 核心功能 (配置、数据库、安全)
-│   │   ├── models/                   # SQLAlchemy 数据模型
-│   │   ├── schema/                   # Pydantic 数据验证模式
-│   │   ├── services/                 # 业务逻辑服务层
-│   │   ├── algorithm/                # 推荐算法 (TF-IDF)
-│   │   ├── middleware/               # 中间件 (日志、限流)
-│   │   ├── utils/                    # 工具函数
-│   │   └── enum/                     # 枚举定义
-│   ├── alembic/                      # 数据库迁移工具
-│   ├── static/                       # 静态资源 (书籍文件)
-│   ├── store/                        # 数据存储目录
-│   ├── logs/                         # 日志文件
-│   ├── test/                         # 测试代码 (pytest)
-│   ├── scripts/                      # 脚本工具
-│   ├── requirements.txt              # Python 依赖
-│   ├── pyproject.toml                # Python 项目配置
-│   ├── docker-compose.yml            # Docker 编排
-│   └── run.py                        # 启动脚本
+│   │   ├── api/v1/                   # API v1 definitions
+│   │   ├── core/                     # Core functionality (config, database, security)
+│   │   ├── models/                   # SQLAlchemy data models
+│   │   ├── schema/                   # Pydantic data validation schemas
+│   │   ├── services/                 # Business logic service layer
+│   │   ├── algorithm/                # Recommendation algorithm (TF-IDF)
+│   │   ├── middleware/               # Middleware (logging, rate limiting)
+│   │   ├── utils/                    # Utility functions
+│   │   └── enum/                     # Enum definitions
+│   ├── alembic/                      # Database migration tool
+│   ├── static/                       # Static assets (book files)
+│   ├── store/                        # Data storage directory
+│   ├── logs/                         # Log files
+│   ├── test/                         # Test code (pytest)
+│   ├── scripts/                      # Script tools
+│   ├── requirements.txt              # Python dependencies
+│   ├── pyproject.toml                # Python project configuration
+│   ├── docker-compose.yml            # Docker orchestration
+│   └── run.py                        # Startup script
 │
-├── author/                           # 作者端应用 (Vue 3)
+├── author/                           # Author client app (Vue 3)
 │   ├── src/
-│   │   ├── components/               # Vue 组件
-│   │   ├── views/                    # 页面视图
-│   │   ├── store/                    # Pinia 状态管理
-│   │   ├── config/                   # 配置文件
-│   │   └── route.ts                  # 路由配置
-│   ├── public/                       # 公共资源
+│   │   ├── components/               # Vue components
+│   │   ├── views/                    # Page views
+│   │   ├── store/                    # Pinia state management
+│   │   ├── config/                   # Configuration files
+│   │   └── route.ts                  # Routing configuration
+│   ├── public/                       # Public assets
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── user/                             # 用户端应用 (Vue 3)
+├── user/                             # User client app (Vue 3)
 │   ├── src/
-│   │   ├── components/               # Vue 组件
-│   │   ├── views/                    # 页面视图
-│   │   ├── store/                    # Pinia 状态管理
-│   │   └── config/                   # 配置文件
-│   ├── public/                       # 公共资源
+│   │   ├── components/               # Vue components
+│   │   ├── views/                    # Page views
+│   │   ├── store/                    # Pinia state management
+│   │   └── config/                   # Configuration files
+│   ├── public/                       # Public assets
 │   └── package.json
 │
-├── admin/                            # 管理后台 (Vue 3)
+├── admin/                            # Admin panel (Vue 3)
 │   ├── src/
-│   │   └── views/                    # 页面视图
-│   ├── public/                       # 公共资源
+│   │   └── views/                    # Page views
+│   ├── public/                       # Public assets
 │   └── package.json
 │
-├── packages/                         # 共享包 (Monorepo)
-│   ├── eslint/                       # ESLint 配置
-│   ├── shares/                       # 共享工具和常量
-│   └── types/                        # TypeScript 类型定义
+├── packages/                         # Shared packages (Monorepo)
+│   ├── eslint/                       # ESLint configuration
+│   ├── shares/                       # Shared tools and constants
+│   └── types/                        # TypeScript type definitions
 │
-├── .husky/                           # Git Hooks 配置
-├── .github/                          # GitHub 工作流
-├── docker-compose.yml                # 根目录 Docker 编排
-├── nginx.conf                        # Nginx 配置
-├── package.json                      # 根目录 pnpm 配置
-├── pnpm-workspace.yaml               # pnpm 工作区配置
-└── README.md                         # 项目说明文档
+├── .husky/                           # Git Hooks configuration
+├── .github/                          # GitHub workflows
+├── docker-compose.yml                # Root Docker orchestration
+├── nginx.conf                        # Nginx configuration
+├── package.json                      # Root pnpm configuration
+├── pnpm-workspace.yaml               # pnpm workspace configuration
+└── README.md                         # Project documentation
 ```
 
-> 💡 **提示**: 本项目采用 pnpm workspace 管理多个前端应用，实现代码共享和统一管理。
+> 💡 **Note**: This project uses pnpm workspace to manage multiple frontend applications, enabling code sharing and unified management.
 
-## 🎯 功能模块
+## 🎯 Feature Modules
 
-### 👤 用户功能
+### 👤 User Features
 
-- **🔐 账户管理**: 注册/登录（手机号、邮箱）、个人资料、密码管理
-- **📚 内容浏览**: 分类浏览、标签筛选、全文搜索、书籍详情
-- **📖 阅读体验**: 章节阅读、翻页/滑动、字体/背景调节、夜间模式
-- **💬 互动功能**: 书籍收藏、追更、章节评论、点赞
-- **⏱️ 阅读进度**: 自动同步、断点续读
-- **🎯 个性化推荐**: 首页推荐、书架推荐、猜你喜欢
+- **🔐 Account Management**: Register/login (phone/email), profile management, password management
+- **📚 Content Browsing**: Category browsing, tag filtering, full-text search, book details
+- **📖 Reading Experience**: Chapter reading, page turning/swiping, font/background adjustment, night mode
+- **💬 Interaction Features**: Bookmarking, follow updates, chapter comments, likes
+- **⏱️ Reading Progress**: Auto-sync, resume reading
+- **🎯 Personalized Recommendations**: Homepage recommendations, shelf recommendations, “you may like”
 
-### ✍️ 作者功能
+### ✍️ Author Features
 
-- **✅ 作者认证**: 在线申请、审核管理
-- **📝 作品管理**: 创建书籍、编辑信息、章节管理
-- **✏️ 内容创作**: 富文本编辑器、草稿系统、版本管理
-- **📊 数据统计**: 阅读量、收藏数、评论数、收益分析
-- **📤 上传支持**: EPUB、TXT 等多种格式
+- **✅ Author Verification**: Online application, approval management
+- **📝 Work Management**: Create books, edit information, manage chapters
+- **✏️ Content Creation**: Rich text editor, draft system, version management
+- **📊 Statistics**: Views, favorites, comments, revenue analysis
+- **📤 Upload Support**: EPUB, TXT, and other formats
 
-### 🔧 管理员功能
+### 🔧 Admin Features
 
-- **👥 用户管理**: 用户列表、禁言、封号、作者认证审核
-- **📚 内容管理**: 书籍/章节审核、下架、评论管理、举报处理
-- **📈 数据统计**: 平台数据、活跃用户、阅读量统计
-- **⚙️ 系统管理**: 配置管理、日志查看、分类/标签管理
+- **👥 User Management**: User list, muting, banning, author verification approval
+- **📚 Content Management**: Book/chapter approval, takedown, comment management, report handling
+- **📈 Data Statistics**: Platform data, active users, reading volume statistics
+- **⚙️ System Management**: Configuration management, log viewing, category/tag management
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-### 后端技术
+### Backend Technologies
 
-| 技术         | 版本               | 说明             |
-| ------------ | ------------------ | ---------------- |
-| **框架**     | FastAPI 0.119.0    | 异步 Web 框架    |
-| **数据库**   | MySQL              | 主数据存储       |
-| **缓存**     | Redis 6.4.0        | 缓存、限流、会话 |
-| **ORM**      | SQLAlchemy 2.0.44  | 异步 ORM         |
-| **推荐算法** | TF-IDF + NumPy     | 个性化推荐       |
-| **认证**     | PyJWT 2.10.1       | JWT 身份认证     |
-| **任务调度** | APScheduler 3.11.2 | 定时任务         |
-| **部署**     | Docker + Gunicorn  | 容器化部署       |
+| Technology          | Version            | Description                      |
+| ------------------- | ------------------ | -------------------------------- |
+| **Framework**       | FastAPI 0.119.0    | Asynchronous web framework       |
+| **Database**        | MySQL              | Primary data storage             |
+| **Cache**           | Redis 6.4.0        | Caching, rate limiting, sessions |
+| **ORM**             | SQLAlchemy 2.0.44  | Asynchronous ORM                 |
+| **Recommendation**  | TF-IDF + NumPy     | Personalized recommendations     |
+| **Auth**            | PyJWT 2.10.1       | JWT authentication               |
+| **Task Scheduling** | APScheduler 3.11.2 | Scheduled tasks                  |
+| **Deployment**      | Docker + Gunicorn  | Containerized deployment         |
 
-### 前端技术
+### Frontend Technologies
 
-| 技术         | 版本                   | 说明           |
-| ------------ | ---------------------- | -------------- |
-| **框架**     | Vue 3.5.24             | 渐进式框架     |
-| **语言**     | TypeScript 5.9.3       | 类型安全       |
-| **状态管理** | Pinia 3.0.4            | Vue 3 官方推荐 |
-| **路由**     | Vue Router 4.6.4       | SPA 路由       |
-| **UI 组件**  | qyani-components 1.5.3 | 自定义组件库   |
-| **构建工具** | Vite 7.2.5             | 快速开发服务器 |
-| **图表**     | ECharts 6.0.0          | 数据可视化     |
-| **HTTP**     | Axios 1.13.6           | HTTP 客户端    |
+| Technology           | Version                | Description                   |
+| -------------------- | ---------------------- | ----------------------------- |
+| **Framework**        | Vue 3.5.24             | Progressive framework         |
+| **Language**         | TypeScript 5.9.3       | Type safety                   |
+| **State Management** | Pinia 3.0.4            | Vue 3 official recommendation |
+| **Routing**          | Vue Router 4.6.4       | SPA routing                   |
+| **UI Components**    | qyani-components 1.5.3 | Custom component library      |
+| **Build Tool**       | Vite 7.2.5             | Fast development server       |
+| **Charts**           | ECharts 6.0.0          | Data visualization            |
+| **HTTP**             | Axios 1.13.6           | HTTP client                   |
 
-### 移动端技术（Android）
+### Mobile (Android) Technologies
 
-| 技术         | 版本                        | 说明                  |
-| ------------ | --------------------------- | --------------------- |
-| **语言**     | Kotlin                      | 现代 Android 开发语言 |
-| **UI 框架**  | Jetpack Compose             | 声明式 UI 框架        |
-| **网络**     | Ktor Client                 | 轻量级 HTTP 客户端    |
-| **序列化**   | kotlinx.serialization       | JSON 序列化           |
-| **图片加载** | Coil 2.6.0                  | 图片加载库            |
-| **导航**     | Navigation Compose          | 页面导航              |
-| **存储**     | DataStore + Security Crypto | 本地安全存储          |
-| **异步**     | Kotlin Coroutines           | 协程支持              |
+| Technology        | Version                     | Description                         |
+| ----------------- | --------------------------- | ----------------------------------- |
+| **Language**      | Kotlin                      | Modern Android development language |
+| **UI Framework**  | Jetpack Compose             | Declarative UI framework            |
+| **Networking**    | Ktor Client                 | Lightweight HTTP client             |
+| **Serialization** | kotlinx.serialization       | JSON serialization                  |
+| **Image Loading** | Coil 2.6.0                  | Image loading library               |
+| **Navigation**    | Navigation Compose          | Page navigation                     |
+| **Storage**       | DataStore + Security Crypto | Secure local storage                |
+| **Asynchrony**    | Kotlin Coroutines           | Coroutine support                   |
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 环境要求
+### Requirements
 
-- **后端**: Python 3.8+
-- **前端**: Node.js >= 16.0.0, pnpm >= 8.0.0
-- **数据库**: MySQL 5.7+
-- **缓存**: Redis 5.0+
-- **移动端**: Android Studio Hedgehog+, JDK 11+
+- **Backend**: Python 3.8+
+- **Frontend**: Node.js >= 16.0.0, pnpm >= 8.0.0
+- **Database**: MySQL 5.7+
+- **Cache**: Redis 5.0+
+- **Mobile**: Android Studio Hedgehog+, JDK 11+
 
-### 后端部署
+### Backend Setup
 
-#### 方式一：本地运行
+#### Option 1: Local Run
 
-1. **安装依赖**
+1. **Install dependencies**
 
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
-2. **配置环境变量**
+2. **Configure environment variables**
 
 ```bash
-# 复制并编辑配置文件
+# Copy and edit the configuration file
 cp .env.example .env
-# 编辑 .env 文件，配置数据库、Redis、邮箱等信息
+# Edit .env to set database, Redis, email, etc.
 ```
 
-3. **初始化数据库**
+3. **Initialize database**
 
 ```bash
-# 执行数据库迁移
+# Run database migrations
 alembic upgrade head
 ```
 
-4. **运行服务**
+4. **Run the service**
 
 ```bash
 python run.py
-# 或使用 gunicorn 生产环境部署
+# Or for production with gunicorn
 gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000
 ```
 
-#### 方式二：Docker 部署
+#### Option 2: Docker Deployment
 
 ```bash
 cd backend
 docker-compose up -d
 ```
 
-访问 API 文档：http://localhost:8000/docs
+Access API docs: http://localhost:8000/docs
 
-### 前端部署
+### Frontend Setup
 
-#### Monorepo 统一管理
+#### Monorepo Management
 
-本项目采用 pnpm workspace 管理多个前端应用。
+This project uses pnpm workspace to manage multiple frontend applications.
 
-**安装所有依赖**
+**Install all dependencies**
 
 ```bash
-# 在根目录执行
+# Run in the root directory
 pnpm install
 ```
 
-**常用命令**
+**Common commands**
 
 ```bash
-# 启动作者端开发服务器
+# Start author client dev server
 pnpm dev:author
 
-# 启动用户端开发服务器
+# Start user client dev server
 pnpm dev:user
 
-# 启动管理端开发服务器
+# Start admin panel dev server
 pnpm dev:admin
 
-# 构建所有前端应用
+# Build all frontend apps
 pnpm build:all
 
-# 代码格式化
+# Code formatting
 pnpm prettier
 ```
 
-#### 单独运行某个应用
+#### Run a single application
 
-**作者端应用**
+**Author client**
 
 ```bash
 cd author
 pnpm install
 pnpm dev
-# 访问 http://localhost:80
+# Access http://localhost:80
 ```
 
-**用户端应用**
+**User client**
 
 ```bash
 cd user
@@ -302,7 +304,7 @@ pnpm install
 pnpm dev
 ```
 
-**管理端应用**
+**Admin panel**
 
 ```bash
 cd admin
@@ -310,18 +312,18 @@ pnpm install
 pnpm dev
 ```
 
-### Android 移动端部署
+### Android Mobile Setup
 
-1. **克隆项目**
+1. **Clone the project**
 
 ```bash
 git clone <repository-url>
 cd reading
 ```
 
-2. **配置签名（可选，用于发布版本）**
+2. **Configure signing (optional, for release builds)**
 
-在 `local.properties` 文件中添加：
+Add the following to the `local.properties` file:
 
 ```properties
 storeFile=/path/to/your/keystore.jks
@@ -330,130 +332,130 @@ keyAlias=your_key_alias
 keyPassword=your_key_password
 ```
 
-3. **使用 Android Studio 打开项目**
+3. **Open the project with Android Studio**
 
-- 打开 Android Studio
-- 选择 "Open an existing project"
-- 选择 `reading` 目录
-- 等待 Gradle 同步完成
+- Launch Android Studio
+- Select "Open an existing project"
+- Choose the `reading` directory
+- Wait for Gradle sync to finish
 
-4. **运行应用**
+4. **Run the app**
 
-- 连接 Android 设备或启动模拟器
-- 点击 Run 按钮或按 `Shift + F10`
-- 应用将自动安装并启动
+- Connect an Android device or start an emulator
+- Click the Run button or press `Shift + F10`
+- The app will be installed and launched automatically
 
-5. **命令行构建（可选）**
+5. **Command line builds (optional)**
 
 ```bash
-# 调试版本
+# Debug build
 ./gradlew assembleDebug
 
-# 发布版本
+# Release build
 ./gradlew assembleRelease
 
-# 安装到设备
+# Install to device
 ./gradlew installDebug
 ```
 
-APK 文件位置：
+APK locations:
 
-- 调试版：`app/build/outputs/apk/debug/app-debug.apk`
-- 发布版：`app/build/outputs/apk/release/app-release.apk`
+- Debug: `app/build/outputs/apk/debug/app-debug.apk`
+- Release: `app/build/outputs/apk/release/app-release.apk`
 
-## 📊 性能优化
+## 📊 Performance Optimization
 
-### 后端优化策略
+### Backend Optimization Strategies
 
-- **💾 缓存策略**
-  - Redis 缓存热门书籍、章节内容、推荐结果
-  - 用户阅读进度实时缓存
-  - 分布式限流保护核心接口
+- **💾 Caching**
+  - Redis caches popular books, chapter content, recommendation results
+  - Real-time caching of user reading progress
+  - Distributed rate limiting protects core APIs
 
-- **🗄️ 数据库优化**
-  - 高频查询字段索引优化
-  - 读写分离设计
-  - 分页查询避免大量数据加载
+- **🗄️ Database Optimization**
+  - Index optimization for high‑frequency query fields
+  - Read/write separation design
+  - Paginated queries to avoid large data loads
 
-- **⚡ 并发处理**
-  - 异步 IO 提升吞吐量
-  - 分布式锁保证数据一致性
-  - 线程池管理资源
+- **⚡ Concurrency Handling**
+  - Asynchronous I/O improves throughput
+  - Distributed locks ensure data consistency
+  - Thread pool manages resources
 
-### 前端优化策略
+### Frontend Optimization Strategies
 
-- **🚀 加载优化**: 路由懒加载、组件异步加载
-- **🎨 渲染优化**: 虚拟列表、防抖节流
-- **💿 缓存优化**: 本地存储、请求缓存
-- **📱 响应式设计**: 移动端/桌面端自适应
+- **🚀 Loading Optimization**: Lazy loading routes, asynchronous components
+- **🎨 Rendering Optimization**: Virtual lists, debouncing/throttling
+- **💿 Cache Optimization**: Local storage, request caching
+- **📱 Responsive Design**: Mobile/desktop adaptation
 
-### Android 移动端优化
+### Android Mobile Optimization
 
-- **🖼️ 图片优化**: Coil 自动缓存和压缩
-- **📡 网络优化**: Ktor 连接池、请求合并
-- **💾 本地缓存**: DataStore 持久化用户偏好
-- **🔋 电量优化**: 协程结构化并发，避免内存泄漏
+- **🖼️ Image Optimization**: Coil automatic caching and compression
+- **📡 Network Optimization**: Ktor connection pooling, request coalescing
+- **💾 Local Caching**: DataStore for persistent user preferences
+- **🔋 Battery Optimization**: Structured concurrency with coroutines to avoid memory leaks
 
-## 🔒 安全设计
+## 🔒 Security Design
 
-- **🔐 认证授权**: JWT Token + 权限校验
-- **🛡️ 数据校验**: 防止 SQL 注入、XSS 攻击
-- **⏱️ 限流保护**: Redis 令牌桶算法限流
-- **📁 文件安全**: 上传文件类型/内容校验
-- **📝 日志审计**: 关键操作记录追踪
+- **🔐 Authentication & Authorization**: JWT tokens + permission checks
+- **🛡️ Data Validation**: Protection against SQL injection, XSS attacks
+- **⏱️ Rate Limiting**: Redis token bucket algorithm
+- **📁 File Security**: Upload file type/content validation
+- **📝 Audit Logging**: Tracking of critical operations
 
-## 📈 高可用设计
+## 📈 High Availability Design
 
-- **⚖️ 负载均衡**: Nginx 反向代理 + 健康检查
-- **🔄 服务冗余**: MySQL 主从复制、Redis 哨兵模式
-- **🚑 故障恢复**: 自动重启、异常监控
-- **💾 数据备份**: 定时备份、灾难恢复
+- **⚖️ Load Balancing**: Nginx reverse proxy + health checks
+- **🔄 Service Redundancy**: MySQL primary‑replica replication, Redis sentinel mode
+- **🚑 Failure Recovery**: Auto‑restart, exception monitoring
+- **💾 Data Backup**: Scheduled backups, disaster recovery
 
-## 📝 API 文档
+## 📝 API Documentation
 
-后端服务启动后，访问以下地址查看 API 文档：
+After starting the backend service, visit the following addresses to view API docs:
 
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
-API 文档提供了完整的接口说明、请求参数、响应示例和在线测试功能。
+The API documentation provides complete endpoint descriptions, request parameters, response examples, and online testing.
 
-## 🧪 测试
+## 🧪 Testing
 
-### 后端测试
+### Backend Testing
 
 ```bash
 cd backend
 pytest
-# 或指定测试文件
+# Or specify a test file
 pytest test/api/v1/test_book.py
 ```
 
-### 前端测试
+### Frontend Testing
 
 ```bash
-# 代码检查和格式化（根目录）
+# Code linting and formatting (root directory)
 pnpm prettier
 
-# 单个应用检查
+# Single app linting
 cd author
 pnpm run lint
 ```
 
-### Android 测试
+### Android Testing
 
 ```bash
-# 运行单元测试
+# Run unit tests
 ./gradlew test
 
-# 运行仪器化测试
+# Run instrumented tests
 ./gradlew connectedAndroidTest
 
-# 生成测试报告
+# Generate test report
 ./gradlew jacocoTestReport
 ```
 
-## 📦 部署架构
+## 📦 Deployment Architecture
 
 ```
                     ┌─────────────┐
@@ -483,7 +485,7 @@ pnpm run lint
    └───────────┘    └────────────┘
 ```
 
-### 移动端架构
+### Mobile Architecture
 
 ```
 ┌──────────────────────────────────────┐
@@ -515,34 +517,34 @@ pnpm run lint
     └─────────────────────┘
 ```
 
-## 🤝 贡献指南
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-### 贡献流程
+### Contribution Process
 
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### 代码规范
+### Code Standards
 
-- 遵循项目现有的代码风格
-- 添加必要的注释和文档
-- 确保测试通过
-- 保持提交信息清晰明了
+- Follow the existing code style of the project
+- Add necessary comments and documentation
+- Ensure tests pass
+- Keep commit messages clear and concise
 
-## 📄 许可证
+## 📄 License
 
 ISC License
 
-## 👥 联系方式
+## 👥 Contact
 
-- **作者**:qianrenni
-- **邮箱**:2112183503@qq.com
+- **Author**: qianrenni
+- **Email**: 2112183503@qq.com
 
 ---
 
-**注意**:本项目仅供学习交流使用,请勿用于商业用途。
+**Note**: This project is for learning and communication purposes only. Do not use for commercial purposes.
