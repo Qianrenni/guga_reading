@@ -16,6 +16,7 @@ kotlin {
     jvmToolchain(21)
 }
 dependencies {
+    // Ktor 核心和插件
     implementation(ktorLibs.server.auth)
     implementation(ktorLibs.server.auth.jwt)
     implementation(ktorLibs.server.autoHeadResponse)
@@ -38,6 +39,22 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.ucasoft.ktorSimpleCache)
     implementation(libs.ucasoft.ktorSimpleMemoryCache)
+    // 数据库相关 - Exposed ORM
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.dao)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.exposed.java.time)
+    implementation(libs.hikaricp)
+    implementation(libs.mysql.connector)
+
+    // Redis 客户端
+    implementation(libs.lettuce.core)
+
+    // JWT 认证
+    implementation(libs.jwt.api)
+
+    // 密码哈希 (BCrypt)
+    implementation(libs.bcrypt)
 
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)

@@ -1,8 +1,10 @@
-package com.qianrenni
+package com.qianrenni.guga
 
-import io.ktor.server.engine.*
-import io.ktor.server.application.*
+import io.ktor.server.netty.*
 
+/**
+ * 应用主入口
+ */
 fun main(args: Array<String>) {
-    io.ktor.server.netty.EngineMain.main(args)
+    EngineMain.main(args)
 }

@@ -1,5 +1,4 @@
-package com.qianrenni
-
+package com.qianrenni.plugins
 import io.ktor.server.application.*
 import io.ktor.server.resources.*
 
