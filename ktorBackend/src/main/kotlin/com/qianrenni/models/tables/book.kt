@@ -6,7 +6,7 @@ import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
 
-object Book : IntIdTable(name = "book") {
+object BookTable : IntIdTable(name = "book") {
     val name = varchar("name", 255)
     val author = varchar("author", 255)
     val cover = varchar("cover", 255)

@@ -1,7 +1,9 @@
 CREATE
 DATABASE if NOT EXISTS `ktor`;
+
 USE
 `ktor`;
+
 CREATE TABLE if not EXISTS `user`
 (
     `id`
@@ -36,7 +38,7 @@ CREATE TABLE if not EXISTS `user`
 (
     `id`
 )
-    ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE =utf8mb4_0900_ai_ci;
+    ) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE if not EXISTS `permission`
 (
@@ -52,23 +54,23 @@ CREATE TABLE if not EXISTS `permission`
 ) NOT NULL,
     `resourceType` enum
 (
-    'book',
-    'user',
-    'permission'
+    'BOOK',
+    'USER',
+    'PERMISSION'
 ) NOT NULL,
     `action` enum
 (
-    'read',
-    'create',
-    'update',
-    'delete',
-    'audit',
-    'manage'
+    'READ',
+    'CREATE',
+    'UPDATE',
+    'DELETE',
+    'AUDIT',
+    'MANAGE'
 ) NOT NULL,
     `scope` enum
 (
-    'own',
-    'all'
+    'OWN',
+    'ALL'
 ) NOT NULL,
     `bitPosition` int NOT NULL,
     `createdAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -91,7 +93,7 @@ CREATE TABLE if not EXISTS `permission`
     `action`,
     `scope`
 )
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE =utf8mb4_0900_ai_ci;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE if not EXISTS `role`
 (
@@ -107,11 +109,11 @@ CREATE TABLE if not EXISTS `role`
 ) NOT NULL,
     `code` enum
 (
-    'user',
-    'reviewer',
-    'author',
-    'admin',
-    'super_admin'
+    'USER',
+    'REVIEWER',
+    'AUTHOR',
+    'ADMIN',
+    'SUPER_ADMIN'
 ) NOT NULL,
     `description` varchar
 (
@@ -131,7 +133,7 @@ CREATE TABLE if not EXISTS `role`
 (
     `code`
 )
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE =utf8mb4_0900_ai_ci;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE if not EXISTS `role_inheritance`
 (
@@ -179,7 +181,7 @@ CREATE TABLE if not EXISTS `role_inheritance`
     <>
     `parentId`
 )
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE =utf8mb4_0900_ai_ci;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE if not EXISTS `role_permission`
 (
@@ -221,7 +223,7 @@ CREATE TABLE if not EXISTS `role_permission`
 (
     `id`
 )
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE =utf8mb4_0900_ai_ci;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE if not EXISTS `user_role`
 (
@@ -278,22 +280,48 @@ CREATE TABLE if not EXISTS `user_role`
 (
     `id`
 )
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE =utf8mb4_0900_ai_ci;
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
-INSERT INTO `permission` (`name`, `resourceType`, `action`, `scope`, `bitPosition`, `createdAt`, `updatedAt`)
-SELECT `name`, LOWER(`resource_type`), `action`, `scope`, `bit_position`, `created_at`, `updated_at`
+INSERT INTO `permission` (`name`,
+                          `resourceType`,
+                          `action`,
+                          `scope`,
+                          `bitPosition`,
+                          `createdAt`,
+                          `updatedAt`)
+SELECT `name`,
+       `resource_type`,
+       `action`,
+       `scope`,
+       `bit_position`,
+       `created_at`,
+       `updated_at`
 FROM `beta`.`permission`;
 
-INSERT INTO `role` (`name`, `code`, `description`, `createdAt`, `updatedAt`)
-SELECT `name`, LOWER(`code`), `description`, `created_at`, `updated_at`
+INSERT INTO `role` (`name`,
+                    `code`,
+                    `description`,
+                    `createdAt`,
+                    `updatedAt`)
+SELECT `name`,
+       `code`,
+       `description`,
+       `created_at`,
+       `updated_at`
 FROM `beta`.`role`;
 
-insert into `role_inheritance` (`childId`, `parentId`, `createdAt`)
-select `child_id`, `parent_id`, `created_at`
+insert into `role_inheritance` (`childId`,
+                                `parentId`,
+                                `createdAt`)
+select `child_id`,
+       `parent_id`,
+       `created_at`
 from `beta`.`role_inheritance`;
 
-INSERT INTO `role_permission` (`roleId`, `permissionId`, `createdAt`)
-SELECT `role_id`, `permission_id`, `created_at`
+INSERT INTO `role_permission` (`roleId`,
+                               `permissionId`,
+                               `createdAt`)
+SELECT `role_id`,
+       `permission_id`,
+       `created_at`
 FROM `beta`.`role_permission`;
-
-

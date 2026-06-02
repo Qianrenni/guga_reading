@@ -1,13 +1,14 @@
 package com.qianrenni.services
 
+import com.qianrenni.database.databaseManager
 import com.qianrenni.guga.com.qianrenni.controller.RequestTokenGet
-import com.qianrenni.guga.com.qianrenni.models.tables.UserDao
+import com.qianrenni.guga.com.qianrenni.models.domain.FullUser
+import com.qianrenni.guga.com.qianrenni.models.domain.toFullUser
 import com.qianrenni.guga.com.qianrenni.models.tables.UserTable
 import com.qianrenni.guga.com.qianrenni.utils.PasswordUtils
 import io.ktor.server.application.*
-import io.ktor.util.AttributeKey
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import io.ktor.util.*
+import org.jetbrains.exposed.sql.selectAll
 
 
 class UserService(private val application: Application) {
@@ -18,23 +19,28 @@ class UserService(private val application: Application) {
      * @param requestTokenGet 登录请求数据
      * @return 用户对象
      */
-    suspend fun login(xCaptchaId: String, requestTokenGet: RequestTokenGet): UserDao {
+    suspend fun login(xCaptchaId: String, requestTokenGet: RequestTokenGet): FullUser {
         // 1. 先校验验证码
         val isCaptchaValid = application.captchaService.verifyCaptcha(requestTokenGet.captcha, xCaptchaId)
         if (!isCaptchaValid) {
             throw IllegalArgumentException("验证码错误或已过期")
         }
+
         // 2. 数据库查询必须放在 IO 线程
-        val user=withContext(Dispatchers.IO) {
+        val user = application.databaseManager.suspendedTransaction {
             // 直接使用 firstOrNull，不要 toList()
-            UserDao.find { UserTable.email eq requestTokenGet.userName }.firstOrNull()
+
+            UserTable.selectAll()
+                .where { UserTable.email eq requestTokenGet.userName }
+                .limit(1)
+                .singleOrNull()
         }
         return when(user){
             null->throw IllegalArgumentException("账号不存在")
             else -> {
-                when(!PasswordUtils.verify(requestTokenGet.password, user.password)){
+                when (!PasswordUtils.verify(requestTokenGet.password, user[UserTable.password])) {
                     false->throw IllegalArgumentException("密码错误")
-                    else -> user
+                    else -> user.toFullUser()
                 }
             }
         }

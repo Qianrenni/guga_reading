@@ -68,8 +68,8 @@ class DatabaseManager(private val config: AppConfig) {
         }
     }
 
-    suspend fun <T> suspendedTransaction(block: suspend () -> T): T {
-        return newSuspendedTransaction(db = getDatabase(), context = Dispatchers.IO) {
+    suspend fun <T> suspendedTransaction(readOnly: Boolean = false, block: suspend () -> T): T {
+        return newSuspendedTransaction(db = getDatabase(), context = Dispatchers.IO, readOnly = readOnly) {
             block()
         }
     }
