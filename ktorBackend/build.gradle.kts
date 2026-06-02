@@ -37,8 +37,10 @@ dependencies {
     implementation(ktorLibs.server.swagger)
     implementation(libs.flaxoos.ktor.server.rateLimiting)
     implementation(libs.logback.classic)
+    implementation(ktorLibs.serialization.kotlinx.json)
     implementation(libs.ucasoft.ktorSimpleCache)
     implementation(libs.ucasoft.ktorSimpleMemoryCache)
+    implementation(ktorLibs.server.contentNegotiation)
     // 数据库相关 - Exposed ORM
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)

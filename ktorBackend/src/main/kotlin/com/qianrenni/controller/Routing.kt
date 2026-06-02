@@ -2,30 +2,34 @@ package com.qianrenni
 
 import com.qianrenni.controller.Articles
 import com.qianrenni.controller.captcha
-import com.ucasoft.ktor.simpleCache.cacheOutput
+import com.qianrenni.services.cache
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 import kotlin.random.Random
-import kotlin.time.Duration.Companion.seconds
 
+@Serializable
+data class Default(
+    val number: Int,
+)
 fun Application.configureRouting() {
     routing {
         captcha()
         get("/") {
             call.respondText("Hello, World!")
         }
-        cacheOutput(2.seconds) {
-            get("/short") {
-                call.respond(Random.nextInt().toString())
+        get("/default") {
+            val result = cache(
+                args = listOf("default"),
+                keyPrefix = "default",
+                serializer = Default.serializer(),
+            ) {
+                Default(number = Random.nextInt())
             }
-        }
-        cacheOutput {
-            get("/default") {
-                call.respond(Random.nextInt().toString())
-            }
+            call.respond(result)
         }
         get<Articles> { article ->
             // Get all articles ...
