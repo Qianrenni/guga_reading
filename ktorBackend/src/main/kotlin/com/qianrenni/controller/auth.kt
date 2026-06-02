@@ -26,7 +26,8 @@ data class ResponseTokenGet(
     @SerialName("refresh_token") val refreshToken: String,
     @SerialName("user") val user: FullUser,
 )
-fun Route.routeAuth() {
+
+fun Routing.auth() {
     route("/token") {
         post("/get") {
             val xCaptchaId = call.requireHeader("x-captcha-id")

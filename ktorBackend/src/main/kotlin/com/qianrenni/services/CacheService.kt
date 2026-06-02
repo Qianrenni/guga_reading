@@ -2,6 +2,7 @@ package com.qianrenni.services
 
 import com.qianrenni.database.redisManager
 import io.ktor.server.application.*
+import io.ktor.server.routing.*
 import io.ktor.util.*
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.api.async.RedisAsyncCommands
@@ -222,5 +223,30 @@ suspend fun <T> Application.cache(
         cacheKey = this.cacheService.generateCacheKey(args = args, excludeArgs = excludeArgs, keyPrefix = keyPrefix),
         serializer = serializer,
         redis = this.redisManager.getAsyncCommands(),
+    )
+}
+
+suspend fun <T> RoutingContext.cache(
+    args: List<Any>,
+    expire: Int = 300,
+    ignoreNull: Boolean = true,
+    excludeArgs: List<Int> = emptyList(),
+    keyPrefix: String = "",
+    lockTimeout: Int = 30,
+    serializer: KSerializer<T>,
+    block: suspend () -> T
+): T {
+    return call.application.cacheService.cacheGetInternal(
+        expire = expire,
+        ignoreNull = ignoreNull,
+        lockTimeout = lockTimeout,
+        fallbackFunc = block,
+        cacheKey = call.application.cacheService.generateCacheKey(
+            args = args,
+            excludeArgs = excludeArgs,
+            keyPrefix = keyPrefix
+        ),
+        serializer = serializer,
+        redis = call.application.redisManager.getAsyncCommands(),
     )
 }

@@ -11,21 +11,40 @@ enum class ResponseCode(val code: Int) {
     ERROR(1);
 }
 
+
 /**
- * 统一响应数据类
+ * 定义响应契约接口
+ */
+interface ResponseContract<out T> {
+    val code: Int
+    val data: T?
+    val message: String
+}
+
+/**
+ * 密封类仅作为类型标记，不持有状态
  */
 @Serializable
-sealed class ResponseModel<out T>(
-    open val code: ResponseCode = ResponseCode.SUCCESS,
-    open val data: T?,
-    open val message: String = ""
-) {
-    data class Success<T>(override val code: ResponseCode, override val data: T, override val message: String) :
-        ResponseModel<T>(code, data, message)
+sealed class ResponseModel<out T> : ResponseContract<T> {
 
-    data class Error(override val message: String) :
-        ResponseModel<Nothing>(code = ResponseCode.ERROR, data = null, message = message)
+    @Serializable
+    data class Success<T>(
+        override val data: T,
+        override val code: Int = 1,
+        override val message: String = ""
+    ) : ResponseModel<T>()
 
-    data class Empty(override val message: String) :
-        ResponseModel<Nothing>(code = ResponseCode.SUCCESS, data = null, message = message)
+    @Serializable
+    data class Error(
+        override val message: String,
+        override val code: Int = 0,
+        override val data: Nothing? = null // Nothing? 等价于只能为 null
+    ) : ResponseModel<Nothing>()
+
+    @Serializable
+    data class Empty(
+        override val message: String = "",
+        override val code: Int = 1,
+        override val data: Nothing? = null
+    ) : ResponseModel<Nothing>()
 }
