@@ -5,6 +5,10 @@ import com.qianrenni.database.redisManager
 import com.qianrenni.utils.KaptchaImageGenerator
 import com.qianrenni.utils.TokenGenerator
 import io.ktor.server.application.*
+import io.ktor.util.AttributeKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.future.await
+import kotlinx.coroutines.withContext
 
 class CaptchaService(val application: Application) {
 
@@ -18,23 +22,33 @@ class CaptchaService(val application: Application) {
         return (1..length).map { chars.random() }.joinToString("")
     }
 
-    fun getCaptcha(): Pair<String, ByteArray> {
-        val text = generateCaptchaText()
-        val image = KaptchaImageGenerator.generate(text)
-        val redis = application.redisManager.getSyncCommands()
+    suspend fun getCaptcha(): Pair<String, ByteArray> {
+        val (text, image) = withContext(Dispatchers.Default) {
+            val text = generateCaptchaText()
+            val image = KaptchaImageGenerator.generate(text)
+            Pair(text, image)
+        }
+        val redis = application.redisManager.getAsyncCommands()
         val captchaId = TokenGenerator.uuid()
-        redis.setex(captchaId, application.appConfig.captchaExpire.toLong(), text)
+        redis.setex(captchaId, application.appConfig.captchaExpire.toLong(), text).await()
         return Pair(captchaId, image)
     }
 
-    fun verifyCaptcha(text: String, captchaId: String): Boolean {
-        val redis = application.redisManager.getSyncCommands()
-        redis.get(captchaId)?.let {
-            return when (it.equals(text, ignoreCase = true)) {
-                true -> true
-                false -> false
-            }
-        }
-        return false
+    suspend fun verifyCaptcha(text: String, captchaId: String): Boolean {
+        val redis = application.redisManager.getAsyncCommands()
+        val storedText = redis.get(captchaId).await() ?: return false
+
+        // 验证成功后删除验证码（防止重放攻击）
+        redis.del(captchaId).await()
+
+        return storedText.equals(text, ignoreCase = true)
     }
+}
+private val CaptchaServiceAttributeKey = AttributeKey<CaptchaService>("CaptchaService")
+
+val Application.captchaService: CaptchaService
+    get() = attributes[CaptchaServiceAttributeKey]
+
+fun Application.registerCaptchaService() {
+    attributes[CaptchaServiceAttributeKey] = CaptchaService(this)
 }

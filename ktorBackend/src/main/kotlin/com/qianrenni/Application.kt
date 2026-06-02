@@ -4,7 +4,9 @@ import com.qianrenni.config.loadConfig
 import com.qianrenni.database.configureDatabase
 import com.qianrenni.database.configureRedis
 import com.qianrenni.guga.com.qianrenni.plugins.configureMetrics
+import com.qianrenni.guga.com.qianrenni.services.configService
 import com.qianrenni.plugins.*
+import com.qianrenni.services.captchaService
 import io.ktor.server.application.*
 
 /**
@@ -25,4 +27,5 @@ fun Application.main() {
     configureStatusPages()
     configureRouting()
     configureMetrics()
+    configService()
 }

@@ -2,6 +2,7 @@ package com.qianrenni.services
 
 import com.qianrenni.config.appConfig
 import io.ktor.server.application.*
+import io.ktor.util.AttributeKey
 import jakarta.mail.*
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeBodyPart
@@ -10,7 +11,7 @@ import jakarta.mail.internet.MimeMultipart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class EmailService(private val application: Application) {
+class EmailService(application: Application) {
     private val config = application.appConfig
     private val logger = application.environment.log
     private val session: Session by lazy {
@@ -68,4 +69,12 @@ class EmailService(private val application: Application) {
             false
         }
     }
+}
+private val EmailServiceAttributeKey = AttributeKey<EmailService>("EmailService")
+
+val Application.emailService: EmailService
+    get() = attributes[EmailServiceAttributeKey]
+
+fun Application.registerEmailService() {
+    attributes[EmailServiceAttributeKey] = EmailService(this)
 }
