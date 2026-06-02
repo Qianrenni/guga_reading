@@ -2,6 +2,7 @@ package com.qianrenni.controller
 
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.cache
+import com.qianrenni.services.emailService
 import com.ucasoft.ktor.simpleCache.cacheOutput
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
@@ -40,6 +41,12 @@ fun Routing.test() {
             }
             get("/empty") {
                 call.respond(ResponseModel.Empty(message = "Empty"))
+            }
+        }
+        route("/email"){
+            get("/get") {
+                call.application.emailService.sendEmail(listOf("1093171693@qq.com"), subject = "测试邮件",body="测试内容")
+                call.respond(ResponseModel.Success(data = "Success"))
             }
         }
         get<Articles> { article ->
