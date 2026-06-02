@@ -1,10 +1,10 @@
 package com.qianrenni.plugins
 
+import com.qianrenni.excptions.PermissionDeniedException
 import com.qianrenni.schemas.ResponseModel
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.ContentTransformationException
-import io.ktor.server.plugins.MissingRequestParameterException
+import io.ktor.server.plugins.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 
@@ -14,7 +14,9 @@ import io.ktor.server.response.*
  */
 fun Application.configureStatusPages() {
     install(StatusPages) {
-
+        exception<PermissionDeniedException> { call, cause ->
+            call.respond(HttpStatusCode.Forbidden, message = ResponseModel.Error(message = cause.message ?: ""))
+        }
         exception<IllegalArgumentException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ResponseModel.Error(message = cause.message ?: "参数错误"))
         }
