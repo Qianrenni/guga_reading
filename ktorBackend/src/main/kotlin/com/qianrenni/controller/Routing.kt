@@ -1,6 +1,7 @@
 package com.qianrenni
 
 import com.qianrenni.controller.Articles
+import com.qianrenni.controller.captcha
 import com.ucasoft.ktor.simpleCache.cacheOutput
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
@@ -12,6 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 
 fun Application.configureRouting() {
     routing {
+        captcha()
         get("/") {
             call.respondText("Hello, World!")
         }
@@ -31,4 +33,5 @@ fun Application.configureRouting() {
         }
         staticResources("/static", "static")
     }
+
 }

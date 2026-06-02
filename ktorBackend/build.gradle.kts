@@ -55,7 +55,13 @@ dependencies {
 
     // 密码哈希 (Bcrypt)
     implementation(libs.bcrypt)
-    implementation("com.github.penggle:kaptcha:2.3.2")
+    // 邮件发送
+    implementation("com.sun.mail:jakarta.mail:2.0.2")
+    implementation("pro.fessional:kaptcha:2.3.3")
+    // Ktor Micrometer 插件
+    implementation(ktorLibs.server.metrics.micrometer)
+    // Micrometer Prometheus 注册表 (用于暴露 /metrics 接口给 Prometheus 抓取)
+    implementation("io.micrometer:micrometer-registry-prometheus:1.12.2")
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }

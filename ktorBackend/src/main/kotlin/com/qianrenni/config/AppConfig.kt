@@ -58,6 +58,8 @@ data class AppConfig(
     val serverUrl: String = "http://localhost:8080",
 
     // 邮箱配置
+    val smtpServer: String = "smtp.qq.com",
+    val smtpPort: Int = 465,
     val emailAccount: String = "",
     val emailCode: String = "",
 
@@ -70,6 +72,10 @@ data class AppConfig(
                 mysqlDsn = config.property("app.database.mysql-dsn").getString(),
                 redisUrl = config.property("app.cache.redis-url").getString(),
                 secretKey = config.property("app.security.secret-key").getString(),
+                smtpServer = config.property("app.email.smtp-server").getString(),
+                smtpPort = config.property("app.email.smtp-port").getString().toInt(),
+                emailAccount = config.property("app.email.account").getString(),
+                emailCode = config.property("app.email.code").getString(),
             )
         }
     }

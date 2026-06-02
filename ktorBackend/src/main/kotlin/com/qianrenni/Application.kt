@@ -3,6 +3,7 @@ package com.qianrenni
 import com.qianrenni.config.loadConfig
 import com.qianrenni.database.configureDatabase
 import com.qianrenni.database.configureRedis
+import com.qianrenni.guga.com.qianrenni.plugins.configureMetrics
 import com.qianrenni.plugins.*
 import io.ktor.server.application.*
 
@@ -23,4 +24,5 @@ fun Application.main() {
     configureSecurity()
     configureStatusPages()
     configureRouting()
+    configureMetrics()
 }

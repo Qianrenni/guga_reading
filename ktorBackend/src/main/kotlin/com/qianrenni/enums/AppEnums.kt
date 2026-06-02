@@ -78,16 +78,16 @@ enum class ScopeEnum(val value: String) {
 /**
  * 角色枚举
  */
-enum class RoleEnum(val value: String, val code: String) {
-    USER("user", "user"),                    // 普通用户
-    REVIEWER("reviewer", "reviewer"),        // 审核员
-    AUTHOR("author", "author"),              // 作者
-    ADMIN("admin", "admin"),                 // 管理员
-    SUPER_ADMIN("super_admin", "super_admin"); // 超级管理员
+enum class RoleEnum(val code: String) {
+    USER("user"),                    // 普通用户
+    REVIEWER("reviewer"),        // 审核员
+    AUTHOR("author"),              // 作者
+    ADMIN("admin"),                 // 管理员
+    SUPER_ADMIN("super_admin"); // 超级管理员
 
     companion object {
         fun fromValue(value: String): RoleEnum {
-            return entries.find { it.value == value || it.code == value }
+            return entries.find { it.code == value }
                 ?: throw IllegalArgumentException("Unknown role: $value")
         }
     }

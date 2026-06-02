@@ -1,13 +1,13 @@
-package com.qianrenni.guga.com.qianrenni.services
+package com.qianrenni.services
 
 import com.qianrenni.guga.com.qianrenni.controller.RequestTokenGet
 import com.qianrenni.guga.com.qianrenni.models.tables.UserDao
 import com.qianrenni.guga.com.qianrenni.models.tables.UserTable
 import com.qianrenni.guga.com.qianrenni.utils.PasswordUtils
-import io.ktor.server.application.Application
+import io.ktor.server.application.*
 
 
-object UserService{
+class UserService(application: Application) {
     fun login(xCaptchaId:String, requestTokenGet: RequestTokenGet, application: Application): UserDao {
         val user=UserDao.find { UserTable.email eq requestTokenGet.userName }.toList().firstOrNull()
         user?.run {

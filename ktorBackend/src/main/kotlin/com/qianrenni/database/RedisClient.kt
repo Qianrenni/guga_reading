@@ -8,7 +8,6 @@ import io.lettuce.core.ClientOptions
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
-import io.lettuce.core.api.async.RedisAsyncCommands
 import io.lettuce.core.codec.StringCodec
 import java.time.Duration
 
@@ -43,10 +42,8 @@ class RedisManager(config: AppConfig) {
     /**
      * 获取异步命令接口
      */
-    fun getAsyncCommands(): RedisAsyncCommands<String, String> {
-        return connection?.async()
+    fun getAsyncCommands() = connection?.async()
             ?: throw IllegalStateException("Redis connection not initialized")
-    }
 
     /**
      * 获取同步命令接口

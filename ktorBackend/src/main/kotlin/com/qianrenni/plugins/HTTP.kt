@@ -1,5 +1,6 @@
 package com.qianrenni.plugins
 
+import com.qianrenni.guga.com.qianrenni.plugins.ResponseTimePlugin
 import com.ucasoft.ktor.simpleCache.SimpleCache
 import com.ucasoft.ktor.simpleMemoryCache.memoryCache
 import io.ktor.http.*
@@ -82,4 +83,5 @@ fun Application.configureHTTP() {
         }
     }
     install(AutoHeadResponse)
+    install(ResponseTimePlugin)
 }
