@@ -59,7 +59,7 @@ class UserService(private val application: Application) {
         return when(user){
             null->throw IllegalArgumentException("账号不存在")
             else -> {
-                when (!PasswordUtils.verify(requestTokenGet.password, user[UserTable.password])) {
+                when (PasswordUtils.verify(requestTokenGet.password, user[UserTable.password])) {
                     false->throw IllegalArgumentException("密码错误")
                     else -> {
                         val res = user.toFullUser()
