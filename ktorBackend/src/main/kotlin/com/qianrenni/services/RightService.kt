@@ -385,7 +385,7 @@ fun generatePermissionCode(
     action: ActionEnum,
     scope: ScopeEnum
 ): String {
-    return "${resource.value}:${action.value}:${scope.value}"
+    return "${resource}:${action}:${scope}"
 }
 
 val Application.rightService: RightService

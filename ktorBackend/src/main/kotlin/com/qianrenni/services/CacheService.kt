@@ -136,6 +136,49 @@ class CacheService(val application: Application) {
     }
 
     /**
+     * 简单设置缓存（不带锁）
+     */
+    suspend fun cacheSetSimple(
+        key: String,
+        value: String,
+        expire: Long,
+    ) {
+        val redis = application.redisManager.getAsyncCommands()
+        try {
+            redis.setex(key, expire, value).await()
+        } catch (e: Exception) {
+            application.log.error("Error in cache set: $key: $e")
+            throw IllegalStateException("服务器繁忙，请稍后再试")
+        }
+    }
+
+    /**
+     * 简单获取缓存值（字符串）
+     */
+    suspend fun cacheGetSimple(key: String): String? {
+        val redis = application.redisManager.getAsyncCommands()
+        return try {
+            redis.get(key).await()
+        } catch (e: Exception) {
+            application.log.error("Cache get failed: $e")
+            null
+        }
+    }
+
+    /**
+     * 简单删除缓存
+     */
+    suspend fun cacheDelete(key: String): Boolean {
+        val redis = application.redisManager.getAsyncCommands()
+        return try {
+            redis.del(key).await() > 0
+        } catch (e: Exception) {
+            application.log.error("Cache delete failed: $e")
+            false
+        }
+    }
+
+    /**
      * 手动设置缓存
      */
     suspend fun <T> cacheSet(

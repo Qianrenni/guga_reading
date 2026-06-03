@@ -1,5 +1,6 @@
 package com.qianrenni.controller
 
+import com.qianrenni.config.appConfig
 import com.qianrenni.guga.com.qianrenni.controller.auth
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
@@ -10,7 +11,9 @@ fun Application.configureRouting() {
         staticResources("/static", "static")
         captcha()
         auth()
-        test()
+        if (application.appConfig.environment != "dev") {
+            test()
+        }
     }
 
 }

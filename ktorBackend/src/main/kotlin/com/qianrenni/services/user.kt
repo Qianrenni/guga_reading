@@ -14,6 +14,24 @@ import org.jetbrains.exposed.sql.selectAll
 class UserService(private val application: Application) {
 
     /**
+     * 根据用户ID获取用户信息
+     * @param userId 用户ID
+     * @return 用户对象
+     */
+    suspend fun getUserById(userId: Int): FullUser {
+        val user = application.databaseManager.suspendedTransaction(readOnly = true) {
+            UserTable.selectAll()
+                .where { UserTable.id eq userId }
+                .limit(1)
+                .singleOrNull()
+        }
+        val fullUser = user?.toFullUser()
+            ?: throw IllegalArgumentException("用户不存在")
+        val rolIds = application.rightService.getUserRoles(fullUser.id)
+        return fullUser.copy(right = application.rightService.getMergedPermissionBitmap((rolIds)))
+    }
+
+    /**
      * 用户登录
      * @param xCaptchaId 验证码ID
      * @param requestTokenGet 登录请求数据
@@ -28,7 +46,6 @@ class UserService(private val application: Application) {
 
         // 2. 数据库查询必须放在 IO 线程
         val user = application.databaseManager.suspendedTransaction {
-            // 直接使用 firstOrNull，不要 toList()
 
             UserTable.selectAll()
                 .where { UserTable.email eq requestTokenGet.userName }
@@ -40,7 +57,11 @@ class UserService(private val application: Application) {
             else -> {
                 when (!PasswordUtils.verify(requestTokenGet.password, user[UserTable.password])) {
                     false->throw IllegalArgumentException("密码错误")
-                    else -> user.toFullUser()
+                    else -> {
+                        val res = user.toFullUser()
+                        val roleIds = application.rightService.getUserRoles(res.id)
+                        res.copy(right = application.rightService.getMergedPermissionBitmap(roleIds))
+                    }
                 }
             }
         }
