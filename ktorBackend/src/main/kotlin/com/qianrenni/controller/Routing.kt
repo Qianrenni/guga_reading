@@ -13,7 +13,7 @@ fun Application.configureRouting() {
         captcha()
         auth()
         user()
-        if (application.appConfig.environment != "dev") {
+        if (application.appConfig.environment == "dev") {
             test()
         }
     }
