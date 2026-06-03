@@ -6,8 +6,8 @@ import java.time.LocalDateTime
 
 
 object UserTable: IntIdTable(name = "user") {
-    val userName = varchar("userName", 15)
-    val password = varchar("password", 25)
+    val userName = varchar("userName", 255)
+    val password = varchar("password", 255)
     val email = varchar("email", 255)
     val isActive = bool("isActive")
     val avatar = varchar("avatar", 255)

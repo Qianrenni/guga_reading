@@ -5,7 +5,7 @@ import com.qianrenni.database.redisManager
 import com.qianrenni.utils.KaptchaImageGenerator
 import com.qianrenni.utils.TokenGenerator
 import io.ktor.server.application.*
-import io.ktor.util.AttributeKey
+import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
@@ -42,6 +42,44 @@ class CaptchaService(val application: Application) {
         redis.del(captchaId).await()
 
         return storedText.equals(text, ignoreCase = true)
+    }
+
+    /**
+     * 获取数字验证码（用于忘记密码等场景）
+     * @param keyPrefix 缓存键前缀
+     * @param length 验证码长度，默认6
+     * @param expire 有效期，默认120秒
+     * @return 验证码
+     */
+    suspend fun getVerifyCode(
+        keyPrefix: String,
+        length: Int = 6,
+        expire: Long = application.appConfig.captchaExpire.toLong()
+    ): String {
+        val answer = generateCaptchaText(length)
+        val redis = application.redisManager.getAsyncCommands()
+        val existing = redis.get(keyPrefix).await()
+        if (existing != null) {
+            throw IllegalArgumentException("Previous verify code exists, please try again later")
+        }
+        redis.setex(keyPrefix, expire, answer).await()
+        return answer
+    }
+
+    /**
+     * 验证数字验证码
+     * @param keyPrefix 缓存键前缀
+     * @param answer 用户输入的验证码
+     * @return 验证结果
+     */
+    suspend fun verifyCode(keyPrefix: String, answer: String): Boolean {
+        val redis = application.redisManager.getAsyncCommands()
+        val cachedAnswer = redis.get(keyPrefix).await() ?: return false
+        if (answer == cachedAnswer) {
+            redis.del(keyPrefix).await()
+            return true
+        }
+        return false
     }
 }
 private val CaptchaServiceAttributeKey = AttributeKey<CaptchaService>("CaptchaService")

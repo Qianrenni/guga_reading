@@ -30,21 +30,21 @@ sealed class ResponseModel<out T> : ResponseContract<T> {
     @Serializable
     data class Success<T>(
         override val data: T,
-        override val code: Int = 1,
+        override val code: Int = 0,
         override val message: String = ""
     ) : ResponseModel<T>()
 
     @Serializable
     data class Error(
         override val message: String,
-        override val code: Int = 0,
+        override val code: Int = 1,
         override val data: Nothing? = null // Nothing? 等价于只能为 null
     ) : ResponseModel<Nothing>()
 
     @Serializable
     data class Empty(
         override val message: String = "",
-        override val code: Int = 1,
+        override val code: Int = 0,
         override val data: Nothing? = null
     ) : ResponseModel<Nothing>()
 }

@@ -35,6 +35,9 @@ fun Application.configureHTTP() {
         allowMethod(HttpMethod.Patch)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
+        allowHeader("x-captcha-id")
+        exposeHeader("x-captcha-id")
+        allowHost("localhost:8080")
         allowNonSimpleContentTypes = true
     }
 

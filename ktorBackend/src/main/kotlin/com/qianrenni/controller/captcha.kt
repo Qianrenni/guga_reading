@@ -7,7 +7,7 @@ import io.ktor.server.routing.*
 
 fun Routing.captcha() {
     route("/captcha") {
-        get {
+        get("/get") {
             val captchaService = CaptchaService(call.application)
             val (captchaId, image) = captchaService.getCaptcha()
             call.response.header("x-captcha-id", captchaId)

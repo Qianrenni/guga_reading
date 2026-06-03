@@ -69,6 +69,7 @@ data class AppConfig(
     companion object {
         fun fromConfig(config: ApplicationConfig): AppConfig {
             return AppConfig(
+                serverUrl = config.property("app.server.url").getString(),
                 mysqlDsn = config.property("app.database.mysql-dsn").getString(),
                 redisUrl = config.property("app.cache.redis-url").getString(),
                 secretKey = config.property("app.security.secret-key").getString(),
@@ -90,4 +91,5 @@ val Application.appConfig: AppConfig
 fun Application.loadConfig() {
     val appConfig = AppConfig.fromConfig(environment.config)
     attributes.put(AppConfigKey, appConfig)
+    log.info(appConfig.toString())
 }

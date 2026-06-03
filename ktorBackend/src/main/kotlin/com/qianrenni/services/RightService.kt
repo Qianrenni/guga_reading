@@ -316,23 +316,21 @@ class RightService(private val application: Application) {
      * @param roleCode 角色编码
      * @return 是否添加成功
      */
-    suspend fun addUserRole(userId: Int, roleCode: RoleEnum): Boolean {
-        return application.databaseManager.suspendedTransaction {
-            for (role in roleDict.values) {
-                logger.debug(
-                    "add user role user:id:$userId role:${role.code.name}:${role.code.code} need role:${roleCode.name}:${roleCode.code}"
-                )
-                if (role.code == roleCode) {
-                    UserRoleTable.insert {
-                        it[UserRoleTable.userId] = userId
-                        it[UserRoleTable.roleId] = role.id
-                        it[UserRoleTable.grantedBy] = userId
-                    }
-                    return@suspendedTransaction true
+    fun addUserRole(userId: Int, roleCode: RoleEnum): Boolean {
+        for (role in roleDict.values) {
+            logger.debug(
+                "add user role user:id:$userId role:${role.code.name}:${role.code.code} need role:${roleCode.name}:${roleCode.code}"
+            )
+            if (role.code == roleCode) {
+                UserRoleTable.insert {
+                    it[UserRoleTable.userId] = userId
+                    it[UserRoleTable.roleId] = role.id
+                    it[UserRoleTable.grantedBy] = userId
                 }
+                return true
             }
-            false
         }
+        return false
     }
 
     /**

@@ -31,6 +31,7 @@ data class RequestTokenGet(
 data class ResponseTokenData(
     @SerialName("access_token") val accessToken: String,
     @SerialName("refresh_token") val refreshToken: String,
+    @SerialName("token_type") val tokenType: String = "Bearer",
     @SerialName("user") val user: FullUser,
 )
 
@@ -67,10 +68,12 @@ fun Routing.auth() {
                 expire = application.appConfig.refreshTokenExpire.toLong()
             )
             call.respond(
-                ResponseTokenData(
-                    accessToken = accessToken,
-                    refreshToken = refreshToken,
-                    user = user
+                ResponseModel.Success(
+                    ResponseTokenData(
+                        accessToken = accessToken,
+                        refreshToken = refreshToken,
+                        user = user
+                    )
                 )
             )
         }
