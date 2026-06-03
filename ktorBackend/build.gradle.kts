@@ -64,6 +64,9 @@ dependencies {
     implementation(ktorLibs.server.metrics.micrometer)
     // Micrometer Prometheus 注册表 (用于暴露 /metrics 接口给 Prometheus 抓取)
     implementation("io.micrometer:micrometer-registry-prometheus:1.12.2")
+    // msgpack 序列化
+    implementation("org.msgpack:msgpack-core:0.9.8")
+    
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }

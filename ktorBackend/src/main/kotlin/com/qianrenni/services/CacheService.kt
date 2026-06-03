@@ -1,19 +1,19 @@
 package com.qianrenni.services
 
 import com.qianrenni.database.redisManager
+import com.qianrenni.utils.RenewLock
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
 import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.api.async.RedisAsyncCommands
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import java.security.MessageDigest
 import java.util.*
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 class CacheService(val application: Application) {
 
@@ -55,26 +55,21 @@ class CacheService(val application: Application) {
         val lockKey = "lock:$cacheKey"
         val lockValue = UUID.randomUUID().toString()
         var lockAcquired = false
-        var renewJob: Job? = null
+        var renewLock: RenewLock? = null
 
         try {
             // Lettuce 设置 NX 和 EX
             val setResult = redis.setex(lockKey, lockTimeout.toLong(), lockValue).await()
             lockAcquired = setResult != null
-
+            renewLock = RenewLock(
+                lockKey = lockKey,
+                lockValue = lockValue,
+                application = application,
+                lockTimeout = lockTimeout
+            )
             if (lockAcquired) {
                 // 启动协程进行锁续期 (Watchdog)
-                renewJob = CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
-                    while (isActive) {
-                        delay(lockTimeout.seconds) // 每 1/3 超时时间续期
-                        try {
-                            redis.expire(lockKey, lockTimeout.toLong()).await()
-                        } catch (e: Exception) {
-                            application.log.error("Lock renew failed: $e")
-                            break
-                        }
-                    }
-                }
+                renewLock.start()
 
                 // 双重检查
                 val cached = redis.get(cacheKey).await()
@@ -116,7 +111,7 @@ class CacheService(val application: Application) {
             application.log.error("Error in cacheGet fallback: $e")
             throw e
         } finally {
-            renewJob?.cancel() // 停止续期
+            renewLock?.stop() // 停止续期
             if (lockAcquired) {
                 try {
                     // Lua 脚本安全释放锁

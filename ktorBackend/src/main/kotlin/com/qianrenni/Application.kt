@@ -7,6 +7,7 @@ import com.qianrenni.database.configureRedis
 import com.qianrenni.guga.com.qianrenni.plugins.configureMetrics
 import com.qianrenni.guga.com.qianrenni.services.configService
 import com.qianrenni.plugins.*
+import com.qianrenni.services.configureChapterStore
 import io.ktor.server.application.*
 
 /**
@@ -26,6 +27,7 @@ fun Application.main() {
     configureSecurity()
     configureStatusPages()
     configureRouting()
+    configureChapterStore()
     configureMetrics()
     configService()
 }
