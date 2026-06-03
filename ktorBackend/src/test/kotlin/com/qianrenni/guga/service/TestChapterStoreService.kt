@@ -4,6 +4,7 @@ import com.qianrenni.services.ChapterStore
 import io.ktor.client.request.*
 import io.ktor.server.testing.*
 import kotlinx.coroutines.test.runTest
+import java.nio.file.Paths
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.deleteRecursively
@@ -127,6 +128,40 @@ class TestChapterStoreService {
             // 验证压缩后数据正确
             assertEquals(listOf(1), chapterStore.listChapters())
             assertEquals("第二次更新", chapterStore.readChapter(1))
+        }
+    }
+
+    /**
+     * 测试读取 Python 版本创建的 data.log 和 index.idx 文件
+     * 验证 Kotlin 实现与 Python 实现的二进制格式兼容性
+     */
+    @Test
+    fun testReadPythonCreatedFiles() = testApplication {
+        configure()
+        client.get("")
+
+        // 使用 Python 版本创建的实际数据目录
+        val pythonBookDir = Paths.get("d:\\project\\guga_reading\\backend\\store\\book").toString()
+
+        val chapterStore = ChapterStore(
+            bookId = 1,
+            baseDir = pythonBookDir,
+            application = application
+        )
+        chapterStore.loadIndex()
+
+        runTest {
+            // 列出所有章节，验证能正确读取 Python 创建的索引
+            val chapters = chapterStore.listChapters()
+            assertTrue(chapters.isNotEmpty(), "Should have chapters from Python-created data")
+
+            // 尝试读取第一个章节，验证二进制格式兼容
+            val firstChapterId = chapters.first()
+            val content = chapterStore.readChapter(firstChapterId)
+            assertTrue(content.isNotEmpty(), "Chapter content should not be empty")
+
+            println("Python-created book 1 has ${chapters.size} chapters")
+            println("First chapter ($firstChapterId) content preview: ${content.take(100)}")
         }
     }
 }

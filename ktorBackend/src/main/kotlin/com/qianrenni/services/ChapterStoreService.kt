@@ -6,6 +6,7 @@ import io.ktor.server.application.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.msgpack.core.MessageFormat
 import org.msgpack.core.MessagePack
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -72,6 +73,7 @@ class ChapterStore(
 
     /**
      * 将内存中的索引持久化到 index.idx 文件（使用 msgpack 二进制格式）
+     * 注意：为兼容 Python 版本，key 使用字符串格式
      */
     private suspend fun saveIndex() {
         val lockKey = "chapter_store_save_index_$bookId"
@@ -88,7 +90,8 @@ class ChapterStore(
                 // 写入 map 头
                 packer.packMapHeader(_index.size)
                 _index.forEach { (chapterId, meta) ->
-                    packer.packInt(chapterId)
+                    // 使用字符串 key 以兼容 Python 版本
+                    packer.packString(chapterId.toString())
                     packer.packMapHeader(4)
                     packer.packString("offset")
                     packer.packLong(meta.offset)
@@ -125,7 +128,13 @@ class ChapterStore(
                         val unpacker = MessagePack.newDefaultUnpacker(data)
                         val mapSize = unpacker.unpackMapHeader()
                         repeat(mapSize) {
-                            val chapterId = unpacker.unpackInt()
+                            // 兼容 Python 版本：key 是字符串
+                            val keyType = unpacker.getNextFormat()
+                            val chapterId = if (keyType == MessageFormat.STR32) {
+                                unpacker.unpackString().toInt()
+                            } else {
+                                unpacker.unpackInt()
+                            }
                             val metaSize = unpacker.unpackMapHeader()
                             var offset = 0L
                             var size = 0
@@ -164,7 +173,9 @@ class ChapterStore(
             val channel = AsynchronousFileChannel.open(dataPath, StandardOpenOption.READ)
             channel.use { channel ->
                 var position = 0L
-                val buffer = ByteBuffer.allocate(recordHeaderSize)
+                val buffer = ByteBuffer.allocate(recordHeaderSize).apply {
+                    order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                }
 
                 while (true) {
                     buffer.clear()
