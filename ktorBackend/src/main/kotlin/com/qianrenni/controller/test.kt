@@ -1,9 +1,15 @@
 package com.qianrenni.controller
 
+import com.qianrenni.enums.ActionEnum
+import com.qianrenni.enums.ResourceTypeEnum
+import com.qianrenni.enums.ScopeEnum
+import com.qianrenni.plugins.PermissionCheck
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.cache
 import com.qianrenni.services.emailService
+import com.qianrenni.services.generatePermissionCode
 import com.ucasoft.ktor.simpleCache.cacheOutput
+import io.ktor.server.auth.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -47,6 +53,26 @@ fun Routing.test() {
             get("/get") {
                 call.application.emailService.sendEmail(listOf("1093171693@qq.com"), subject = "测试邮件",body="测试内容")
                 call.respond(ResponseModel.Success(data = "Success"))
+            }
+        }
+        authenticate("auth-jwt") {
+
+            route("/permissions") {
+                install(PermissionCheck) {
+                    requiredPermissions = listOf(
+                        generatePermissionCode(
+                            resource = ResourceTypeEnum.BOOK,
+                            action = ActionEnum.READ,
+                            scope = ScopeEnum.ALL
+                        )
+                    )
+                }
+                get {
+                    call.respond(ResponseModel.Success(data = "Success"))
+                }
+                get("/book1") {
+                    call.respond(ResponseModel.Success(data = "Success"))
+                }
             }
         }
         get<Articles> { article ->

@@ -1,5 +1,6 @@
 package com.qianrenni.schemas
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -48,3 +49,8 @@ sealed class ResponseModel<out T> : ResponseContract<T> {
         override val data: Nothing? = null
     ) : ResponseModel<Nothing>()
 }
+
+@Serializable
+data class CountResponseModel(
+    @SerialName("count") val count: Int
+)

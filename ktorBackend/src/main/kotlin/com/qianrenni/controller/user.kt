@@ -1,5 +1,7 @@
 package com.qianrenni.guga.com.qianrenni.controller
 
+import com.qianrenni.guga.com.qianrenni.models.domain.FullUser
+import com.qianrenni.schemas.CountResponseModel
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.cacheService
 import com.qianrenni.services.captchaService
@@ -11,18 +13,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-@Serializable
-data class UserBody(
-    @SerialName("username") val username: String,
-    @SerialName("password") val password: String,
-    @SerialName("email") val email: String,
-    @SerialName("avatar") val avatar: String = "",
-)
-
 @Serializable
 data class RegisterUser(
-    @SerialName("user") val userBody: UserBody,
+    @SerialName("user") val user: FullUser,
     @SerialName("captcha") val captcha: String
 )
 
@@ -40,10 +33,6 @@ data class ForgotPasswordRequest(
     @SerialName("password") val password: String
 )
 
-@Serializable
-data class CountResponseModel(
-    @SerialName("count") val count: Int
-)
 
 fun Routing.user() {
     route("/user") {
@@ -70,7 +59,7 @@ fun Routing.user() {
             }
 
             // 检查邮箱是否已验证
-            application.cacheService.cacheGetSimple("email_verified:${request.userBody.email}")
+            application.cacheService.cacheGetSimple("email_verified:${request.user.email}")
                 ?: return@post call.respond(
                     HttpStatusCode.BadRequest,
                     ResponseModel.Error("邮箱未验证")
@@ -78,14 +67,14 @@ fun Routing.user() {
 
             // 创建用户
             application.userService.createUser(
-                username = request.userBody.username,
-                email = request.userBody.email,
-                password = request.userBody.password,
-                avatar = request.userBody.avatar
+                username = request.user.userName,
+                email = request.user.email,
+                password = request.user.password,
+                avatar = request.user.avatar
             )
 
             // 删除邮箱验证状态
-            application.cacheService.cacheDelete("email_verified:${request.userBody.email}")
+            application.cacheService.cacheDelete("email_verified:${request.user.email}")
 
             call.respond(HttpStatusCode.Created)
         }

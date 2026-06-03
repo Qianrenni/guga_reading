@@ -2,6 +2,7 @@ package com.qianrenni.plugins
 
 import com.google.protobuf.LazyStringArrayList.emptyList
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 
 data class PermissionCheckConfig(var requiredPermissions: List<String> = emptyList())
 
@@ -10,7 +11,9 @@ val PermissionCheck = createRouteScopedPlugin(
     name = "PermissionCheck",
     createConfiguration = ::PermissionCheckConfig
 ) {
-    onCall { call ->
+    on(AuthenticationChecked) { call ->
+        // 在认证后的阶段执行
+        call.application.log.info("PermissionCheck started")
         call.requirePermission(pluginConfig.requiredPermissions)
     }
 }
