@@ -1,6 +1,7 @@
 package com.qianrenni.guga.com.qianrenni.models.domain
 
 import com.qianrenni.enums.BookStatus
+import com.qianrenni.guga.com.qianrenni.models.tables.BookChapterTable
 import com.qianrenni.guga.com.qianrenni.models.tables.BookTable
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.ResultRow
@@ -36,8 +37,33 @@ fun ResultRow.toBook() = Book(
     wordsCount = this[BookTable.wordsCount],
     isActive = this[BookTable.isActive],
     isEnded = this[BookTable.isEnded],
-    parentId = this[BookTable.parentId],
+    parentId = this[BookTable.parentId] ?: -1,
     status = this[BookTable.status],
     createdAt = this[BookTable.createdAt].toString(),
     updatedAt = this[BookTable.updatedAt].toString()
+)
+
+@Serializable
+data class BookCatalogItem(
+    val id: Int,
+    val bookId: Int,
+    val title: String,
+    val wordsCount: Int,
+    val status: BookStatus,
+    val order: Float,
+    val isActive: Boolean,
+    val createdAt: String,
+    val updatedAt: String
+)
+
+fun ResultRow.toBookCatalogItem() = BookCatalogItem(
+    id = this[BookChapterTable.id].value,
+    bookId = this[BookChapterTable.bookId],
+    title = this[BookChapterTable.title],
+    wordsCount = this[BookChapterTable.wordCount],
+    status = this[BookChapterTable.status],
+    order = this[BookChapterTable.order].toFloat(),
+    isActive = this[BookChapterTable.isActive],
+    createdAt = this[BookChapterTable.createdAt].toString(),
+    updatedAt = this[BookChapterTable.updatedAt].toString()
 )

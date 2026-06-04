@@ -10,4 +10,5 @@ fun Application.configService() {
     registerUserService()
     registerCaptchaService()
     registerCacheService()
+    registerBookService()
 }

@@ -77,7 +77,7 @@ class ChapterStore(
      */
     private suspend fun saveIndex() {
         val lockKey = "chapter_store_save_index_$bookId"
-        val lock = DistributedLock(lockKey, expireTime = 10, application = application)
+        val lock = DistributedLock(lockKey, application = application)
         if (!lock.acquire()) {
             application.log.error("Failed to acquire lock for chapter store save index $bookId")
             return
@@ -222,7 +222,7 @@ class ChapterStore(
         }
 
         val lockKey = "chapter_store_append_record_$bookId"
-        val lock = DistributedLock(lockKey, expireTime = 10, application = application)
+        val lock = DistributedLock(lockKey, application = application)
 
         if (!lock.acquire()) {
             application.log.error("Failed to acquire lock for chapter store append record $bookId")

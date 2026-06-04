@@ -48,7 +48,7 @@ data class AppConfig(
     val staticBookDir: String = "static/book",
     val staticTempDir: String = "static/temp",
     val contentDir: String = "store",
-    val bookDir: String = "store/book",
+    val bookDir: String = "D:\\project\\guga_reading\\backend\\store\\book",
     val contentTempDir: String = "store/temp",
     val recommendBookFile: String = "store/book.json",
     val recommendModelFile: String = "store/model.pkl.npz",
