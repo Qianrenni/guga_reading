@@ -41,9 +41,12 @@ async def get_book_count(
     database: Annotated[AsyncSession, Depends(get_session)],
 ):
     """
-    获取图书数量
-    :param database:    数据库会话
-    :return:            图书数量
+    获取图书总数量
+
+    @param _current_user: 当前登录用户(需要管理员权限)
+    @param database: 数据库会话对象
+    @return ResponseModel[CountResponseModel]: 包含图书总数的响应对象
+    @raise AppError: 数据库查询失败或权限不足时抛出
     """
     result = await BookService.get_book_count(database=database)
     return ResponseModel[CountResponseModel](data=CountResponseModel(count=result))
@@ -60,10 +63,12 @@ async def get_book_category_count(
     ],
 ):
     """
-    获取图书分类下的图书数量
-    :param database:    数据库会话
-    :param category:     分类
-    :return:             图书数量
+    获取指定分类下的图书数量
+
+    @param database: 数据库会话对象
+    @param category: 图书分类名称,1-50个字符
+    @return ResponseModel[CountResponseModel]: 包含该分类下图书数量的响应对象
+    @raise AppError: 数据库查询失败时抛出
     """
     result = await BookService.get_category_count(database=database, category=category)
     return ResponseModel[CountResponseModel](data=CountResponseModel(count=result))
@@ -72,9 +77,11 @@ async def get_book_category_count(
 @book_router.get("/category", response_model=ResponseModel[list[str]])
 async def get_book_category(database: Annotated[AsyncSession, Depends(get_session)]):
     """
-    获取图书分类
-    :param database:    数据库会话
-    :return:    分类列表
+    获取所有图书分类列表
+
+    @param database: 数据库会话对象
+    @return ResponseModel[list[str]]: 包含所有图书分类的响应对象
+    @raise AppError: 数据库查询失败时抛出
     """
     result = await BookService.get_category(database=database)
     return ResponseModel[list[str]](data=result)

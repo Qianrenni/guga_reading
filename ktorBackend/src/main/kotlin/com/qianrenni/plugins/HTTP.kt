@@ -54,14 +54,14 @@ fun Application.configureHTTP() {
 //        header("X-Engine", "Ktor")
 //    }
 
-    // 条件请求支持（Etag, Last-Modified）
+    // 条件请求支持(Etag, Last-Modified)
 //    install(ConditionalHeaders)
 //    install(PartialContent) {
 //        // Maximum number of ranges that will be accepted from a HTTP request.
 //        // If the HTTP request specifies more ranges, they will all be merged into a single range.
 //        maxRangeCount = 10
 //    }
-//    // 转发头支持（反向代理场景）
+//    // 转发头支持(反向代理场景)
 //    install(ForwardedHeaders) // WARNING: for security, do not include this if not behind a reverse proxy
 //    install(XForwardedHeaders)
     routing {

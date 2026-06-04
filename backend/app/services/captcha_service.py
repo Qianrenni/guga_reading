@@ -9,12 +9,15 @@ from app.services.cache_service import cache_delete, cache_get, cache_set
 
 
 class CaptchaService:
+    """验证码服务类,处理图形验证码和数字验证码的生成与验证"""
+
     @staticmethod
     def generate_captcha_text(length: int = 4) -> str:
         """
-        生成随机验证码
-        :param length: 验证码长度
-        :return: 验证码
+        生成随机验证码文本
+
+        @param length: 验证码长度,默认4
+        @return str: 随机验证码字符串,包含字母和数字
         """
         return "".join(choices(ascii_letters + digits, k=length))
 
@@ -23,9 +26,17 @@ class CaptchaService:
         length: int = 4,
         width: int = 160,
         height: int = 60,
-        expire: int = SETTING.CAPTCHA_EXPIRE,  # 2分钟
+        expire: int = SETTING.CAPTCHA_EXPIRE,
     ) -> tuple[bytes, str]:
-        """生成验证码图片并缓存,返回图片 bytes 和 ID"""
+        """
+        生成验证码图片并缓存
+
+        @param length: 验证码文本长度,默认4
+        @param width: 验证码图片宽度,默认160
+        @param height: 验证码图片高度,默认60
+        @param expire: 验证码有效期(秒),默认使用配置值
+        @return tuple[bytes, str]: 返回验证码图片字节数据和验证码ID
+        """
         text = CaptchaService.generate_captcha_text(length)
         image = ImageCaptcha(width=width, height=height)
         image_bytes = image.generate(text).getvalue()  # 直接获取 bytes

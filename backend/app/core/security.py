@@ -21,37 +21,34 @@ pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token/get")
 
 
-def verify_password(plain_password: str, hashed_password: str):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    验证密码是否正确
-    Args:
-        plain_password (str): 明文密码
-        hashed_password (str): 密码哈希值
-    Returns:
-        bool: 如果密码正确,则返回True,否则返回False
+    验证明文密码是否与哈希值匹配
+
+    @param plain_password: 明文密码
+    @param hashed_password: 密码哈希值
+    @return bool: 密码匹配返回True,否则返回False
     """
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def get_password_hash(password: str):
+def get_password_hash(password: str) -> str:
     """
-    获取密码哈希值
-    Args:
-        password (str): 密码
-    Returns:
-        str: 密码哈希值
+    将明文密码转换为哈希值
+
+    @param password: 明文密码
+    @return str: 密码哈希值
     """
     return pwd_context.hash(password)
 
 
-def create_access_token(data: dict[str, Any], expires_delta: int | None = None):
+def create_access_token(data: dict[str, Any], expires_delta: int | None = None) -> str:
     """
-    创建访问令牌
-    Args:
-        data (dict[str,Any]): 令牌数据
-        expires_delta (timedelta | None, optional): 令牌过期时间. Defaults to None.
-    Returns:
-        str: 令牌字符串
+    创建JWT访问令牌
+
+    @param data: 要编码到令牌中的载荷数据字典
+    @param expires_delta: 令牌有效期(秒),如果为None则使用默认配置
+    @return str: JWT令牌字符串
     """
     to_encode = data.copy()
     if expires_delta:
@@ -66,12 +63,11 @@ def create_access_token(data: dict[str, Any], expires_delta: int | None = None):
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> FullUser:
     """
-    获取当前用户
-    该函数接收一个访问令牌,并使用它来验证用户身份。
-    如果访问令牌无效或已过期,将抛出HTTP 401未授权异常。
-    - param token: 访问令牌
-    - return: 当前用户
-    - raises HTTPException: 当访问令牌无效或已过期时抛出401未授权异常
+    从JWT令牌中获取当前用户信息
+
+    @param token: JWT访问令牌字符串
+    @return FullUser: 完整用户对象,包含权限信息
+    @raise AppError: 当令牌无效或过期时抛出401未授权错误
     """
     credentials_exception = AppError(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -97,5 +93,9 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Ful
 
 
 def create_refresh_token() -> str:
-    """生成一个安全的随机 refresh token"""
+    """
+    生成安全的随机刷新令牌
+
+    @return str: 512位随机字符串作为刷新令牌
+    """
     return token_urlsafe(64)  # 512-bit 随机字符串

@@ -25,6 +25,13 @@ class UserService:
     async def get_user_count(
         db: AsyncSession,
     ) -> int:
+        """
+        获取用户总数
+
+        @param db: 数据库会话对象
+        @return int: 用户总数,如果无用户则返回0
+        @raise AppError: 数据库查询失败时抛出
+        """
         statement = select(func.count()).select_from(User)
         result = await db.exec(statement)
         return result.one_or_none() or 0
@@ -36,18 +43,14 @@ class UserService:
         """
         创建新用户
 
-        Args:
-            db: 数据库会话依赖
-            username: 用户名
-            email: 邮箱
-            password: 明文密码
-            avatar: 头像URL
-
-        Returns:
-            User: 创建的用户对象,包含数据库自动生成的ID
-
-        Raises:
-            CustomException: 当用户名或邮箱已存在时抛出
+        @param db: 数据库会话对象
+        @param username: 用户名,3-20个字符,只能包含字母、数字、下划线和中文
+        @param email: 邮箱地址,需符合标准邮箱格式
+        @param password: 明文密码,至少6个字符
+        @param avatar: 头像URL,可选,默认为空字符串
+        @return None: 无返回值,创建成功后用户对象会自动刷新
+        @raise AppError: 当用户名或邮箱已存在时抛出409冲突错误
+        @raise AppError: 当用户创建失败时抛出500内部服务器错误
         """
         # 检查用户名是否已存在
         statement = select(User).where(User.username == username)
@@ -87,16 +90,14 @@ class UserService:
         """
         验证用户凭据
 
-        Args:
-            db: 数据库会话依赖
-            user_email:  用户邮箱
-            password: <PASSWORD>
-
-        Returns:
-            User: 如果凭据有效,则返回用户对象
-
-        Raises:
-            CustomException: 当用户名或密码无效时抛出
+        @param db: 数据库会话对象
+        @param user_email: 用户邮箱地址
+        @param password: 明文密码
+        @return FullUser: 验证成功后返回完整用户对象,包含权限信息
+        @raise AppError: 当用户不存在时抛出400错误
+        @raise AppError: 当用户未激活时抛出400错误
+        @raise AppError: 当用户无任何权限时抛出400错误
+        @raise AppError: 当密码错误时抛出400错误
         """
         statement = select(User).where(User.email == user_email)
         result = await db.exec(statement)
@@ -129,17 +130,14 @@ class UserService:
         """
         更新用户密码
 
-        Args:
-            db: 数据库会话依赖
-            username: 用户名
-            old_password: <PASSWORD>
-            new_password: <PASSWORD>
-
-        Returns:
-            bool: 如果密码更新成功,则返回True,否则返回False
-
-        Raises:
-            CustomException: 当旧密码无效时抛出
+        @param db: 数据库会话对象
+        @param user_email: 用户邮箱地址
+        @param old_password: 旧密码,用于验证用户身份
+        @param new_password: 新密码,将替换旧密码
+        @return bool: 密码更新成功返回True
+        @raise AppError: 当用户不存在时抛出404错误
+        @raise AppError: 当旧密码错误时抛出400错误
+        @raise ValueError: 当数据库提交失败时抛出
         """
         statement = select(User).where(User.email == user_email)
         user = (await db.exec(statement)).first()
@@ -166,12 +164,10 @@ class UserService:
         """
         根据用户ID获取用户信息
 
-        Args:
-            db: 数据库会话依赖
-            user_id: 用户ID
-
-        Returns:
-            FullUser
+        @param db: 数据库会话对象
+        @param user_id: 用户唯一标识ID
+        @return FullUser: 完整用户对象,包含权限信息
+        @raise AppError: 当用户不存在时抛出404错误
         """
         statement = select(User).where(User.id == user_id)
         result = await db.exec(statement)
@@ -193,12 +189,10 @@ class UserService:
         """
         根据用户邮箱获取用户信息
 
-        Args:
-            db: 数据库会话依赖
-            user_email: 用户邮箱
-
-        Returns:
-            User: 用户对象
+        @param db: 数据库会话对象
+        @param user_email: 用户邮箱地址
+        @return User: 用户对象
+        @raise AppError: 当用户不存在时抛出404错误
         """
         statement = select(User).where(User.email == user_email)
         result = await db.exec(statement)
@@ -213,15 +207,8 @@ class UserService:
         """
         将用户对象转换为响应数据
 
-        Args:
-            user: 用户对象
-
-        Returns:
-            - id: 用户ID
-            - username: 用户名
-            - email: 邮箱
-            - avatar: 头像URL
-            - is_active: 是否激活
+        @param user: 完整用户对象
+        @return dict[str, Any]: 包含用户基本信息的字典,包括id、username、email、avatar、is_active、right
         """
         return {
             "id": user.id,
@@ -237,19 +224,15 @@ class UserService:
         db: AsyncSession, user_account: str, new_password: str, verify_code: str
     ) -> bool:
         """
-        忘记密码
+        忘记密码 - 重置用户密码
 
-        Args:
-            db: 数据库会话依赖
-            user_account: 用户账号
-            new_password: <PASSWORD>
-            verify_code: 验证码
-
-        Returns:
-            bool: 如果密码重置成功,则返回True,否则返回False
-
-        Raises:
-            CustomException: 当用户不存在时抛出
+        @param db: 数据库会话对象
+        @param user_account: 用户账号(邮箱地址)
+        @param new_password: 新密码,将替换旧密码
+        @param verify_code: 验证码,用于验证用户身份
+        @return bool: 密码重置成功返回True
+        @raise AppError: 当验证码错误时抛出400错误
+        @raise AppError: 当用户不存在时抛出404错误
         """
         is_verify_code_valid = await CaptchaService.verify_code(
             key_prefix=f"forgot_password:{user_account}", answer=verify_code

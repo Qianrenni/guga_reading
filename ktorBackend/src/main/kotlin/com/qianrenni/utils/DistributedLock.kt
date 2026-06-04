@@ -27,7 +27,7 @@ class DistributedLock(
      */
     private suspend fun tryAcquire(): Boolean {
         val redis = application.redisManager.getAsyncCommands()
-        // SET NX EX - 仅在键不存在时设置，并设置过期时间
+        // SET NX EX - 仅在键不存在时设置,并设置过期时间
         val result = redis.setex(lockKey, timeout, lockValue).await()
         val flag = result != null
         if (flag) {
@@ -58,7 +58,7 @@ class DistributedLock(
     }
 
     /**
-     * 获取锁（带阻塞等待）
+     * 获取锁(带阻塞等待)
      */
     suspend fun acquire(): Boolean {
         return withContext(Dispatchers.IO) {

@@ -18,7 +18,7 @@ fun Application.configureMetrics() {
     // 2. 只安装这一个插件
     install(MicrometerMetrics) {
         registry = prometheusRegistry
-        // 开启耗时分布统计 (可选，开启后才能看到 TP90/TP99 等耗时数据)
+        // 开启耗时分布统计 (可选,开启后才能看到 TP90/TP99 等耗时数据)
         distributionStatisticConfig = DistributionStatisticConfig.Builder()
             .percentiles(0.5, 0.9, 0.95, 0.99)
             .build()
@@ -31,7 +31,7 @@ fun Application.configureMetrics() {
     }
 
     routing {
-        // 3. 提供一个接口，让你能直接看到收集到的耗时数据
+        // 3. 提供一个接口,让你能直接看到收集到的耗时数据
         get("/metrics") {
             call.respondText(prometheusRegistry.scrape())
         }

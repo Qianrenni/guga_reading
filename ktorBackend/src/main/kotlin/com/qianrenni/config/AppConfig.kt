@@ -27,10 +27,10 @@ data class AppConfig(
     val secretKey: String,
     val audience: String = "",
     val issuer: String = "",
-    val accessTokenExpire: Int = 43200,      // 12小时（秒）
-    val refreshTokenExpire: Int = 604800,     // 7天（秒）
-    val emailVerifyExpire: Int = 300,         // 5分钟（秒）
-    val captchaExpire: Int = 120,             // 2分钟（秒）
+    val accessTokenExpire: Int = 43200,      // 12小时(秒)
+    val refreshTokenExpire: Int = 604800,     // 7天(秒)
+    val emailVerifyExpire: Int = 300,         // 5分钟(秒)
+    val captchaExpire: Int = 120,             // 2分钟(秒)
     val permissionBitLength: Int = 32,
 
     // 缓存配置

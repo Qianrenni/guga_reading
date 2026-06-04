@@ -14,7 +14,7 @@ class CaptchaService(val application: Application) {
 
     /**
      * 生成随机验证码文本
-     * @param length 验证码长度，默认4
+     * @param length 验证码长度,默认4
      * @return 由字母和数字组成的随机字符串
      */
     fun generateCaptchaText(length: Int = 4): String {
@@ -38,17 +38,17 @@ class CaptchaService(val application: Application) {
         val redis = application.redisManager.getAsyncCommands()
         val storedText = redis.get(captchaId).await() ?: return false
 
-        // 验证成功后删除验证码（防止重放攻击）
+        // 验证成功后删除验证码(防止重放攻击)
         redis.del(captchaId).await()
 
         return storedText.equals(text, ignoreCase = true)
     }
 
     /**
-     * 获取数字验证码（用于忘记密码等场景）
+     * 获取数字验证码(用于忘记密码等场景)
      * @param keyPrefix 缓存键前缀
-     * @param length 验证码长度，默认6
-     * @param expire 有效期，默认120秒
+     * @param length 验证码长度,默认6
+     * @param expire 有效期,默认120秒
      * @return 验证码
      */
     suspend fun getVerifyCode(

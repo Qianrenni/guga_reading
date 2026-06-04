@@ -86,7 +86,7 @@ class TestChapterStoreService {
             chapterStore1.createChapter(2, "第二章内容")
         }
 
-        // 重新加载，验证索引持久化
+        // 重新加载,验证索引持久化
         val chapterStore2 = ChapterStore(
             bookId = 2,
             baseDir = tempDir.toString(),
@@ -151,11 +151,11 @@ class TestChapterStoreService {
         chapterStore.loadIndex()
 
         runTest {
-            // 列出所有章节，验证能正确读取 Python 创建的索引
+            // 列出所有章节,验证能正确读取 Python 创建的索引
             val chapters = chapterStore.listChapters()
             assertTrue(chapters.isNotEmpty(), "Should have chapters from Python-created data")
 
-            // 尝试读取第一个章节，验证二进制格式兼容
+            // 尝试读取第一个章节,验证二进制格式兼容
             val firstChapterId = chapters.first()
             val content = chapterStore.readChapter(firstChapterId)
             assertTrue(content.isNotEmpty(), "Chapter content should not be empty")

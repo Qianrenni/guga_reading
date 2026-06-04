@@ -6,6 +6,11 @@ from app.utils.renew_lock import RenewLock
 
 
 class DistributedLock:
+    """
+    基于Redis的分布式锁实现
+    支持阻塞等待和非阻塞两种模式,自动续期防止业务执行期间锁过期
+    """
+
     def __init__(
         self,
         lock_key: str,
@@ -14,11 +19,12 @@ class DistributedLock:
         timeout: float = 10,
     ):
         """
-        Args:
-            lock_key (str): 锁的唯一标识(如 "lock:task:123")
-            expire_time (int): 锁自动过期时间(秒),防止死锁
-            blocking (bool): 是否阻塞等待锁
-            timeout (float): 最大等待时间(秒)
+        初始化分布式锁
+
+        @param lock_key: 锁的唯一标识,如"lock:task:123"
+        @param expire_time: 锁自动过期时间(秒),防止死锁,默认10秒
+        @param blocking: 是否阻塞等待锁,默认True
+        @param timeout: 最大等待时间(秒),仅在blocking=True时有效,默认10秒
         """
         self.lock_key = lock_key
         self.expire_time = expire_time
@@ -30,9 +36,8 @@ class DistributedLock:
     async def acquire(self) -> bool:
         """
         异步获取锁
-        :param blocking: 是否阻塞等待
-        :param timeout: 最大等待时间(秒)
-        :return: 是否成功获取锁
+
+        @return bool: 成功获取锁返回True,否则返回False
         """
         if self.blocking:
             start = asyncio.get_event_loop().time()
@@ -53,7 +58,11 @@ class DistributedLock:
             return await self._try_acquire()
 
     async def _try_acquire(self) -> bool:
-        """尝试一次获取锁"""
+        """
+        尝试一次获取锁
+
+        @return bool: 成功获取锁返回True,否则返回False
+        """
         # 注意:aioredis 的 set 支持 nx, px 参数(v2.x)
         redis = await get_redis()
         result = await redis.set(
@@ -62,7 +71,9 @@ class DistributedLock:
         return result is True
 
     async def release(self) -> None:
-        """安全释放锁"""
+        """
+        安全释放锁,确保只释放自己持有的锁
+        """
         lua_script = """
         if redis.call("GET", KEYS[1]) == ARGV[1] then
             return redis.call("DEL", KEYS[1])
@@ -74,9 +85,11 @@ class DistributedLock:
         await redis.eval(lua_script, 1, self.lock_key, self.lock_value)
 
     async def __aenter__(self):
+        """异步上下文管理器入口"""
         return await self.acquire()
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """异步上下文管理器出口,确保锁被正确释放"""
         # 停止锁续期任务
         if self.renew_lock:
             await self.renew_lock.stop()

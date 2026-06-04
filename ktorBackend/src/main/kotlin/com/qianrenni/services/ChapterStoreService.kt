@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 /**
- * 面向单本书的章节存储引擎，支持完整的 CRUD 操作。
+ * 面向单本书的章节存储引擎,支持完整的 CRUD 操作。
  * 对应 Python 项目中的 app/services/chapter_store_service.py
  *
  * 设计目标:
@@ -24,7 +24,7 @@ import kotlin.concurrent.withLock
  * - 支持高效随机读取
  * - 支持章节更新与删除(通过追加写 + 索引)
  * - 支持垃圾回收(compaction)
- * - 全异步 I/O，适配 Ktor 协程框架
+ * - 全异步 I/O,适配 Ktor 协程框架
  *
  * 存储结构:
  * book/
@@ -72,8 +72,8 @@ class ChapterStore(
     }
 
     /**
-     * 将内存中的索引持久化到 index.idx 文件（使用 msgpack 二进制格式）
-     * 注意：为兼容 Python 版本，key 使用字符串格式
+     * 将内存中的索引持久化到 index.idx 文件(使用 msgpack 二进制格式)
+     * 注意：为兼容 Python 版本,key 使用字符串格式
      */
     private suspend fun saveIndex() {
         val lockKey = "chapter_store_save_index_$bookId"
@@ -114,12 +114,12 @@ class ChapterStore(
     /**
      * 启动时加载索引：
      * 1. 优先尝试从 index.idx 快速加载
-     * 2. 若文件不存在或损坏，则回退到扫描 data.log 重建索引
+     * 2. 若文件不存在或损坏,则回退到扫描 data.log 重建索引
      */
     suspend fun loadIndex() {
         _index.clear()
 
-        // 尝试从持久化索引加载（快速路径）
+        // 尝试从持久化索引加载(快速路径)
         if (indexPath.toFile().exists()) {
             try {
                 val loaded = withContext(Dispatchers.IO) {
@@ -156,7 +156,7 @@ class ChapterStore(
                         false
                     }
                 }
-                if (loaded) return // 成功加载索引，直接返回
+                if (loaded) return // 成功加载索引,直接返回
             } catch (e: Exception) {
                 application.log.warn(
                     "Failed to load index.idx for book $bookId, falling back to data.log: ${e.message}"
@@ -164,7 +164,7 @@ class ChapterStore(
             }
         }
 
-        // 回退：从 data.log 重建索引（慢路径）
+        // 回退：从 data.log 重建索引(慢路径)
         if (!dataPath.toFile().exists()) {
             return
         }
@@ -199,19 +199,19 @@ class ChapterStore(
             }
         }
 
-        // 重建完成后，立即持久化索引，加速下次启动
+        // 重建完成后,立即持久化索引,加速下次启动
         saveIndex()
     }
 
     /**
-     * 追加一条新记录到 data.log 末尾，并更新内存索引。
+     * 追加一条新记录到 data.log 末尾,并更新内存索引。
      * 所有写操作(create/update/delete)最终都调用此方法。
      */
     private suspend fun appendRecord(chapterId: Int, content: String, deleted: Boolean = false) {
         val ts = System.currentTimeMillis() * 1000 // 微秒级时间戳
         val data = content.toByteArray(Charsets.UTF_8)
 
-        // 打包二进制头（小端字节序）
+        // 打包二进制头(小端字节序)
         val header = ByteBuffer.allocate(recordHeaderSize).apply {
             order(java.nio.ByteOrder.LITTLE_ENDIAN)
             putInt(chapterId)
@@ -233,7 +233,7 @@ class ChapterStore(
         try {
             withContext(Dispatchers.IO) {
                 // 注意：AsynchronousFileChannel 不支持 APPEND 选项
-                // 需要先获取文件大小，然后手动定位到末尾写入
+                // 需要先获取文件大小,然后手动定位到末尾写入
                 val channel = AsynchronousFileChannel.open(
                     dataPath,
                     StandardOpenOption.CREATE,
@@ -271,7 +271,7 @@ class ChapterStore(
 
     /**
      * 读取指定章节内容。
-     * 若章节不存在或已被删除，抛出异常
+     * 若章节不存在或已被删除,抛出异常
      */
     suspend fun readChapter(chapterId: Int): String {
         val meta = _index[chapterId]
@@ -301,13 +301,13 @@ class ChapterStore(
     }
 
     /**
-     * 删除章节（逻辑删除）。
+     * 删除章节(逻辑删除)。
      * 幂等操作：多次删除无副作用。
      */
     suspend fun deleteChapter(chapterId: Int) {
         val meta = _index[chapterId]
         if (meta == null || meta.deleted) {
-            return // 已删除或不存在，直接返回
+            return // 已删除或不存在,直接返回
         }
         // 写入一个空内容的删除标记
         appendRecord(chapterId, "", deleted = true)
@@ -321,7 +321,7 @@ class ChapterStore(
     }
 
     /**
-     * 返回所有有效章节 ID 列表（按 chapterId 升序）。
+     * 返回所有有效章节 ID 列表(按 chapterId 升序)。
      */
     fun listChapters(): List<Int> {
         return _index
@@ -331,10 +331,10 @@ class ChapterStore(
     }
 
     /**
-     * 执行 compaction（压缩/清理）：
+     * 执行 compaction(压缩/清理)：
      * - 仅保留未删除的最新章节
-     * - 重写 data.log，移除历史版本和删除标记
-     * - 减小文件体积，提升读取效率
+     * - 重写 data.log,移除历史版本和删除标记
+     * - 减小文件体积,提升读取效率
      */
     suspend fun compact() {
         if (!dataPath.toFile().exists()) {
@@ -428,7 +428,7 @@ class ChapterStoreManager(private val application: Application) {
     }
 
     /**
-     * 初始化指定书籍的索引（应在应用启动后调用）
+     * 初始化指定书籍的索引(应在应用启动后调用)
      */
     suspend fun initStore(bookId: Int) {
         val store = getStore(bookId)

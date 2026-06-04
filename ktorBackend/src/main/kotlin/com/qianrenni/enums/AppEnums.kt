@@ -99,7 +99,7 @@ enum class RoleEnum(val code: String) {
 enum class ReportEnum(val value: String) {
     ENTER("enter"),       // 进入章节
     EXIT("exit"),         // 离开章节
-    HEARTBEAT("heartbeat"); // 心跳（阅读中）
+    HEARTBEAT("heartbeat"); // 心跳(阅读中)
 
     companion object {
         fun fromValue(value: String): ReportEnum {

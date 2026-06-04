@@ -12,7 +12,7 @@ import io.ktor.server.plugins.csrf.*
 import io.ktor.server.response.*
 
 /**
- * 安全配置（JWT 认证）
+ * 安全配置(JWT 认证)
  * 对应原项目中的 Security.kt
  */
 fun Application.configureSecurity() {

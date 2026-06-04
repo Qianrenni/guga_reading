@@ -22,19 +22,22 @@ key_exclude_pattern = compile(r"[^a-z0-9\u4e00-\u9fa5\s]")
 
 
 def escape_like_pattern(value: str) -> str:
-    """
-    转义 SQL LIKE 中的特殊字符:% _ \
+    r"""
+    转义 SQL LIKE 中的特殊字符
+
+    @param value: 需要转义的字符串
+    @return str: 转义后的字符串,% _ \ 字符被转义
     """
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def normalize_search_keyword(keyword: str, max_length: int = 50) -> str:
     """
-    标准化搜索关键字:
-    - 去除首尾空白
-    - 转为小写(可选,根据业务需求)
-    - 限制长度
-    - 只保留字母、数字、中文、空格(防止特殊字符污染缓存 key)
+    标准化搜索关键字
+
+    @param keyword: 原始搜索关键字
+    @param max_length: 最大长度限制,默认50
+    @return str: 标准化后的关键字,去除首尾空白、转小写、限制长度、只保留安全字符
     """
     if not keyword or not isinstance(keyword, str):
         return ""
@@ -70,9 +73,12 @@ class BookService:
     ):
         """
         更新临时图书章节内容
-        :param book_id: 图书ID
-        :param chapter_id: 章节ID
-        :param content: 章节内容
+
+        @param book_id: 图书唯一标识ID
+        @param chapter_id: 章节唯一标识ID
+        @param content: 章节文本内容
+        @return None: 无返回值
+        @raise AppError: 章节存储操作失败时抛出
         """
         temp_chapter_store = ChapterStore(
             book_id, SETTING.CONTENT_TEMP_DIR_PATH / "book"
@@ -87,8 +93,11 @@ class BookService:
     ):
         """
         删除临时图书章节内容
-        :param book_id: 图书ID
-        :param chapter_id: 章节ID
+
+        @param book_id: 图书唯一标识ID
+        @param chapter_id: 章节唯一标识ID
+        @return None: 无返回值
+        @raise AppError: 章节存储操作失败时抛出
         """
         temp_chapter_store = ChapterStore(
             book_id, SETTING.CONTENT_TEMP_DIR_PATH / "book"
@@ -100,9 +109,11 @@ class BookService:
     async def read_temp_book_chapter(book_id: int, chapter_id: int) -> str:
         """
         读取临时图书章节内容
-        :param book_id: 图书ID
-        :param chapter_id: 章节ID
-        return: str章节内容
+
+        @param book_id: 图书唯一标识ID
+        @param chapter_id: 章节唯一标识ID
+        @return str: 章节文本内容
+        @raise AppError: 章节不存在或读取失败时抛出404错误
         """
         temp_chapter_store = ChapterStore(
             book_id, SETTING.CONTENT_TEMP_DIR_PATH / "book"
@@ -114,10 +125,12 @@ class BookService:
     @cache(expire=SETTING.BOOK_CACHE_EXPIRE)
     async def book_chapter_read_from_file(book_id: int, chapter_id: int):
         """
-        读取章节内容
-        :param book_id: 图书ID
-        :param chapter_id: 章节ID
-        return: str章节内容
+        从文件读取章节内容(带缓存)
+
+        @param book_id: 图书唯一标识ID
+        @param chapter_id: 章节唯一标识ID
+        @return str: 章节文本内容
+        @raise AppError: 章节不存在或读取失败时抛出404错误
         """
         chapter_store = ChapterStore(book_id)
         await chapter_store._load_index()
@@ -128,9 +141,11 @@ class BookService:
     @cache(exclude_kwargs=["database"])
     async def get_book_count(database: AsyncSession) -> int:
         """
-        获取图书数量
-        :param database:    数据库会话
-        :return:    图书数量
+        获取图书总数量
+
+        @param database: 数据库会话对象
+        @return int: 图书总数量,如果无图书则返回0
+        @raise AppError: 数据库查询失败时抛出
         """
         statement = select(count()).select_from(Book)
         result = await database.exec(statement)
@@ -140,8 +155,11 @@ class BookService:
     @cache(expire=SETTING.BOOK_CACHE_EXPIRE, exclude_kwargs=["database"])
     async def get_category(database: AsyncSession) -> list[str]:
         """
-        获取图书分类
-        return: list[str]分类列表
+        获取所有已发布图书的分类列表
+
+        @param database: 数据库会话对象
+        @return list[str]: 分类字符串列表,去重后的所有图书分类
+        @raise AppError: 数据库查询失败时抛出
         """
         statement = (
             select(Book.category)
@@ -161,10 +179,12 @@ class BookService:
     )
     async def get_book_by_id(book_id: int, database: AsyncSession) -> Book:
         """
-        获取图书信息
-        :param book_id: 图书ID
-        :param database:    数据库会话
-        :return:    图书信息
+        根据ID获取图书信息
+
+        @param book_id: 图书唯一标识ID
+        @param database: 数据库会话对象
+        @return Book: 图书对象,包含完整的图书信息,封面URL会自动拼接为完整路径
+        @raise AppError: 当图书不存在时抛出404错误
         """
         try:
             statement = (
@@ -187,12 +207,13 @@ class BookService:
         book_ids: list[int], database: AsyncSession, background_tasks: BackgroundTasks
     ) -> list[Book]:
         """
-        获取图书信息
+        批量获取图书信息(带缓存优化)
 
-        :param book_ids:  图书ID列表
-        :param database:        数据库会话
-        :param background_tasks: 后台任务
-        :return:         图书信息
+        @param book_ids: 图书ID列表
+        @param database: 数据库会话对象
+        @param background_tasks: FastAPI后台任务对象,用于异步更新缓存
+        @return list[Book]: 图书对象列表,仅返回已发布的图书,封面URL会自动拼接为完整路径
+        @raise AppError: 数据库查询失败时抛出
         """
         if not book_ids:
             return []
@@ -246,10 +267,12 @@ class BookService:
     )
     async def get_book_toc_by_id(book_id: int, database: AsyncSession):
         """
-        获取图书目录
-        :param book_id: 图书ID
-        :param database:      数据库会话
-        :return:       图书目录
+        根据图书ID获取目录信息
+
+        @param book_id: 图书唯一标识ID
+        @param database: 数据库会话对象
+        @return list[BookCatalogItemResponseModel]: 图书目录列表,包含章节ID和标题
+        @raise AppError: 数据库查询失败时抛出
         """
         statement = (
             select(BookChapter.id, BookChapter.title)
@@ -270,8 +293,10 @@ class BookService:
     ) -> int:
         """
         获取图书总数
-        :param database:      数据库会话
-        :return:              图书总数
+
+        @param database: 数据库会话对象
+        @return int: 图书总数
+        @raise AppError: 数据库查询失败时抛出
         """
         statement = select(count(Book.id))
         result = await database.exec(statement)
@@ -290,10 +315,12 @@ class BookService:
         database: AsyncSession,
     ) -> list[Book]:
         """
-        搜索图书
-        :param keyword:   搜索关键字
-        :param database:      数据库会话
-        :return:              图书列表
+        搜索图书(按书名或作者名模糊匹配)
+
+        @param keyword: 搜索关键字,会标准化处理后进行前缀匹配
+        @param database: 数据库会话对象
+        @return list[Book]: 匹配的图书列表,仅返回已发布的图书,封面URL会自动拼接为完整路径
+        @raise AppError: 数据库查询失败时抛出
         """
         normalized_keyword = normalize_search_keyword(keyword)
         if not normalized_keyword:
@@ -334,10 +361,12 @@ class BookService:
         category: str,
     ) -> list[Book]:
         """
-        获取图书列表
-        :param database:      数据库会话
-        :param category:         分类
-        :return:               图书列表
+        根据分类获取图书列表
+
+        @param database: 数据库会话对象
+        @param category: 图书分类名称
+        @return list[Book]: 该分类下的图书列表,仅返回已发布的图书,封面URL会自动拼接为完整路径
+        @raise AppError: 数据库查询失败时抛出
         """
         statement = (
             select(Book)
@@ -360,13 +389,15 @@ class BookService:
         sorted_condition: dict[str, int],
     ) -> list[Book]:
         """
-        获取图书列表
-        :param database:      数据库会话
-        :param limit:           每页数量
-        :param offset:           偏移量
-        :param category:         分类
-        :param sorted_condition 排序条件
-        :return:               图书列表
+        获取分页排序后的图书列表
+
+        @param database: 数据库会话对象
+        @param limit: 每页返回的图书数量
+        @param offset: 分页偏移量,从第几条开始返回
+        @param category: 图书分类名称
+        @param sorted_condition: 排序条件字典,key为字段名,value为1(升序)或-1(降序)
+        @return list[Book]: 分页排序后的图书列表
+        @raise AppError: 数据库查询失败时抛出
         """
         books = await BookService.get_books_by_category(
             database=database, category=category
@@ -403,10 +434,12 @@ class BookService:
         category: str,
     ):
         """
-        获取图书数量
-        :param database:      数据库会话
-        :param category:         分类
-        :return:               图书数量
+        获取指定分类的图书数量
+
+        @param database: 数据库会话对象
+        @param category: 图书分类名称
+        @return int: 该分类下的图书数量
+        @raise AppError: 数据库查询失败时抛出
         """
         statement = select(count(Book.id)).where(Book.category == category)
         result = await database.exec(statement)
@@ -419,6 +452,15 @@ class BookService:
         book_id: int,
         order: float,
     ):
+        """
+        根据排序号获取图书章节
+
+        @param database: 数据库会话对象
+        @param book_id: 图书唯一标识ID
+        @param order: 章节排序号
+        @return BookChapter: 章节对象
+        @raise AppError: 当章节不存在时抛出400错误
+        """
         statement = (
             select(BookChapter)
             .where(BookChapter.book_id == book_id)
@@ -438,6 +480,17 @@ class BookService:
         book_id: int,
         chapter_id: int | None,
     ):
+        """
+        获取图书章节内容(支持按排序号或章节ID查询)
+
+        @param database: 数据库会话对象
+        @param order: 章节排序号,与chapter_id至少提供一个
+        @param book_id: 图书唯一标识ID
+        @param chapter_id: 章节唯一标识ID,与order至少提供一个
+        @return str: 章节文本内容
+        @raise AppError: 当order和chapter_id都未提供时抛出400错误
+        @raise AppError: 当章节不存在时抛出400错误
+        """
         if order is None and chapter_id is None:
             raise AppError(
                 message="Either order or chapter_id must be provided", status_code=400

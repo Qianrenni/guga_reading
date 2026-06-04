@@ -82,7 +82,7 @@ class UserService(private val application: Application) {
     }
 
     /**
-     * 创建新用户（注册）
+     * 创建新用户(注册)
      * @param username 用户名
      * @param email 邮箱
      * @param password 密码
@@ -163,7 +163,7 @@ class UserService(private val application: Application) {
 
     /**
      * 忘记密码
-     * @param userAccount 用户账号（邮箱）
+     * @param userAccount 用户账号(邮箱)
      * @param newPassword 新密码
      * @param verifyCode 验证码
      */

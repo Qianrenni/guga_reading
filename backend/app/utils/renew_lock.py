@@ -7,6 +7,7 @@ from app.middleware.logging import logger
 class RenewLock:
     """
     自动续期锁
+    用于在业务执行期间自动延长Redis锁的过期时间,防止锁提前过期
     """
 
     def __init__(
@@ -17,11 +18,12 @@ class RenewLock:
         interval: float | None = None,
     ):
         """
-        Args:
-            lock_key (str): 锁的 key
-            lock_value (str): 锁的值
-            lock_timeout (int): 锁的过期时间(秒)
-            interval (float | None): 锁续期的间隔(秒),默认为锁过期时间的三分之一
+        初始化自动续期锁
+
+        @param lock_key: 锁的key
+        @param lock_value: 锁的值,用于确保只续期自己持有的锁
+        @param lock_timeout: 锁的过期时间(秒)
+        @param interval: 锁续期的间隔(秒),默认为锁过期时间的三分之一
         """
         self.lock_key = lock_key
         self.lock_value = lock_value
@@ -30,6 +32,10 @@ class RenewLock:
         self.renew_task = None
 
     async def _start(self):
+        """
+        后台续期任务,定期延长锁的过期时间
+        当锁不再属于当前持有者时自动停止
+        """
         redis_pool = await get_redis()
         while True:
             try:
@@ -61,9 +67,15 @@ class RenewLock:
             await asyncio.sleep(self.interval)
 
     def start(self):
+        """
+        启动后台续期任务
+        """
         self.renew_task = asyncio.create_task(self._start())
 
     async def stop(self):
+        """
+        停止后台续期任务
+        """
         # 停止锁续期任务
         if self.renew_task and not self.renew_task.done():
             self.renew_task.cancel()

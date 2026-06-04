@@ -23,7 +23,7 @@ interface ResponseContract<out T> {
 }
 
 /**
- * 密封类仅作为类型标记，不持有状态
+ * 密封类仅作为类型标记,不持有状态
  */
 @Serializable
 sealed class ResponseModel<out T> : ResponseContract<T> {

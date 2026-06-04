@@ -30,7 +30,7 @@ class CacheService(val application: Application) {
         keyPrefix: String
     ): String {
         val filteredArgs = args.filterIndexed { index, _ -> index !in excludeArgs }
-        // 将参数转为字符串再序列化，避免 kotlinx.serialization 对 Any? 类型的限制
+        // 将参数转为字符串再序列化,避免 kotlinx.serialization 对 Any? 类型的限制
         val payload = filteredArgs.joinToString("") { it.toString() }
 
         return "$keyPrefix:${md5(payload)}"
@@ -130,7 +130,7 @@ class CacheService(val application: Application) {
     }
 
     /**
-     * 简单设置缓存（不带锁）
+     * 简单设置缓存(不带锁)
      */
     suspend fun cacheSetSimple(
         key: String,
@@ -142,12 +142,12 @@ class CacheService(val application: Application) {
             redis.setex(key, expire, value).await()
         } catch (e: Exception) {
             application.log.error("Error in cache set: $key: $e")
-            throw IllegalStateException("服务器繁忙，请稍后再试")
+            throw IllegalStateException("服务器繁忙,请稍后再试")
         }
     }
 
     /**
-     * 简单获取缓存值（字符串）
+     * 简单获取缓存值(字符串)
      */
     suspend fun cacheGetSimple(key: String): String? {
         val redis = application.redisManager.getAsyncCommands()
@@ -202,7 +202,7 @@ class CacheService(val application: Application) {
             }
         }
 
-        // 带锁逻辑 (与 cacheGet 类似，此处简化展示核心逻辑)
+        // 带锁逻辑 (与 cacheGet 类似,此处简化展示核心逻辑)
         val lockKey = "lock:$cacheKey"
         val lockValue = UUID.randomUUID().toString()
         var lockAcquired = false
@@ -240,7 +240,7 @@ fun Application.registerCacheService() {
 }
 
 /**
- * 在 Ktor 的 Application 或 Routing 中直接使用，语法类似 Python 的装饰器
+ * 在 Ktor 的 Application 或 Routing 中直接使用,语法类似 Python 的装饰器
  */
 suspend fun <T> Application.cache(
     args: List<Any>,

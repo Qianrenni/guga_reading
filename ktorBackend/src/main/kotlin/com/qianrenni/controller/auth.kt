@@ -165,7 +165,7 @@ fun Routing.auth() {
                 HttpStatusCode.BadRequest,
                 ResponseModel.Error("email expired")
             )
-            // 删除验证 token（防止重复使用）
+            // 删除验证 token(防止重复使用)
             application.cacheService.cacheDelete("email_verify:$token")
 
             // 标记邮箱为已验证
