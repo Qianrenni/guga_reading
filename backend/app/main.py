@@ -102,10 +102,13 @@ if SETTING.ENV != "prod":
 
     @app.middleware("http")
     async def log_middleware(request: Request, call_next):
-        response = await call_next(request)
+        # 记录请求时间ms
+        import time
 
+        start_time = time.perf_counter()
+        response = await call_next(request)
         logger.info(
-            f"{request.client.host} {request.method} {request.url} {response.status_code}"
+            f"{request.client.host} {request.method} {request.url} {response.status_code} {(time.perf_counter() - start_time):0.3f} s"
         )
         return response
 
