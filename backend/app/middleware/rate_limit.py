@@ -34,12 +34,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # 跳过不需要限流的路径
         redis_pool = await get_redis()
-        if request.url.path in self.exclude_paths:
+
+        route = request.scope.get("route")
+        if route is not None:
+            src_url = route.path
+        else:
+            src_url = request.url.path
+
+        if src_url in self.exclude_paths:
             return await call_next(request)
 
         # 获取客户端 IP(支持反向代理)
         client_ip = get_client_ip(request)
-        key = f"rate_limit:{client_ip}:{request.url.path}"
+        key = f"rate_limit:{client_ip}:{src_url}"
 
         # 使用 Redis 的 INCR + EXPIRE 实现原子限流
         current = await redis_pool.incr(key)
