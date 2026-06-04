@@ -10,8 +10,8 @@ WORKDIR /app
 
 # 复制依赖文件并安装 Python 包(以 root 身份)
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir gunicorn
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip install --no-cache-dir -r requirements.txt
 
 # 复制整个应用代码
 # 只复制 /app 和 /static 目录
