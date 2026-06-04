@@ -15,7 +15,6 @@ import java.util.*
  */
 class DistributedLock(
     private val lockKey: String,
-    private val expireTime: Int = 10,
     private val blocking: Boolean = false,
     private val timeout: Long = 10,
     private val application: Application
@@ -92,9 +91,8 @@ class DistributedLock(
  */
 fun Application.distributedLock(
     lockKey: String,
-    expireTime: Int = 10,
     blocking: Boolean = true,
     timeout: Long = 10
 ): DistributedLock {
-    return DistributedLock(lockKey, expireTime, blocking, timeout, this)
+    return DistributedLock(lockKey, blocking, timeout, this)
 }

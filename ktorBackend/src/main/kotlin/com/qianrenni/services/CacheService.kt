@@ -31,7 +31,7 @@ class CacheService(val application: Application) {
     ): String {
         val filteredArgs = args.filterIndexed { index, _ -> index !in excludeArgs }
         // 将参数转为字符串再序列化，避免 kotlinx.serialization 对 Any? 类型的限制
-        val payload = filteredArgs.map { it.toString() }.joinToString("")
+        val payload = filteredArgs.joinToString("") { it.toString() }
 
         return "$keyPrefix:${md5(payload)}"
     }
@@ -46,10 +46,9 @@ class CacheService(val application: Application) {
         redis: RedisAsyncCommands<String, String>
     ): T {
         // 1. 尝试读缓存
-        val cached = redis.get(cacheKey).await()
-        if (cached != null) {
+        redis.get(cacheKey).await()?.let {
             application.log.info("Cache hit: $cacheKey")
-            return json.decodeFromString(serializer, cached)
+            return json.decodeFromString(serializer, it)
         }
         // 2. 尝试加锁回源
         val lockKey = "lock:$cacheKey"
@@ -72,8 +71,9 @@ class CacheService(val application: Application) {
                 renewLock.start()
 
                 // 双重检查
-                val cached = redis.get(cacheKey).await()
-                if (cached != null) return json.decodeFromString(serializer, cached)
+                redis.get(cacheKey).await()?.let {
+                    return json.decodeFromString(serializer, it)
+                }
 
                 // 执行回源逻辑
                 val result = fallbackFunc()
@@ -96,10 +96,9 @@ class CacheService(val application: Application) {
 
                 while (System.currentTimeMillis() - startTime < maxWait) {
                     delay(50.milliseconds)
-                    val cached = redis.get(cacheKey).await()
-                    if (cached != null) {
+                    redis.get(cacheKey).await()?.let {
                         application.log.info("Cache filled by another worker: $cacheKey")
-                        return json.decodeFromString(serializer, cached)
+                        return json.decodeFromString(serializer, it)
                     }
                 }
 

@@ -8,20 +8,20 @@ import org.jetbrains.exposed.sql.ResultRow
 @Serializable
 data class Book(
     val id: Int,
-    val name: String,
-    val author: String,
-    val cover: String,
-    val description: String,
-    val category: String,
-    val tags: String,
-    val totalChapter: Int,
-    val wordsCount: Int,
-    val isActive: Boolean,
-    val isEnded: Boolean,
+    val name: String = "",
+    val author: String = "",
+    val cover: String = "",
+    val description: String = "",
+    val category: String = "",
+    val tags: String = "",
+    val totalChapter: Int = 0,
+    val wordsCount: Int = 0,
+    val isActive: Boolean = true,
+    val isEnded: Boolean = false,
     val parentId: Int,
     val status: BookStatus,
-    val createdAt: String,
-    val updatedAt: String
+    val createdAt: String = "",
+    val updatedAt: String = ""
 )
 
 fun ResultRow.toBook() = Book(

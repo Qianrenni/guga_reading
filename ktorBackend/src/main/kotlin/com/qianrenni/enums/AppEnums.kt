@@ -108,15 +108,3 @@ enum class ReportEnum(val value: String) {
         }
     }
 }
-
-/**
- * 生成权限编码
- * 格式：{resource}:{action}:{scope}
- */
-fun generatePermissionCode(
-    resource: ResourceTypeEnum,
-    action: ActionEnum,
-    scope: ScopeEnum
-): String {
-    return "${resource.value}:${action.value}:${scope.value}"
-}

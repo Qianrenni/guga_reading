@@ -12,7 +12,7 @@ class RenewLock(
     private val lockKey: String,
     private val lockValue: String,
     private val lockTimeout: Int,
-    private val renewInterval: Long? = null,
+    renewInterval: Long? = null,
     private val application: Application
 ) {
     private val interval = renewInterval ?: (lockTimeout / 3).toLong().coerceAtLeast(1)
