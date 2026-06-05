@@ -1,25 +1,13 @@
-# Stage 1: Cache Gradle dependencies
-FROM gradle:jdk21 AS cache
-RUN mkdir -p /home/gradle/cache_home
-ENV GRADLE_USER_HOME=/home/gradle/cache_home
-COPY build.gradle.* gradle.properties settings.gradle.kts /home/gradle/app/
-COPY gradle /home/gradle/app/gradle
-WORKDIR /home/gradle/app
-RUN gradle dependencies --no-daemon
-
-# Stage 2: Build Application
-FROM gradle:jdk21 AS build
-COPY --from=cache /home/gradle/cache_home /home/gradle/.gradle
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
-# Build the fat JAR, Gradle also supports shadow
-# and boot JAR by default.
-RUN gradle buildFatJar --no-daemon
-
-# Stage 3: Create the Runtime Image
+# 建议使用 JRE 版本，体积更小，启动更快
 FROM amazoncorretto:21 AS runtime
+
+WORKDIR /app
+
+# 暴露你在 application.conf 中配置的端口
 EXPOSE 8000
-RUN mkdir /app
-COPY --from=build /home/gradle/src/build/libs/*.jar /app/app.jar
-COPY --from=build /home/gradle/src/src/main/resources/application.conf /app/application.conf
-ENTRYPOINT ["java","-jar","/app/app.jar","-config=/app/application.conf"]
+
+# 提前创建好目录（虽然挂载时会自动创建，但显式声明更规范）
+RUN mkdir -p /app
+
+# 启动命令保持不变
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

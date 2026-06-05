@@ -9,7 +9,7 @@ group = "com.qianrenni"
 version = "1.0.0-SNAPSHOT"
 
 application {
-    mainClass = "io.ktor.server.netty.EngineMain"
+    mainClass = "com.qianrenni.Application"
 }
 ktor {
     docker {
