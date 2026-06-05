@@ -18,7 +18,8 @@ RUN gradle buildFatJar --no-daemon
 
 # Stage 3: Create the Runtime Image
 FROM amazoncorretto:21 AS runtime
-EXPOSE 8080
+EXPOSE 8000
 RUN mkdir /app
-COPY --from=build /home/gradle/src/build/libs/*.jar /app/ktor-docker-sample.jar
-ENTRYPOINT ["java","-jar","/app/ktor-docker-sample.jar"]
+COPY --from=build /home/gradle/src/build/libs/*.jar /app/app.jar
+COPY --from=build /home/gradle/src/src/main/resources/application.conf /app/application.conf
+ENTRYPOINT ["java","-jar","/app/app.jar","-config=/app/application.conf"]

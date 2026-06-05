@@ -38,7 +38,6 @@ dependencies {
     implementation(ktorLibs.server.cachingHeaders)
     implementation(ktorLibs.server.compression)
     implementation(ktorLibs.server.conditionalHeaders)
-    implementation(ktorLibs.server.config.yaml)
     implementation(ktorLibs.server.core)
     implementation(ktorLibs.server.cors)
     implementation(ktorLibs.server.csrf)
