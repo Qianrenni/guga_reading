@@ -10,7 +10,7 @@ data class FullUser(
     val id:Int,
     @SerialName("username") val userName: String = "",
     val email: String = "",
-    val isActive: Boolean = true,
+    @SerialName("is_active") val isActive: Boolean = true,
     val avatar: String = "",
     val password: String = "",
     @SerialName("created_at") val createdAt: String = "",

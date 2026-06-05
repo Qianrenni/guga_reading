@@ -8,7 +8,6 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
-import io.ktor.server.plugins.csrf.*
 import io.ktor.server.response.*
 
 /**
@@ -36,14 +35,14 @@ fun Application.configureSecurity() {
             }
         }
     }
-    install(CSRF) {
-        // tests Origin is an expected value
-        allowOrigin("http://localhost:8080")
+//    install(CSRF) {
+//        tests Origin is an expected value
+//        allowOrigin("http://localhost:8080")
 
         // tests Origin matches Host header
 //        originMatchesHost()
 
         // custom header checks
 //        checkHeader("X-CSRF-Token")
-    }
+//    }
 }

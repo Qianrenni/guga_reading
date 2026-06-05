@@ -1,5 +1,6 @@
 package com.qianrenni.plugins
 
+import com.qianrenni.config.appConfig
 import com.qianrenni.guga.com.qianrenni.plugins.ResponseTimePlugin
 import com.ucasoft.ktor.simpleCache.SimpleCache
 import com.ucasoft.ktor.simpleMemoryCache.memoryCache
@@ -18,6 +19,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 fun Application.configureHTTP() {
     // CORS 配置
+    val config = appConfig
     install(ContentNegotiation) {
         json()
     }
@@ -30,7 +32,9 @@ fun Application.configureHTTP() {
         allowHeader(HttpHeaders.ContentType)
         allowHeader("x-captcha-id")
         exposeHeader("x-captcha-id")
-        allowHost("localhost:8080")
+        config.allowHost.split(",").forEach {
+            allowHost(it.trim())
+        }
         allowNonSimpleContentTypes = true
     }
 
@@ -84,5 +88,7 @@ fun Application.configureHTTP() {
 //        }
 //    }
 //    install(AutoHeadResponse)
-    install(ResponseTimePlugin)
+    if (appConfig.environment == "dev") {
+        install(ResponseTimePlugin)
+    }
 }

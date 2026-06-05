@@ -1,5 +1,6 @@
 package com.qianrenni.config
 
+import com.typesafe.config.ConfigFactory
 import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.ktor.util.*
@@ -11,7 +12,7 @@ import io.ktor.util.*
 data class AppConfig(
     // 运行环境
     val environment: String = "dev",
-
+    val allowHost: String = "localhost",
     // 数据库配置
     val mysqlDsn: String,
     val dbPoolSize: Int = 20,
@@ -63,6 +64,8 @@ data class AppConfig(
     companion object {
         fun fromConfig(config: ApplicationConfig): AppConfig {
             return AppConfig(
+                environment = config.property("app.env").getString(),
+                allowHost = config.property("app.server.allowHost").getString(),
                 contentDir = config.property("app.contentDir").getString(),
                 staticDir = config.property("app.staticDir").getString(),
                 serverUrl = config.property("app.server.url").getString(),
@@ -85,7 +88,8 @@ val Application.appConfig: AppConfig
     get() = attributes[AppConfigKey]
 
 fun Application.loadConfig() {
-    val appConfig = AppConfig.fromConfig(environment.config)
+    val config = HoconApplicationConfig(ConfigFactory.load())
+    val appConfig = AppConfig.fromConfig(config)
     attributes.put(AppConfigKey, appConfig)
     log.info(appConfig.toString())
 }

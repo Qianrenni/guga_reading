@@ -9,7 +9,7 @@ group = "com.qianrenni"
 version = "1.0.0-SNAPSHOT"
 
 application {
-    mainClass = "com.qianrenni.Application"
+    mainClass = "com.qianrenni.ApplicationKt"
 }
 ktor {
     docker {
