@@ -1,7 +1,13 @@
 package com.qianrenni.guga.com.qianrenni.controller
 
+import com.qianrenni.enums.ActionEnum
+import com.qianrenni.enums.ResourceTypeEnum
+import com.qianrenni.enums.ScopeEnum
 import com.qianrenni.guga.com.qianrenni.services.bookService
+import com.qianrenni.plugins.requirePermission
 import com.qianrenni.schemas.ResponseModel
+import com.qianrenni.services.generatePermissionCode
+import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -37,11 +43,22 @@ fun Routing.book() {
             val result = application.bookService.getBookCatalog(bookId)
             call.respond(ResponseModel.Success(result))
         }
-        get("/chapter/{chapter_id}") {
-            val chapterId = call.requirePathParameter("chapter_id").toInt()
-            val bookId = call.requireQueryParameter("book_id").toInt()
-            val result = application.bookService.getBookChapter(chapterId, bookId)
-            call.respond(ResponseModel.Success(result))
+        authenticate("auth-jwt") {
+            get("/chapter/{chapter_id}") {
+                call.requirePermission(
+                    permissions = listOf(
+                        generatePermissionCode(
+                            resource = ResourceTypeEnum.BOOK,
+                            action = ActionEnum.READ,
+                            scope = ScopeEnum.ALL
+                        )
+                    )
+                )
+                val chapterId = call.requirePathParameter("chapter_id").toInt()
+                val bookId = call.requireQueryParameter("book_id").toInt()
+                val result = application.bookService.getBookChapter(chapterId, bookId)
+                call.respond(ResponseModel.Success(result))
+            }
         }
         get("/select") {
             val category = call.requireQueryParameter("category")
@@ -49,6 +66,11 @@ fun Routing.book() {
             val limit = call.requireQueryParameter("limit").toInt()
             val result = application.bookService.getBookSelect(category, offset, limit)
             call.respond(ResponseModel.Success(result))
+        }
+        get("/{book_id}") {
+            val bookId = call.requirePathParameter("book_id").toInt()
+            val result = application.bookService.getBookList(listOf(bookId))
+            call.respond(ResponseModel.Success(result.first()))
         }
     }
 }

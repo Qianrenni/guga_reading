@@ -3,6 +3,8 @@ package com.qianrenni.guga.com.qianrenni.models.domain
 import com.qianrenni.enums.BookStatus
 import com.qianrenni.guga.com.qianrenni.models.tables.BookChapterTable
 import com.qianrenni.guga.com.qianrenni.models.tables.BookTable
+import com.qianrenni.guga.com.qianrenni.models.tables.UserReadingProgressTable
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.ResultRow
 
@@ -66,4 +68,21 @@ fun ResultRow.toBookCatalogItem() = BookCatalogItem(
     isActive = this[BookChapterTable.isActive],
     createdAt = this[BookChapterTable.createdAt].toString(),
     updatedAt = this[BookChapterTable.updatedAt].toString()
+)
+
+@Serializable
+data class UserReadingProgress(
+    val userId: Int,
+    @SerialName("book_id") val bookId: Int,
+    @SerialName("last_chapter_id") val lastChapterId: Int,
+    @SerialName("last_position") val lastPosition: Int,
+    @SerialName("last_read_at") val lastReadAt: String,
+)
+
+fun ResultRow.toUserReadingProgress() = UserReadingProgress(
+    userId = this[UserReadingProgressTable.userId],
+    bookId = this[UserReadingProgressTable.bookId],
+    lastChapterId = this[UserReadingProgressTable.lastChapterId],
+    lastPosition = this[UserReadingProgressTable.lastPosition],
+    lastReadAt = this[UserReadingProgressTable.lastReadAt].toString(),
 )

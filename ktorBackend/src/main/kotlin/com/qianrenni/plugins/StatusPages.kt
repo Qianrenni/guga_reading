@@ -21,7 +21,10 @@ fun Application.configureStatusPages() {
             call.respond(HttpStatusCode.BadRequest, ResponseModel.Error(message = cause.message ?: "参数错误"))
         }
         exception<MissingRequestParameterException> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, message = ResponseModel.Error(message = "缺少header[${cause.parameterName}]"))
+            call.respond(
+                HttpStatusCode.BadRequest,
+                message = ResponseModel.Error(message = cause.message ?: "缺少参数[${cause.parameterName}]")
+            )
         }
         exception<ContentTransformationException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, message = ResponseModel.Error(message = cause.message?:"数据格式错误"))
