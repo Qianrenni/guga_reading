@@ -11,7 +11,22 @@ version = "1.0.0-SNAPSHOT"
 application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
-
+ktor {
+    docker {
+        jreVersion.set(JavaVersion.VERSION_21)
+        localImageName.set("guga_backend")
+        imageTag.set("latest")
+        portMappings.set(
+            listOf(
+                io.ktor.plugin.features.DockerPortMapping(
+                    8000,
+                    8000,
+                    io.ktor.plugin.features.DockerPortMappingProtocol.TCP
+                )
+            )
+        )
+    }
+}
 kotlin {
     jvmToolchain(21)
 }
