@@ -28,7 +28,7 @@ class BookService(private val application: Application) {
         ) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
                 BookTable.selectAll().where { BookTable.category eq category }.map { it.toBook() }
-                    .map { it.copy(cover = "${application.appConfig.serverUrl}/${application.appConfig.staticDir}/book/${it.id}/cover.webp") }
+                    .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
             }
         }
     }
@@ -65,7 +65,7 @@ class BookService(private val application: Application) {
         ) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
                 BookTable.selectAll().orderBy(Random()).limit(5).map { it.toBook() }
-                    .map { it.copy(cover = "${application.appConfig.serverUrl}/${application.appConfig.staticDir}/book/${it.id}/cover.webp") }
+                    .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
             }
         }
     }
@@ -79,7 +79,7 @@ class BookService(private val application: Application) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
                 BookTable.selectAll().where { (BookTable.name like "%$query%") or (BookTable.author like "%$query%") }
                     .map { it.toBook() }
-                    .map { it.copy(cover = "${application.appConfig.serverUrl}/${application.appConfig.staticDir}/book/${it.id}/cover.webp") }
+                    .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
             }
         }
     }
@@ -87,7 +87,7 @@ class BookService(private val application: Application) {
     suspend fun getBookList(bookIds: List<Int>): List<Book> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
             BookTable.selectAll().where { BookTable.id inList bookIds }.map { it.toBook() }
-                .map { it.copy(cover = "${application.appConfig.serverUrl}/${application.appConfig.staticDir}/book/${it.id}/cover.webp") }
+                .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
         }
     }
 
@@ -119,7 +119,7 @@ class BookService(private val application: Application) {
             }
             val chapterStore = ChapterStore(
                 bookId = bookId,
-                baseDir = application.appConfig.bookDir,
+                baseDir = application.appConfig.contentDir + "/book",
                 application = application
             )
             chapterStore.loadIndex()

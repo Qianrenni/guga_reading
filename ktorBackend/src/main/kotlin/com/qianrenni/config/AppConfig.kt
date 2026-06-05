@@ -45,13 +45,7 @@ data class AppConfig(
     // 存储配置
     val bookShardCount: Int = 64,
     val staticDir: String = "static",
-    val staticBookDir: String = "static/book",
-    val staticTempDir: String = "static/temp",
     val contentDir: String = "store",
-    val bookDir: String = "D:\\project\\guga_reading\\backend\\store\\book",
-    val contentTempDir: String = "store/temp",
-    val recommendBookFile: String = "store/book.json",
-    val recommendModelFile: String = "store/model.pkl.npz",
     val chapterEncoding: String = "utf-8",
 
     // 服务器配置
@@ -69,6 +63,8 @@ data class AppConfig(
     companion object {
         fun fromConfig(config: ApplicationConfig): AppConfig {
             return AppConfig(
+                contentDir = config.property("app.contentDir").getString(),
+                staticDir = config.property("app.staticDir").getString(),
                 serverUrl = config.property("app.server.url").getString(),
                 mysqlDsn = config.property("app.database.mysql-dsn").getString(),
                 redisUrl = config.property("app.cache.redis-url").getString(),

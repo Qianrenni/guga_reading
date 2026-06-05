@@ -9,7 +9,7 @@ import java.io.File
 
 fun Application.configureRouting() {
     routing {
-        staticFiles("/static", File("D:\\project\\guga_reading\\backend\\static"))
+        staticFiles("/static", File(appConfig.staticDir))
         captcha()
         auth()
         user()

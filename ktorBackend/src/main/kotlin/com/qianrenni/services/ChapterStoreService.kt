@@ -14,6 +14,7 @@ import java.nio.channels.AsynchronousFileChannel
 import java.nio.file.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import kotlin.io.path.exists
 
 /**
  * 面向单本书的章节存储引擎,支持完整的 CRUD 操作。
@@ -64,8 +65,12 @@ class ChapterStore(
 
 
     init {
-        val base = baseDir ?: application.appConfig.bookDir
+        val base = baseDir ?: (application.appConfig.contentDir + "/book")
+
         dir = Paths.get(base, "$bookId")
+        if (!dir.parent.exists()) {
+            throw IllegalStateException("内容存储位置不存在")
+        }
         dir.toFile().mkdirs()
         dataPath = dir.resolve("data.log")
         indexPath = dir.resolve("index.idx")
