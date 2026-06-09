@@ -22,7 +22,7 @@ val ResponseTimePlugin = createApplicationPlugin("ResponseTime") {
         if (startTime != null) {
             val duration = System.currentTimeMillis() - startTime
 
-            val status = call.response.status()?.value ?: "-"
+            val status = call.response.status()?.value ?: "200"
             val method = call.request.httpMethod.value
             val uri = call.request.uri
 

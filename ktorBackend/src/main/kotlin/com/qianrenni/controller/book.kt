@@ -29,7 +29,7 @@ fun Routing.book() {
             call.respond(ResponseModel.Success(result))
         }
         get("/search") {
-            val query = call.requireQueryParameter("query")
+            val query = call.requireQueryParameter("q")
             val result = application.bookService.getSearchBook(query)
             call.respond(ResponseModel.Success(result))
         }
