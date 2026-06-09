@@ -11,5 +11,5 @@ export interface User {
   username: string;
   email: string;
   avatar: string;
-  is_active: boolean;
+  isActive: boolean;
 }

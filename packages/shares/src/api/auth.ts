@@ -2,7 +2,7 @@ import { get, post } from '../utils';
 import { User } from '@guga-reading/types';
 export const useApiAuth = {
   authMe: async (tokenType: string, token: string) => {
-    return await get<{ user: User }>(`/token/auth/me`, {
+    return await get<User>(`/token/auth/me`, {
       headers: {
         Authorization: `${tokenType} ${token}`,
       },

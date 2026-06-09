@@ -11,8 +11,8 @@
           "
         />
         <h2>{{ userStore.getUser?.username }}</h2>
-        <p :style="{ color: userStore.getUser?.is_active ? 'green' : 'red' }">
-          {{ userStore.getUser?.is_active ? 'Active' : 'Inactive' }}
+        <p :style="{ color: userStore.getUser?.isActive ? 'green' : 'red' }">
+          {{ userStore.getUser?.isActive ? 'Active' : 'Inactive' }}
         </p>
         <div
           class="container bg-body padding-46rem container-align-center container-w100"
