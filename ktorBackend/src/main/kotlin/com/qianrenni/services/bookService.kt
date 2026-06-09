@@ -20,19 +20,6 @@ import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 
 class BookService(private val application: Application) {
-    private suspend fun cacheBooksByCategory(category: String): List<Book> {
-        return application.cache(
-            keyPrefix = "book_service",
-            args = listOf("books_by_category", category),
-            serializer = ListSerializer(Book.serializer())
-        ) {
-            application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookTable.selectAll().where { BookTable.category eq category }.map { it.toBook() }
-                    .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
-            }
-        }
-    }
-
     suspend fun getBookCount(): Long {
         return application.cache(
             keyPrefix = "book_service",
@@ -128,11 +115,11 @@ class BookService(private val application: Application) {
     }
 
     suspend fun getBookSelect(category: String, offSet: Int, limit: Int): List<Book> {
-        val list = cacheBooksByCategory(category)
-        if(offSet+limit > list.size) {
-            return emptyList()
+        return application.databaseManager.suspendedTransaction(readOnly = true) {
+            BookTable.selectAll().where { (BookTable.category eq category) }.offset(start = offSet.toLong())
+                .limit(count = limit).map { it.toBook() }
+                .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
         }
-        return list.subList(offSet, offSet + limit)
     }
 }
 
