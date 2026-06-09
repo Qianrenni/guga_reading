@@ -73,10 +73,10 @@ fun ResultRow.toBookCatalogItem() = BookCatalogItem(
 @Serializable
 data class UserReadingProgress(
     val userId: Int,
-    @SerialName("book_id") val bookId: Int,
-    @SerialName("last_chapter_id") val lastChapterId: Int,
-    @SerialName("last_position") val lastPosition: Int,
-    @SerialName("last_read_at") val lastReadAt: String,
+    val bookId: Int,
+    val lastChapterId: Int,
+    val lastPosition: Int,
+    val lastReadAt: String,
 )
 
 fun ResultRow.toUserReadingProgress() = UserReadingProgress(

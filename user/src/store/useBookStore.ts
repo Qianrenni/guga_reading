@@ -116,10 +116,10 @@ export const useBookStore = defineStore('book', {
       }
       return [];
     },
-    async getBookByList(book_ids: number[]) {
+    async getBookByList(bookIds: number[]) {
       const booksFinded = [] as Book[];
       const booksNotFinded = [] as number[];
-      for (const bookId of book_ids) {
+      for (const bookId of bookIds) {
         if (this.books.has(bookId)) {
           booksFinded.push(this.books.get(bookId)!);
         } else if (cache.has(`book_${bookId}`)) {

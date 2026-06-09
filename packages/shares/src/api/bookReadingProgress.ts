@@ -6,20 +6,20 @@ export const useApiBookReadingProgress = {
    *
    * @param bookId 书籍ID
    * @param chapterId 章节ID
-   * @param last_position 最后阅读位置
+   * @param lastPosition 最后阅读位置
    * @returns {success:boolean,data:null,message:string|null}
    */
   update: async (
     bookId: number,
     chapterId: number,
-    last_position: number = 0,
+    lastPosition: number = 0,
   ) => {
     return await patch<null>(`/user_reading_progress/add`, {
-      book_id: bookId,
+      bookId: bookId,
 
-      last_chapter_id: chapterId,
+      lastChapterId: chapterId,
 
-      last_position: last_position,
+      lastPosition: lastPosition,
     });
   },
   get: async (): Promise<{

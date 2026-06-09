@@ -13,12 +13,12 @@ export const useApiReport = {
   reportChapterRead: async function (
     bookId: number,
     chapterId: number,
-    event_type: EventType,
+    eventType: EventType,
   ) {
     return await post<null>(`${this.prefix}/book-chapter`, {
-      book_id: bookId,
-      chapter_id: chapterId,
-      event_type: event_type,
+      bookId: bookId,
+      chapterId: chapterId,
+      eventType: eventType,
     });
   },
 };

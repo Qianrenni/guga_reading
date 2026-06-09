@@ -30,15 +30,15 @@
       <template #index="{ row }">
         <span>第{{ row.index + 1 }}章</span>
       </template>
-      <template #word_count="{ row }">
-        <span>{{ row.word_count }} 字</span>
+      <template #wordsCount="{ row }">
+        <span>{{ row.wordsCount }} 字</span>
       </template>
-      <template #created_at="{ value }">
+      <template #createdAt="{ value }">
         <span>{{
           new UseTimeUtils(value as string).format('YYYY年M月D日H时')
         }}</span>
       </template>
-      <template #updated_at="{ value }">
+      <template #updatedAt="{ value }">
         <span>{{
           new UseTimeUtils(value as string).format('YYYY年M月D日H时')
         }}</span>
@@ -110,15 +110,15 @@ const columns = [
   },
   {
     label: '字数',
-    value: 'word_count',
+    value: 'wordsCount',
   },
   {
     label: '发布时间',
-    value: 'created_at',
+    value: 'createdAt',
   },
   {
     label: '更新时间',
-    value: 'updated_at',
+    value: 'updatedAt',
   },
   {
     label: '状态',

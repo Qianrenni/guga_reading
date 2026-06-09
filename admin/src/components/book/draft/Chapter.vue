@@ -2,10 +2,10 @@
   <div class="container-column container-wrap">
     <QFormTable :columns="columns" :data="bookchapters" size="small">
       <template #name="{ row }">
-        {{ bookMap[row.book_id]?.name || '--' }}
+        {{ bookMap[row.bookId]?.name || '--' }}
       </template>
       <template #author="{ row }">
-        {{ bookMap[row.book_id]?.author || '--' }}
+        {{ bookMap[row.bookId]?.author || '--' }}
       </template>
       <template #status="{ row }">
         {{ TranslationStatus[row.status as StatusEnum] }}
@@ -13,17 +13,17 @@
       <template #type="{ row }">
         {{ row.order > 0 ? '章节更新' : '章节修改' }}
       </template>
-      <template #created_at="{ row }">
+      <template #createdAt="{ row }">
         <span>
           {{
-            new UseTimeUtils(row.created_at as string).format('YYYY年M月D日H时')
+            new UseTimeUtils(row.createdAt as string).format('YYYY年M月D日H时')
           }}
         </span>
       </template>
-      <template #updated_at="{ row }">
+      <template #updatedAt="{ row }">
         <span>
           {{
-            new UseTimeUtils(row.updated_at as string).format('YYYY年M月D日H时')
+            new UseTimeUtils(row.updatedAt as string).format('YYYY年M月D日H时')
           }}
         </span>
       </template>
@@ -39,7 +39,7 @@
                 router.push({
                   path: `/chapter-audit`,
                   query: {
-                    chapter_id: row.id,
+                    chapterId: row.id,
                   },
                 });
               }
@@ -83,15 +83,15 @@ const columns: TableColumn[] = [
   },
   {
     label: '字数',
-    value: 'word_count',
+    value: 'wordsCount',
   },
   {
     label: '创建时间',
-    value: 'created_at',
+    value: 'createdAt',
   },
   {
     label: '更新时间',
-    value: 'updated_at',
+    value: 'updatedAt',
   },
   {
     label: '状态',

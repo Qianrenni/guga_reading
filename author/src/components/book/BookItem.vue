@@ -12,9 +12,9 @@
         </h4>
         <p class="container-space-between">
           <span class="litte-tag">{{
-            book.is_ended ? '已完结' : '连载中'
+            book.isEnded ? '已完结' : '连载中'
           }}</span>
-          <span class="text-muted text-08rem">{{ book.total_chapter }}章</span>
+          <span class="text-muted text-08rem">{{ book.totalChapter }}章</span>
         </p>
       </div>
     </div>

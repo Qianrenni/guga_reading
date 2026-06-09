@@ -80,7 +80,7 @@ import { useApiAudit, useApiBooks } from '@guga-reading/shares';
 import type { Book } from '@guga-reading/types';
 import { onBeforeMount, ref } from 'vue';
 import { QLazyImage, QFormButton, useMessage } from 'qyani-components';
-const bookId = parseInt(router.currentRoute.value.query.book_id as string);
+const bookId = parseInt(router.currentRoute.value.query.bookId as string);
 const book = ref<Book>({} as Book);
 const books = ref<Book[]>([]);
 const isUpdate = ref(false);
@@ -88,9 +88,9 @@ onBeforeMount(() => {
   useApiAudit.getAuditBook([bookId]).then((res) => {
     book.value = res.data[0] as Book;
     books.value = [book.value, ...books.value];
-    if (book.value.parent_id != null) {
+    if (book.value.parentId != null) {
       isUpdate.value = true;
-      useApiBooks.getBookById(book.value.parent_id).then((res) => {
+      useApiBooks.getBookById(book.value.parentId).then((res) => {
         books.value = [res.data, ...books.value];
       });
     }

@@ -5,30 +5,30 @@ import { StatusEnum } from './enum';
  * @param cover  封面URL
  * @param id  书籍id
  * @param category   分类
- * @param total_chapter   总章节数
+ * @param totalChapter   总章节数
  * @param author  作者
  * @param description  书籍描述
  * @param name  书籍名称
  * @param tags   标签
- * @param created_at  创建时间
- * @param is_ended  是否完结
- * @param words_cnt  字数
- * @param updated_at  更新时间
+ * @param createdAt  创建时间
+ * @param isEnded  是否完结
+ * @param wordsCount  字数
+ * @param updatedAt  更新时间
  */
 export interface Book {
   cover: string;
   id: number;
   category: string;
-  total_chapter: number;
+  totalChapter: number;
   author: string;
   description: string;
   name: string;
   tags: string;
-  created_at: string;
-  is_ended: boolean;
-  words_cnt: number;
-  updated_at: string;
-  parent_id: number | null;
+  createdAt: string;
+  isEnded: boolean;
+  wordsCount: number;
+  updatedAt: string;
+  parentId: number | null;
   status: StatusEnum;
 }
 
@@ -52,45 +52,45 @@ export interface BookMeta {
  * 目录信息
  * @param id  目录id
  * @param title  目录标题
- * @param word_count  字数
+ * @param wordsCount  字数
  * @param sort_order  排序
- * @param created_at  创建时间
- * @param updated_at  更新时间
+ * @param createdAt  创建时间
+ * @param updatedAt  更新时间
  */
 export interface Catalog {
   id: number;
   title: string;
-  word_count: number;
+  wordsCount: number;
   order: number;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BookChapter extends Catalog {
   status: StatusEnum;
-  book_id: number;
+  bookId: number;
 }
 
 /**
  * 书籍阅读进度
- * @param book_id  书籍id
- * @param last_chapter_id  最后阅读的章节id
- * @param last_position  最后阅读位置
- * @param last_read_at  最后阅读时间
+ * @param bookId  书籍id
+ * @param lastChapterId  最后阅读的章节id
+ * @param lastPosition  最后阅读位置
+ * @param lastReadAt  最后阅读时间
  */
 export interface BookReadingProgress {
-  book_id: number;
-  last_chapter_id: number;
-  last_position: number;
-  last_read_at: string;
+  bookId: number;
+  lastChapterId: number;
+  lastPosition: number;
+  lastReadAt: string;
 }
 
 export type ShelfItem = Book & Partial<BookReadingProgress>;
 
 export interface ChapterReadStatistic {
   id: number;
-  book_id: number;
-  chapter_id: number;
+  bookId: number;
+  chapterId: number;
   hour_start: string;
   unique_reader_count: number;
   page_view_count: number;

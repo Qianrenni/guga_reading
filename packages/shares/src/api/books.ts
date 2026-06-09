@@ -6,9 +6,9 @@ export const useApiBooks = {
   getBookCount: async function () {
     return await get<{ count: number }>(`${this.prefix}/count`);
   },
-  getBooksByList: async function (book_ids: number[]) {
+  getBooksByList: async function (bookIds: number[]) {
     return await get<Book[]>(
-      `${this.prefix}/list?${book_ids.map((id) => `book_ids=${id}`).join('&')}`,
+      `${this.prefix}/list?${bookIds.map((id) => `bookIds=${id}`).join('&')}`,
     );
   },
   getTotalBookCount: async function () {
@@ -22,7 +22,7 @@ export const useApiBooks = {
   },
   getBookChapterById: async function (bookId: number, chapterId: number) {
     return await get<string>(
-      `${this.prefix}/chapter/${chapterId}?book_id=${bookId}`,
+      `${this.prefix}/chapter/${chapterId}?bookId=${bookId}`,
     );
   },
   searchBook: async function (key: string) {
@@ -45,7 +45,7 @@ export const useApiBooks = {
   },
   getBookChapterByOrder: async function (bookId: number, order: number) {
     return await get<BookChapter>(
-      `${this.prefix}/chapter-order?book_id=${bookId}&order=${order}`,
+      `${this.prefix}/chapter-order?bookId=${bookId}&order=${order}`,
     );
   },
   getBookChapterContentByOrder: async function (
@@ -54,7 +54,7 @@ export const useApiBooks = {
     chapterId?: number,
   ) {
     return await get<string>(
-      `${this.prefix}/content/chapter?book_id=${bookId}${order ? `&order=${order}` : ''}${chapterId ? `&chapter_id=${chapterId}` : ''}`,
+      `${this.prefix}/content/chapter?bookId=${bookId}${order ? `&order=${order}` : ''}${chapterId ? `&chapterId=${chapterId}` : ''}`,
     );
   },
 };

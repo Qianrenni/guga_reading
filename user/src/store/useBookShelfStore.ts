@@ -24,22 +24,22 @@ export const useBookShelfStore = defineStore('bookShelf', {
         const bookStore = useBookStore();
         const readingHistoryStore = useReadingHistoryStore();
         const books = await bookStore.getBookByList(
-          data!.map((item) => item.book_id),
+          data!.map((item) => item.bookId),
         );
         const historyItems = (
           await Promise.all(
-            data!.map((item) => readingHistoryStore.getSingle(item.book_id)),
+            data!.map((item) => readingHistoryStore.getSingle(item.bookId)),
           )
         ).filter((item) => item !== undefined);
         const shelfItems = data!.map((item) => ({
           ...item,
-          ...books.find((book) => book.id === item.book_id),
+          ...books.find((book) => book.id === item.bookId),
           ...(historyItems.find(
-            (historyItem) => historyItem.book_id === item.book_id,
+            (historyItem) => historyItem.bookId === item.bookId,
           ) ?? {
-            last_chapter_id: -1,
-            last_position: 0,
-            last_read_at: '',
+            lastChapterId: -1,
+            lastPosition: 0,
+            lastReadAt: '',
           }),
         }));
         this.bookShelf = shelfItems as ShelfItem[];
@@ -47,7 +47,7 @@ export const useBookShelfStore = defineStore('bookShelf', {
       this.loading = false;
     },
     async add(bookId: number) {
-      if (this.bookShelf.findIndex((item) => item.book_id === bookId) !== -1) {
+      if (this.bookShelf.findIndex((item) => item.bookId === bookId) !== -1) {
         return;
       }
       const bookStore = useBookStore();
@@ -62,9 +62,9 @@ export const useBookShelfStore = defineStore('bookShelf', {
         this.bookShelf.unshift({
           ...book,
           ...(history ?? {
-            last_chapter_id: -1,
-            last_position: 0,
-            last_read_at: '',
+            lastChapterId: -1,
+            lastPosition: 0,
+            lastReadAt: '',
           }),
         } as ShelfItem);
       }
@@ -74,7 +74,7 @@ export const useBookShelfStore = defineStore('bookShelf', {
       const { success } = await useApiBookShelf.delete(bookId);
       if (success) {
         const index = this.bookShelf.findIndex(
-          (item) => item.book_id === bookId,
+          (item) => item.bookId === bookId,
         );
         if (index !== -1) {
           this.bookShelf.splice(index, 1);

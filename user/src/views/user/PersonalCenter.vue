@@ -91,7 +91,7 @@
             class="bg-body mouse-cursor"
             @click="
               router.push(
-                `/book-read/${histortItem.id}/${histortItem.last_chapter_id}`,
+                `/book-read/${histortItem.id}/${histortItem.lastChapterId}`,
               )
             "
           >

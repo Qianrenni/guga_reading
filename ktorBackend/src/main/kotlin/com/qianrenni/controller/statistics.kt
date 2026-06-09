@@ -13,9 +13,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RequestStatisticsReadEvent(
-    @SerialName("book_id") val bookId: Int,
-    @SerialName("chapter_id") val chapterId: Int,
-    @SerialName("event_type") val eventType: String,
+     val bookId: Int,
+     val chapterId: Int,
+     val eventType: String,
 )
 
 fun Routing.statistics() {

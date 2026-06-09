@@ -12,9 +12,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RequestReadingProgressAdd(
-    @SerialName("book_id") val bookId: Int,
-    @SerialName("last_chapter_id") val lastChapterId: Int,
-    @SerialName("last_position") val lastPosition: Int,
+     val bookId: Int,
+     val lastChapterId: Int,
+     val lastPosition: Int,
 )
 
 fun Routing.userReadingProgress() {
@@ -36,9 +36,9 @@ fun Routing.userReadingProgress() {
                 )
                 call.respond(ResponseModel.Empty("更新书籍阅读历史成功"))
             }
-            delete("/delete/{book_id}") {
+            delete("/delete/{bookId}") {
                 val user = call.getCurrentUser()
-                val bookId = call.requirePathParameter("book_id").toInt()
+                val bookId = call.requirePathParameter("bookId").toInt()
                 application.readProgressService.delete(userId = user.id, bookId = bookId)
                 call.respond(ResponseModel.Empty("删除书籍阅读历史成功"))
             }

@@ -78,9 +78,7 @@ import {
   useMessage,
 } from 'qyani-components';
 const chapter = ref<BookChapter>({} as BookChapter);
-const chapterId = parseInt(
-  router.currentRoute.value.query.chapter_id as string,
-);
+const chapterId = parseInt(router.currentRoute.value.query.chapterId as string);
 const isMobile = useScreenSize.getWidth(768);
 const select = ref<string>('after');
 const options = [
@@ -126,12 +124,12 @@ onBeforeMount(() => {
       if (res.order < 0) {
         isUpdate.value = true;
         useApiBooks
-          .getBookChapterByOrder(res.book_id, -res.order)
+          .getBookChapterByOrder(res.bookId, -res.order)
           .then((res) => {
             srcChapter.value = res.data;
           });
         useApiBooks
-          .getBookChapterContentByOrder(res.book_id, -res.order)
+          .getBookChapterContentByOrder(res.bookId, -res.order)
           .then((res) => {
             srcContent.value = res.data;
           });

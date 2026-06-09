@@ -22,22 +22,22 @@ import java.util.*
 
 @Serializable
 data class RequestTokenGet(
-    @SerialName("username") val userName: String,
-    @SerialName("password") val password: String,
-    @SerialName("captcha") val captcha: String
+    @SerialName("username")val userName: String,
+    val password: String,
+    val captcha: String
 )
 
 @Serializable
 data class ResponseTokenData(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("refresh_token") val refreshToken: String,
-    @SerialName("token_type") val tokenType: String = "Bearer",
-    @SerialName("user") val user: FullUser,
+     val accessToken: String,
+     val refreshToken: String,
+     val tokenType: String = "Bearer",
+     val user: FullUser,
 )
 
 @Serializable
 data class RequestVerifyEmail(
-    @SerialName("email") val email: String
+     val email: String
 )
 
 fun Routing.auth() {

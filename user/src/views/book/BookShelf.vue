@@ -29,12 +29,12 @@
               <QIcon icon="User" size="14px"></QIcon>
               <span class="text-08rem">{{ histortItem.author }}</span>
             </div>
-            <div class="inner-container" v-if="histortItem.last_read_at">
+            <div class="inner-container" v-if="histortItem.lastReadAt">
               <QIcon icon="History" size="14px"></QIcon>
               <p>
                 <span class="text-08rem">上次阅读:</span>
                 <span class="text-08rem">{{
-                  histortItem.last_read_at?.split('T')[0]
+                  histortItem.lastReadAt?.split('T')[0]
                 }}</span>
               </p>
             </div>
@@ -44,7 +44,7 @@
                 @click="
                   () =>
                     router.push(
-                      `/book-read/${histortItem.id}/${histortItem.last_chapter_id}`,
+                      `/book-read/${histortItem.id}/${histortItem.lastChapterId}`,
                     )
                 "
               >

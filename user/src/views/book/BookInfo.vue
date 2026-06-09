@@ -12,7 +12,7 @@
             </div>
             <div class="container-align-center">
               <QIcon icon="Calender" size="16px" />
-              <h5>{{ book.created_at?.split('T')[0] }}</h5>
+              <h5>{{ book.createdAt?.split('T')[0] }}</h5>
             </div>
           </div>
           <p
@@ -25,7 +25,7 @@
           <div class="container-wrap text-08rem">
             <div class="container">
               <QIcon icon="Book" size="16px" />
-              <span>{{ book.total_chapter }} 章节</span>
+              <span>{{ book.totalChapter }} 章节</span>
             </div>
             <div class="container">
               <QIcon icon="EyeOpen" size="16px" />
@@ -146,8 +146,8 @@ const book = ref<Book>({
   description: '',
   category: '',
   tags: '',
-  created_at: '',
-  total_chapter: 0,
+  createdAt: '',
+  totalChapter: 0,
 } as Book);
 const catalog = ref<Catalog[]>([] as Catalog[]);
 const height = ref(window.innerWidth < 768 ? 192 : 240);

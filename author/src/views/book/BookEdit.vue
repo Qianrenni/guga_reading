@@ -48,7 +48,7 @@ const content = ref<string>('');
 const title = ref<string>('');
 const options = computed(() => {
   return bookChapters.value.map((chapter, index) => ({
-    label: `${chapter.title}-${TranslationStatus[chapter.status]}-${new UseTimeUtils(chapter.created_at).format('M月D日H时m分')}`,
+    label: `${chapter.title}-${TranslationStatus[chapter.status]}-${new UseTimeUtils(chapter.createdAt).format('M月D日H时m分')}`,
     value: index,
   }));
 });

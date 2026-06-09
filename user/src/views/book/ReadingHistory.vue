@@ -37,7 +37,7 @@
                 <div class="inner-container">
                   <span class="text-08rem">上次阅读:</span>
                   <span class="text-08rem">{{
-                    histortItem.last_read_at.split('T')[0]
+                    histortItem.lastReadAt.split('T')[0]
                   }}</span>
                 </div>
               </div>
@@ -46,7 +46,7 @@
                   type="button"
                   @click="
                     router.push(
-                      `/book-read/${histortItem.id}/${histortItem.last_chapter_id}`,
+                      `/book-read/${histortItem.id}/${histortItem.lastChapterId}`,
                     )
                   "
                 >

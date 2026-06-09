@@ -18,7 +18,7 @@
         {{ TranslationStatus[row.status as StatusEnum] }}
       </template>
       <template #action="{ row }">
-        {{ row.parent_id === null ? '创建' : '更新' }}
+        {{ row.parentId === null ? '创建' : '更新' }}
       </template>
       <template #cover="{ row }">
         <QLazyImage :src="row.cover" :height="128" :width="72" />
@@ -40,14 +40,14 @@
           </span>
         </div>
       </template>
-      <template #created_at="{ row }">
+      <template #createdAt="{ row }">
         <span>{{
-          new UseTimeUtils(row.created_at as string).format('YYYY年M月D日H时')
+          new UseTimeUtils(row.createdAt as string).format('YYYY年M月D日H时')
         }}</span>
       </template>
-      <template #updated_at="{ row }">
+      <template #updatedAt="{ row }">
         <span>{{
-          new UseTimeUtils(row.updated_at as string).format('YYYY年M月D日H时')
+          new UseTimeUtils(row.updatedAt as string).format('YYYY年M月D日H时')
         }}</span>
       </template>
       <template #response="{ row }">
@@ -144,11 +144,11 @@ const columns = [
     label: '标签',
   },
   {
-    value: 'created_at',
+    value: 'createdAt',
     label: '创建时间',
   },
   {
-    value: 'updated_at',
+    value: 'updatedAt',
     label: '更新时间',
   },
   {

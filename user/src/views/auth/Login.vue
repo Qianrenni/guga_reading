@@ -105,9 +105,9 @@ const run = async () => {
     useMessage.success('登录成功');
     authStore.setRemeber(form.value.remember.length > 0);
     authStore.setToken(
-      data!.access_token!,
-      data!.refresh_token!,
-      data!.token_type!,
+      data!.accessToken!,
+      data!.refreshToken!,
+      data!.tokenType!,
     );
     authStore.setUser(data!.user!);
     axios.defaults.headers.common['Authorization'] =

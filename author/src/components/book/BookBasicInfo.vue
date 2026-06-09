@@ -17,28 +17,26 @@
           </p>
           <p>
             <span>章节</span>
-            <span class="margin-rem">{{ book.total_chapter }} 章</span>
+            <span class="margin-rem">{{ book.totalChapter }} 章</span>
           </p>
           <p>
             <span>字数</span>
-            <span class="margin-rem">{{ book.words_cnt }} 字</span>
+            <span class="margin-rem">{{ book.wordsCount }} 字</span>
           </p>
           <p>
             <span>状态</span>
-            <span class="margin-rem">{{
-              book.is_ended ? '完结' : '连载'
-            }}</span>
+            <span class="margin-rem">{{ book.isEnded ? '完结' : '连载' }}</span>
           </p>
           <p>
             <span>上架时间</span>
             <span class="margin-rem">{{
-              book.created_at?.split('T').join(' ')
+              book.createdAt?.split('T').join(' ')
             }}</span>
           </p>
           <p>
             <span>更新时间</span>
             <span class="margin-rem">{{
-              book.updated_at?.split('T').join(' ')
+              book.updatedAt?.split('T').join(' ')
             }}</span>
           </p>
         </div>
@@ -53,26 +51,26 @@
       </p>
       <p>
         <span>章节</span>
-        <span class="margin-rem">{{ book.total_chapter }} 章</span>
+        <span class="margin-rem">{{ book.totalChapter }} 章</span>
       </p>
       <p>
         <span>字数</span>
-        <span class="margin-rem">{{ book.words_cnt }} 字</span>
+        <span class="margin-rem">{{ book.wordsCount }} 字</span>
       </p>
       <p>
         <span>状态</span>
-        <span class="margin-rem">{{ book.is_ended ? '完结' : '连载' }}</span>
+        <span class="margin-rem">{{ book.isEnded ? '完结' : '连载' }}</span>
       </p>
       <p>
         <span>上架时间</span>
         <span class="margin-rem">{{
-          book.created_at?.split('T').join(' ')
+          book.createdAt?.split('T').join(' ')
         }}</span>
       </p>
       <p>
         <span>更新时间</span>
         <span class="margin-rem">{{
-          book.updated_at?.split('T').join(' ')
+          book.updatedAt?.split('T').join(' ')
         }}</span>
       </p>
     </div>
@@ -115,10 +113,10 @@ const book = ref<Book>({
   category: '',
   name: '',
   author: '',
-  total_chapter: 0,
+  totalChapter: 0,
   description: '',
-  is_ended: false,
-  updated_at: '',
+  isEnded: false,
+  updatedAt: '',
 } as Book);
 const isMobile = useScreenSize.getWidth(768);
 const width = computed(() => (isMobile.value ? 96 : 168));

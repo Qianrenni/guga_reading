@@ -24,34 +24,34 @@ export const useReadingHistoryStore = defineStore('readingHistory', {
       if (success) {
         const bookStore = useBookStore();
         const books = await bookStore.getBookByList(
-          data!.map((item) => item.book_id),
+          data!.map((item) => item.bookId),
         );
         const historyItems = data!.map((item) => ({
           ...item,
-          ...books.find((book) => book.id === item.book_id),
+          ...books.find((book) => book.id === item.bookId),
         }));
         this.readingHistory = historyItems as HistoryItem[];
       }
       this.loading = false;
     },
-    async update(bookId: number, chapterId: number, last_position: number = 0) {
+    async update(bookId: number, chapterId: number, lastPosition: number = 0) {
       const index = this.readingHistory.findIndex((item) => item.id === bookId);
       if (index !== -1) {
         const [item] = this.readingHistory.splice(index, 1);
-        item.last_chapter_id = chapterId;
-        item.last_position = last_position;
+        item.lastChapterId = chapterId;
+        item.lastPosition = lastPosition;
         this.readingHistory.unshift(item);
       } else {
         const [responseProgress, responseBook] = await Promise.all([
-          useApiBookReadingProgress.update(bookId, chapterId, last_position),
+          useApiBookReadingProgress.update(bookId, chapterId, lastPosition),
           useBookStore().getBookById(bookId),
         ]);
         if (responseProgress.success) {
           this.readingHistory.unshift({
             ...responseBook,
-            last_chapter_id: chapterId,
-            last_position: last_position,
-            last_read_at: new Date().toISOString(),
+            lastChapterId: chapterId,
+            lastPosition: lastPosition,
+            lastReadAt: new Date().toISOString(),
           } as HistoryItem);
         }
       }
@@ -60,13 +60,13 @@ export const useReadingHistoryStore = defineStore('readingHistory', {
       if (this.readingHistory.length <= 0) {
         await this.get();
       }
-      return this.readingHistory.find((item) => item.book_id === bookId);
+      return this.readingHistory.find((item) => item.bookId === bookId);
     },
     async delete(bookId: number) {
       const { success } = await useApiBookReadingProgress.delete(bookId);
       if (success) {
         const index = this.readingHistory.findIndex(
-          (item) => item.book_id === bookId,
+          (item) => item.bookId === bookId,
         );
         if (index !== -1) {
           this.readingHistory.splice(index, 1);

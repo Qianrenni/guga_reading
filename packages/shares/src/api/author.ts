@@ -63,7 +63,7 @@ export const useApiAuthor = {
   },
   getBookChapter: async function (bookId: number, chapterId?: number[]) {
     return await get<BookChapter[]>(
-      `${this.prefix}/chapter?book_id=${bookId}${chapterId ? `&chapter_id=${chapterId.join('&chapter_id=')}` : ''}`,
+      `${this.prefix}/chapter?bookId=${bookId}${chapterId ? `&chapterId=${chapterId.join('&chapterId=')}` : ''}`,
     );
   },
   updateBookChapter: async function (
@@ -73,7 +73,7 @@ export const useApiAuthor = {
     order: number,
   ) {
     return await patch<null>(`${this.prefix}/chapter`, {
-      book_id: bookId,
+      bookId: bookId,
       title,
       content,
       order,
@@ -81,12 +81,12 @@ export const useApiAuthor = {
   },
   deleteBookChapter: async function (bookId: number, chapterId: number) {
     return await del<null>(
-      `${this.prefix}/chapter?book_id=${bookId}&chapter_id=${chapterId}`,
+      `${this.prefix}/chapter?bookId=${bookId}&chapterId=${chapterId}`,
     );
   },
   getBookChapterContent: async function (bookId: number, chapterId: number[]) {
     return await get<string[]>(
-      `${this.prefix}/content?book_id=${bookId}${`&chapter_id=${chapterId.join('&chapter_id=')}`}`,
+      `${this.prefix}/content?bookId=${bookId}${`&chapterId=${chapterId.join('&chapterId=')}`}`,
     );
   },
   getAuthorDraftChapter: async function () {
@@ -98,14 +98,14 @@ export const useApiAuthor = {
     status: string,
   ) {
     return await patch<null>(`${this.prefix}/status/chapter`, {
-      book_id: bookId,
-      chapter_id: chapterId,
+      bookId: bookId,
+      chapterId: chapterId,
       status,
     });
   },
   updateStatusBook: async function (bookId: number, status: string) {
     return await patch<null>(`${this.prefix}/status/book`, {
-      book_id: bookId,
+      bookId: bookId,
       status,
     });
   },

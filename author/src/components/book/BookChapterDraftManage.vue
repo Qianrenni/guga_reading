@@ -11,8 +11,8 @@
       class="text-one-line"
       style="height: calc(100vh - 9rem)"
     >
-      <template #book_id="{ row }">
-        {{ books.get(row.book_id)?.name }}
+      <template #bookId="{ row }">
+        {{ books.get(row.bookId)?.name }}
       </template>
       <template #status="{ row }">
         {{ TranslationStatus[row.status as StatusEnum] }}
@@ -30,7 +30,7 @@
                 router.push({
                   name: 'BookEdit',
                   query: {
-                    bookId: row.book_id,
+                    bookId: row.bookId,
                     chapterId: row.id,
                   },
                 });
@@ -45,7 +45,7 @@
             @click="
               () => {
                 useApiAuthor
-                  .updateStatusBookChapter(row.book_id, row.id, row.status)
+                  .updateStatusBookChapter(row.bookId, row.id, row.status)
                   .then((res) => {
                     if (res.success) {
                       useMessage.success('提交成功');
@@ -64,7 +64,7 @@
             @click="
               () => {
                 useApiAuthor
-                  .deleteBookChapter(row.book_id, row.id)
+                  .deleteBookChapter(row.bookId, row.id)
                   .then((res) => {
                     if (res.success) {
                       useMessage.success('撤销成功');
@@ -78,14 +78,14 @@
           />
         </div>
       </template>
-      <template #created_at="{ row }">
+      <template #createdAt="{ row }">
         <span>{{
-          new UseTimeUtils(row.created_at as string).format('YYYY年M月D日H时')
+          new UseTimeUtils(row.createdAt as string).format('YYYY年M月D日H时')
         }}</span>
       </template>
-      <template #updated_at="{ row }">
+      <template #updatedAt="{ row }">
         <span>{{
-          new UseTimeUtils(row.updated_at as string).format('YYYY年M月D日H时')
+          new UseTimeUtils(row.updatedAt as string).format('YYYY年M月D日H时')
         }}</span>
       </template>
       <template #action="{ row }">
@@ -118,7 +118,7 @@ const bookChapterDrafts = ref<BookChapter[]>([]);
 const books: Map<number, Book> = new Map();
 const columns = [
   {
-    value: 'book_id',
+    value: 'bookId',
     label: '书名',
   },
   {
@@ -126,15 +126,15 @@ const columns = [
     label: '标题',
   },
   {
-    value: 'word_count',
+    value: 'wordsCount',
     label: '字数',
   },
   {
-    value: 'created_at',
+    value: 'createdAt',
     label: '创建时间',
   },
   {
-    value: 'updated_at',
+    value: 'updatedAt',
     label: '更新时间',
   },
   {

@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RequestShelfAdd(
-    @SerialName("book_id") val bookId: Int,
+     val bookId: Int,
 )
 
 fun Routing.shelf() {
@@ -30,9 +30,9 @@ fun Routing.shelf() {
                 call.respond(ResponseModel.Empty("添加书籍到书架成功"))
 
             }
-            delete("/delete/{book_id}") {
+            delete("/delete/{bookId}") {
                 val user = call.getCurrentUser()
-                val bookId = call.requirePathParameter("book_id").toInt()
+                val bookId = call.requirePathParameter("bookId").toInt()
                 application.shelfService.delete(bookId = bookId, userId = user.id)
                 call.respond(ResponseModel.Empty("移除书架书籍成功"))
             }

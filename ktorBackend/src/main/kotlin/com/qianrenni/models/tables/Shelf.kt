@@ -15,8 +15,8 @@ object ShelfTable : Table(name = "shelf") {
 @Serializable
 data class Shelf(
     val userId: Int,
-    @SerialName("book_id") val bookId: Int,
-    @SerialName("created_at") val createdAt: String,
+     val bookId: Int,
+     val createdAt: String,
 )
 
 fun ResultRow.toShelf() = Shelf(

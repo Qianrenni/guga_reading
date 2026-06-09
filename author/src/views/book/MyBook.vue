@@ -45,7 +45,7 @@ onBeforeMount(() => {
     .then((res) => {
       bookItems.value.push(
         ...(res.data.filter(
-          (book) => book.status === 'published' && book.parent_id === null,
+          (book) => book.status === 'published' && book.parentId === null,
         ) ?? []),
       );
     })

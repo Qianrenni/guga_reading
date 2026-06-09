@@ -34,17 +34,17 @@ fun Routing.book() {
             call.respond(ResponseModel.Success(result))
         }
         get("/list") {
-            val bookIds = call.request.queryParameters.getAll("book_ids")?.map { it.toInt() } ?: emptyList()
+            val bookIds = call.request.queryParameters.getAll("bookIds")?.map { it.toInt() } ?: emptyList()
             val result = application.bookService.getBookList(bookIds)
             call.respond(ResponseModel.Success(result))
         }
-        get("/toc/{book_id}") {
-            val bookId = call.requirePathParameter("book_id").toInt()
+        get("/toc/{bookId}") {
+            val bookId = call.requirePathParameter("bookId").toInt()
             val result = application.bookService.getBookCatalog(bookId)
             call.respond(ResponseModel.Success(result))
         }
         authenticate("auth-jwt") {
-            get("/chapter/{chapter_id}") {
+            get("/chapter/{chapterId}") {
                 call.requirePermission(
                     permissions = listOf(
                         generatePermissionCode(
@@ -54,8 +54,8 @@ fun Routing.book() {
                         )
                     )
                 )
-                val chapterId = call.requirePathParameter("chapter_id").toInt()
-                val bookId = call.requireQueryParameter("book_id").toInt()
+                val chapterId = call.requirePathParameter("chapterId").toInt()
+                val bookId = call.requireQueryParameter("bookId").toInt()
                 val result = application.bookService.getBookChapter(chapterId, bookId)
                 call.respond(ResponseModel.Success(result))
             }
@@ -67,8 +67,8 @@ fun Routing.book() {
             val result = application.bookService.getBookSelect(category, offset, limit)
             call.respond(ResponseModel.Success(result))
         }
-        get("/{book_id}") {
-            val bookId = call.requirePathParameter("book_id").toInt()
+        get("/{bookId}") {
+            val bookId = call.requirePathParameter("bookId").toInt()
             val result = application.bookService.getBookList(listOf(bookId))
             call.respond(ResponseModel.Success(result.first()))
         }

@@ -1,10 +1,10 @@
 import { get, post } from '../utils';
 import { User } from '@guga-reading/types';
 export const useApiAuth = {
-  authMe: async (token_type: string, token: string) => {
+  authMe: async (tokenType: string, token: string) => {
     return await get<{ user: User }>(`/token/auth/me`, {
       headers: {
-        Authorization: `${token_type} ${token}`,
+        Authorization: `${tokenType} ${token}`,
       },
     });
   },
@@ -12,12 +12,12 @@ export const useApiAuth = {
     username: string,
     password: string,
     captcha: string,
-    x_captcha_id: string,
+    xCaptchaId: string,
   ) {
     return await post<{
-      access_token: string;
-      refresh_token: string;
-      token_type: string;
+      accessToken: string;
+      refreshToken: string;
+      tokenType: string;
       user: User;
     }>(
       `/token/get`,
@@ -28,23 +28,23 @@ export const useApiAuth = {
       },
       {
         headers: {
-          'X-Captcha-Id': x_captcha_id,
+          'X-Captcha-Id': xCaptchaId,
         },
       },
     );
   },
-  refreshToken: async function (token_type: string, refresh_token: string) {
+  refreshToken: async function (tokenType: string, refreshToken: string) {
     return await post<{
-      access_token: string;
-      refresh_token: string;
-      token_type: string;
+      accessToken: string;
+      refreshToken: string;
+      tokenType: string;
       user: User;
     }>(
       `/token/refresh`,
       {},
       {
         headers: {
-          Authorization: `${token_type} ${refresh_token}`,
+          Authorization: `${tokenType} ${refreshToken}`,
         },
       },
     );
@@ -59,7 +59,7 @@ export const useApiAuth = {
     password: string,
     email: string,
     captcha: string,
-    x_captcha_id: string,
+    xCaptchaId: string,
     avatar: string = '',
   ) => {
     return await post<null>(
@@ -75,7 +75,7 @@ export const useApiAuth = {
       },
       {
         headers: {
-          'X-Captcha-Id': x_captcha_id,
+          'X-Captcha-Id': xCaptchaId,
         },
       },
     );

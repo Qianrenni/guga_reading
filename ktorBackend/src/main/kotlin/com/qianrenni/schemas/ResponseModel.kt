@@ -52,5 +52,5 @@ sealed class ResponseModel<out T> : ResponseContract<T> {
 
 @Serializable
 data class CountResponseModel(
-    @SerialName("count") val count: Int
+     val count: Int
 )

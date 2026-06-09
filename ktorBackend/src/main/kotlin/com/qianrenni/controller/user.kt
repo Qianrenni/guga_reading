@@ -15,22 +15,22 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 @Serializable
 data class RegisterUser(
-    @SerialName("user") val user: FullUser,
-    @SerialName("captcha") val captcha: String
+     val user: FullUser,
+     val captcha: String
 )
 
 @Serializable
 data class UserPasswordUpdate(
-    @SerialName("username") val username: String,
-    @SerialName("old_password") val oldPassword: String,
-    @SerialName("new_password") val newPassword: String
+     val username: String,
+     val oldPassword: String,
+     val newPassword: String
 )
 
 @Serializable
 data class ForgotPasswordRequest(
-    @SerialName("user_account") val userAccount: String,
-    @SerialName("verify_code") val verifyCode: String,
-    @SerialName("password") val password: String
+     val userAccount: String,
+     val verifyCode: String,
+     val password: String
 )
 
 
