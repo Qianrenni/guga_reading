@@ -37,7 +37,7 @@ logger.configure(
         },
         {
             "sink": sys.stderr,
-            "level": "DEBUG",
+            "level": "INFO" if SETTING.ENV == "prod" else "DEBUG",
             "colorize": True,
             "format": "<green>{time:HH:mm:ss}</green> | <level>{level}</level> | <cyan>{message}</cyan>",
             "catch": True,

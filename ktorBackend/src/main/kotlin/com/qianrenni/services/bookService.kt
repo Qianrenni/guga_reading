@@ -128,7 +128,11 @@ class BookService(private val application: Application) {
     }
 
     suspend fun getBookSelect(category: String, offSet: Int, limit: Int): List<Book> {
-        return cacheBooksByCategory(category).subList(offSet, offSet + limit)
+        val list = cacheBooksByCategory(category)
+        if(offSet+limit > list.size) {
+            return emptyList()
+        }
+        return list.subList(offSet, offSet + limit)
     }
 }
 
