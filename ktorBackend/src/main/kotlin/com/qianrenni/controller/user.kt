@@ -11,7 +11,6 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 @Serializable
 data class RegisterUser(
@@ -21,9 +20,9 @@ data class RegisterUser(
 
 @Serializable
 data class UserPasswordUpdate(
-     val username: String,
-     val oldPassword: String,
-     val newPassword: String
+    val userName: String,
+    val oldPassword: String,
+    val newPassword: String
 )
 
 @Serializable
@@ -84,7 +83,7 @@ fun Routing.user() {
             val request = call.receive<UserPasswordUpdate>()
 
             application.userService.updatePassword(
-                userEmail = request.username,
+                userEmail = request.userName,
                 oldPassword = request.oldPassword,
                 newPassword = request.newPassword
             )

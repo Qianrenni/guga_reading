@@ -39,8 +39,8 @@ export const useApiUser = {
       return { success: false, data: null, message: '密码不一致' };
     }
     return await patch<null>(`${this.prefix}/forgot-password`, {
-      user_account: email,
-      verify_code: code,
+      userAccount: email,
+      verifyCode: code,
       password,
     });
   },
@@ -65,9 +65,9 @@ export const useApiUser = {
       return { success: false, data: null, message: '密码不一致' };
     }
     return await patch<null>(`${this.prefix}/update-password`, {
-      username: email,
-      old_password: oldPassword,
-      new_password: newPassword,
+      userName: email,
+      oldPassword,
+      newPassword,
     });
   },
 };

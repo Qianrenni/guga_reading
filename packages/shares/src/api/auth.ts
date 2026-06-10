@@ -66,7 +66,7 @@ export const useApiAuth = {
       `/user/register`,
       {
         user: {
-          username: username,
+          userName: username,
           password: password,
           email: email,
           avatar: avatar,
