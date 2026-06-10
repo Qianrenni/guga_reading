@@ -113,10 +113,12 @@ fun Routing.auth() {
             )
 
             call.respond(
-                ResponseTokenData(
+                ResponseModel.Success(
+                    ResponseTokenData(
                     accessToken = newAccessToken,
                     refreshToken = newRefreshToken,
                     user = user
+                    )
                 )
             )
         }
