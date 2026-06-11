@@ -80,7 +80,7 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus:1.12.2")
     // msgpack 序列化
     implementation("org.msgpack:msgpack-core:0.9.8")
-    
+    implementation("org.lz4:lz4-java:1.8.0")
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }
