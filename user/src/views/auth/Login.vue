@@ -1,18 +1,18 @@
 <template>
   <div class="content-container">
-    <div class="container-column bg-card radius-rem">
+    <div class="container-column bg-card">
       <h3 class="text-center">用户登录</h3>
       <QFormText
+        prefixIcon="User"
         v-model="form.username"
         type="email"
-        label="用户名"
         placeholder="请输入用户名"
         name="username"
       />
       <QFormText
+        prefixIcon="Lock"
         v-model="form.password"
         type="password"
-        label="密码"
         placeholder="请输入密码"
         name="password"
       />
@@ -20,7 +20,6 @@
         <QFormText
           v-model="form.captcha"
           type="text"
-          label="验证码"
           placeholder="请输入验证码"
           name="captcha"
         />
