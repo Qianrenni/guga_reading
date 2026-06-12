@@ -7,10 +7,12 @@ import com.qianrenni.guga.com.qianrenni.services.bookService
 import com.qianrenni.plugins.requirePermission
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.generatePermissionCode
+import com.ucasoft.ktor.simpleCache.cacheOutput
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlin.time.Duration.Companion.minutes
 
 
 fun Routing.book() {
@@ -38,10 +40,12 @@ fun Routing.book() {
             val result = application.bookService.getBookList(bookIds)
             call.respond(ResponseModel.Success(result))
         }
-        get("/toc/{bookId}") {
-            val bookId = call.requirePathParameter("bookId").toInt()
-            val result = application.bookService.getBookCatalog(bookId)
-            call.respond(ResponseModel.Success(result))
+        cacheOutput(30.minutes) {
+            get("/toc/{bookId}") {
+                val bookId = call.requirePathParameter("bookId").toInt()
+                val result = application.bookService.getBookCatalog(bookId)
+                call.respond(ResponseModel.Success(result))
+            }
         }
         authenticate("auth-jwt") {
             get("/chapter/{chapterId}") {
