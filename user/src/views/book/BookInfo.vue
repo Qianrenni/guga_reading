@@ -132,6 +132,7 @@ import {
   QIcon,
   QTab,
   QTag,
+  useShowLoading,
 } from 'qyani-components';
 import { indexToCN, useApiBooks, useTitle } from '@guga-reading/shares';
 import router from '@/route';
@@ -167,6 +168,7 @@ const bookStore = useBookStore();
 const relatedBooks = ref([] as Book[]);
 
 const initial = async (bookId: number) => {
+  useShowLoading.show();
   const [rawbook, rawcatalog] = await Promise.all([
     bookStore.getBookById(bookId),
     bookStore.getCatalogById(bookId),
@@ -182,6 +184,7 @@ const initial = async (bookId: number) => {
       relatedBooks.value = result.data!.filter((item) => item.id !== bookId);
     });
   useTitle(rawbook.name);
+  useShowLoading.hide();
 };
 onBeforeMount(() => {
   const bookId = parseInt(router.currentRoute.value.params.id as string);

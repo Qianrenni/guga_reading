@@ -79,15 +79,9 @@ class BookService(private val application: Application) {
     }
 
     suspend fun getBookCatalog(bookId: Int): List<BookCatalogItem> {
-        return application.cache(
-            keyPrefix = "book_service",
-            args = listOf("book_catalog", bookId.toString()),
-            serializer = ListSerializer(BookCatalogItem.serializer())
-        ) {
-            application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookChapterTable.selectAll().where { BookChapterTable.bookId eq bookId }.orderBy(BookChapterTable.order)
-                    .map { it.toBookCatalogItem() }
-            }
+        return application.databaseManager.suspendedTransaction(readOnly = true) {
+            BookChapterTable.selectAll().where { BookChapterTable.bookId eq bookId }.orderBy(BookChapterTable.order)
+                .map { it.toBookCatalogItem() }
         }
     }
 
