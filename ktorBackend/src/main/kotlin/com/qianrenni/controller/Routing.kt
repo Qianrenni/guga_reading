@@ -1,7 +1,6 @@
 package com.qianrenni.controller
 
 import com.qianrenni.config.appConfig
-import com.qianrenni.guga.com.qianrenni.controller.*
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
 import io.ktor.server.routing.*
@@ -17,6 +16,8 @@ fun Application.configureRouting() {
         userReadingProgress()
         statistics()
         shelf()
+        admin()
+        author()
         if (application.appConfig.environment == "dev") {
             test()
         }

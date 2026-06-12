@@ -1,9 +1,9 @@
-package com.qianrenni.guga.com.qianrenni.services
+package com.qianrenni.services
 
 import com.qianrenni.database.databaseManager
-import com.qianrenni.guga.com.qianrenni.models.tables.Shelf
-import com.qianrenni.guga.com.qianrenni.models.tables.ShelfTable
-import com.qianrenni.guga.com.qianrenni.models.tables.toShelf
+import com.qianrenni.models.tables.Shelf
+import com.qianrenni.models.tables.ShelfTable
+import com.qianrenni.models.tables.toShelf
 import io.ktor.server.application.*
 import io.ktor.util.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

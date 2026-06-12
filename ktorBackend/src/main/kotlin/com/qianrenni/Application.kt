@@ -4,9 +4,8 @@ import com.qianrenni.config.loadConfig
 import com.qianrenni.controller.configureRouting
 import com.qianrenni.database.configureDatabase
 import com.qianrenni.database.configureRedis
-import com.qianrenni.guga.com.qianrenni.plugins.configureMetrics
-import com.qianrenni.guga.com.qianrenni.services.configService
 import com.qianrenni.plugins.*
+import com.qianrenni.services.configService
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*

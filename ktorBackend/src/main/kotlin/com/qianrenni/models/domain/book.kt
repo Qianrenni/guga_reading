@@ -1,10 +1,9 @@
-package com.qianrenni.guga.com.qianrenni.models.domain
+package com.qianrenni.models.domain
 
 import com.qianrenni.enums.BookStatus
-import com.qianrenni.guga.com.qianrenni.models.tables.BookChapterTable
-import com.qianrenni.guga.com.qianrenni.models.tables.BookTable
-import com.qianrenni.guga.com.qianrenni.models.tables.UserReadingProgressTable
-import kotlinx.serialization.SerialName
+import com.qianrenni.models.tables.BookChapterTable
+import com.qianrenni.models.tables.BookTable
+import com.qianrenni.models.tables.UserReadingProgressTable
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.ResultRow
 

@@ -1,11 +1,11 @@
-package com.qianrenni.guga.com.qianrenni.controller
+package com.qianrenni.controller
 
 import com.qianrenni.enums.ActionEnum
 import com.qianrenni.enums.ResourceTypeEnum
 import com.qianrenni.enums.ScopeEnum
-import com.qianrenni.guga.com.qianrenni.services.bookService
 import com.qianrenni.plugins.requirePermission
 import com.qianrenni.schemas.ResponseModel
+import com.qianrenni.services.bookService
 import com.qianrenni.services.generatePermissionCode
 import com.ucasoft.ktor.simpleCache.cacheOutput
 import io.ktor.server.auth.*

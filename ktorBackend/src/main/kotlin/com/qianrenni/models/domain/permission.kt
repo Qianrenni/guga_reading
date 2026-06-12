@@ -1,9 +1,9 @@
-package com.qianrenni.guga.com.qianrenni.models.domain
+package com.qianrenni.models.domain
 
 import com.qianrenni.enums.ActionEnum
 import com.qianrenni.enums.ResourceTypeEnum
 import com.qianrenni.enums.ScopeEnum
-import com.qianrenni.guga.com.qianrenni.models.tables.PermissionTable
+import com.qianrenni.models.tables.PermissionTable
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.ResultRow
 

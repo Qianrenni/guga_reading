@@ -1,6 +1,6 @@
-package com.qianrenni.guga.com.qianrenni.models.domain
+package com.qianrenni.models.domain
 
-import com.qianrenni.guga.com.qianrenni.models.tables.UserRoleTable
+import com.qianrenni.models.tables.UserRoleTable
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.ResultRow
 

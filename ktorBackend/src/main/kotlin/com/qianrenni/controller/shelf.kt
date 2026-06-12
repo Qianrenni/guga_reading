@@ -1,13 +1,12 @@
-package com.qianrenni.guga.com.qianrenni.controller
+package com.qianrenni.controller
 
-import com.qianrenni.guga.com.qianrenni.services.shelfService
 import com.qianrenni.plugins.getCurrentUser
 import com.qianrenni.schemas.ResponseModel
+import com.qianrenni.services.shelfService
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable

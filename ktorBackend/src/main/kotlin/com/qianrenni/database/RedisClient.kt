@@ -27,12 +27,10 @@ class RedisManager(config: AppConfig) {
         redisClient = RedisClient.create(uri)
 
         // 配置连接池
-        redisClient?.setOptions(
-            ClientOptions.builder()
-                .autoReconnect(true)
-                .pingBeforeActivateConnection(true)
-                .build()
-        )
+        redisClient?.options = ClientOptions.builder()
+            .autoReconnect(true)
+            .pingBeforeActivateConnection(true)
+            .build()
 
         connection = redisClient?.connect(StringCodec.UTF8)
         connection?.timeout = Duration.ofSeconds(config.redisWaitTimeout.toLong())

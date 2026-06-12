@@ -1,4 +1,4 @@
-package com.qianrenni.guga.com.qianrenni.models.tables
+package com.qianrenni.models.tables
 
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.datetime

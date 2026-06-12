@@ -1,6 +1,5 @@
-package com.qianrenni.guga.com.qianrenni.services
+package com.qianrenni.services
 
-import com.qianrenni.services.*
 import io.ktor.server.application.*
 
 
@@ -14,4 +13,6 @@ fun Application.configService() {
     registerReadProgressService()
     registerStatisticsService()
     registerShelfService()
+    registerAdminService()
+    registerAuthorBookService()
 }

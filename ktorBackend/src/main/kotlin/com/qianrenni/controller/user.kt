@@ -1,6 +1,6 @@
-package com.qianrenni.guga.com.qianrenni.controller
+package com.qianrenni.controller
 
-import com.qianrenni.guga.com.qianrenni.models.domain.FullUser
+import com.qianrenni.models.domain.FullUser
 import com.qianrenni.schemas.CountResponseModel
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.cacheService

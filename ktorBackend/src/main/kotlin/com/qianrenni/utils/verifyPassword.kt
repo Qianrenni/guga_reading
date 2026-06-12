@@ -1,4 +1,4 @@
-package com.qianrenni.guga.com.qianrenni.utils
+package com.qianrenni.utils
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 

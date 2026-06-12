@@ -1,6 +1,5 @@
-package com.qianrenni.guga.com.qianrenni.models.tables
+package com.qianrenni.models.tables
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.Table

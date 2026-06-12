@@ -1,8 +1,8 @@
-package com.qianrenni.guga.com.qianrenni.services
+package com.qianrenni.services
 
 import com.qianrenni.database.databaseManager
 import com.qianrenni.enums.ReportEnum
-import com.qianrenni.guga.com.qianrenni.models.tables.UserReadEventTable
+import com.qianrenni.models.tables.UserReadEventTable
 import io.ktor.server.application.*
 import io.ktor.util.*
 import org.jetbrains.exposed.sql.insert

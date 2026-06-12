@@ -1,7 +1,7 @@
-package com.qianrenni.guga.com.qianrenni.models.domain
+package com.qianrenni.models.domain
 
 import com.qianrenni.enums.RoleEnum
-import com.qianrenni.guga.com.qianrenni.models.tables.RoleTable
+import com.qianrenni.models.tables.RoleTable
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.ResultRow
 

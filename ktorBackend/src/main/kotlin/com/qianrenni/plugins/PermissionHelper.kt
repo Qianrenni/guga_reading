@@ -1,7 +1,7 @@
 package com.qianrenni.plugins
 
 import com.qianrenni.excptions.PermissionDeniedException
-import com.qianrenni.guga.com.qianrenni.models.domain.FullUser
+import com.qianrenni.models.domain.FullUser
 import com.qianrenni.services.rightService
 import io.ktor.server.application.*
 import io.ktor.server.auth.*

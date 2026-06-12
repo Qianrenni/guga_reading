@@ -6,8 +6,8 @@ import com.qianrenni.enums.ActionEnum
 import com.qianrenni.enums.ResourceTypeEnum
 import com.qianrenni.enums.RoleEnum
 import com.qianrenni.enums.ScopeEnum
-import com.qianrenni.guga.com.qianrenni.models.domain.*
-import com.qianrenni.guga.com.qianrenni.models.tables.*
+import com.qianrenni.models.domain.*
+import com.qianrenni.models.tables.*
 import io.ktor.server.application.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers

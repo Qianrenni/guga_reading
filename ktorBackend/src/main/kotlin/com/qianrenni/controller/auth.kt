@@ -1,9 +1,9 @@
-package com.qianrenni.guga.com.qianrenni.controller
+package com.qianrenni.controller
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.qianrenni.config.appConfig
-import com.qianrenni.guga.com.qianrenni.models.domain.FullUser
+import com.qianrenni.models.domain.FullUser
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.cacheService
 import com.qianrenni.services.emailService

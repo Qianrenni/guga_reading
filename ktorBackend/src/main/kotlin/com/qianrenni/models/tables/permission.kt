@@ -1,4 +1,4 @@
-package com.qianrenni.guga.com.qianrenni.models.tables
+package com.qianrenni.models.tables
 
 import com.qianrenni.enums.ActionEnum
 import com.qianrenni.enums.ResourceTypeEnum
