@@ -20,17 +20,16 @@ data class Book(
     val wordsCount: Int = 0,
     val isActive: Boolean = true,
     val isEnded: Boolean = false,
-    val parentId: Int,
     val status: BookStatus,
     val createdAt: String = "",
     val updatedAt: String = ""
 )
 
-fun ResultRow.toBook() = Book(
+fun ResultRow.toBook(serverUrl: String) = Book(
     id = this[BookTable.id].value,
     name = this[BookTable.name],
     author = this[BookTable.author],
-    cover = this[BookTable.cover],
+    cover = "${serverUrl}/static/book/${this[BookTable.id].value}/cover.webp",
     description = this[BookTable.description],
     category = this[BookTable.category],
     tags = this[BookTable.tags],
@@ -38,7 +37,6 @@ fun ResultRow.toBook() = Book(
     wordsCount = this[BookTable.wordsCount],
     isActive = this[BookTable.isActive],
     isEnded = this[BookTable.isEnded],
-    parentId = this[BookTable.parentId] ?: -1,
     status = this[BookTable.status],
     createdAt = this[BookTable.createdAt].toString(),
     updatedAt = this[BookTable.updatedAt].toString()

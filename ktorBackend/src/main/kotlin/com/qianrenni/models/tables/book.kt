@@ -19,7 +19,6 @@ object BookTable : IntIdTable(name = "book") {
     val wordsCount = integer("wordsCount")
     val isActive = bool("isActive")
     val isEnded = bool("isEnded")
-    val parentId = integer("parentId").references(id).nullable()
     val status = enumerationByName<BookStatus>(
         name = "status",
         length = 25

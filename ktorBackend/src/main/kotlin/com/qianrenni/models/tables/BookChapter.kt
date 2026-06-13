@@ -12,5 +12,5 @@ object BookChapterTable : IntIdTable(name = "book_chapter") {
     val updatedAt = datetime("updatedAt")
     val status = enumerationByName<BookStatus>("status", 25)
     val isActive = bool("isActive")
-    val order = decimal("order", 10, 2)
+    val order = float("order")
 }

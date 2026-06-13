@@ -2,6 +2,7 @@ package com.qianrenni.services
 
 import com.qianrenni.config.appConfig
 import com.qianrenni.database.databaseManager
+import com.qianrenni.enums.BookStatus
 import com.qianrenni.models.domain.Book
 import com.qianrenni.models.domain.BookCatalogItem
 import com.qianrenni.models.domain.toBook
@@ -25,7 +26,7 @@ class BookService(private val application: Application) {
             serializer = Long.serializer()
         ) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookTable.selectAll().count()
+                BookTable.selectAll().where { BookTable.status eq BookStatus.PUBLISHED }.count()
             }
         }
     }
@@ -49,8 +50,8 @@ class BookService(private val application: Application) {
             serializer = ListSerializer(Book.serializer())
         ) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookTable.selectAll().orderBy(Random()).limit(5).map { it.toBook() }
-                    .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
+                BookTable.selectAll().where { BookTable.status eq BookStatus.PUBLISHED }.orderBy(Random()).limit(5)
+                    .map { it.toBook(application.appConfig.serverUrl) }
             }
         }
     }
@@ -62,23 +63,28 @@ class BookService(private val application: Application) {
             serializer = ListSerializer(Book.serializer())
         ) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookTable.selectAll().where { (BookTable.name like "%$query%") or (BookTable.author like "%$query%") }
-                    .map { it.toBook() }
-                    .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
+                BookTable.selectAll()
+                    .where { (BookTable.status eq BookStatus.PUBLISHED) and ((BookTable.name like "%$query%") or (BookTable.author like "%$query%")) }
+                    .map { it.toBook(application.appConfig.serverUrl) }
             }
         }
     }
 
     suspend fun getBookList(bookIds: List<Int>): List<Book> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
-            BookTable.selectAll().where { BookTable.id inList bookIds }.map { it.toBook() }
-                .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
+            BookTable.selectAll().where { (BookTable.status eq BookStatus.PUBLISHED) and (BookTable.id inList bookIds) }
+                .map { it.toBook(application.appConfig.serverUrl) }
         }
     }
 
     suspend fun getBookCatalog(bookId: Int): List<BookCatalogItem> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
-            BookChapterTable.selectAll().where { BookChapterTable.bookId eq bookId }.orderBy(BookChapterTable.order)
+            BookChapterTable
+                .selectAll()
+                .where {
+                    (BookChapterTable.status eq BookStatus.PUBLISHED) and (BookChapterTable.bookId eq bookId)
+                }
+                .orderBy(BookChapterTable.order)
                 .map { it.toBookCatalogItem() }
         }
     }
@@ -90,8 +96,11 @@ class BookService(private val application: Application) {
             serializer = String.serializer()
         ) {
             val result = application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookChapterTable.selectAll()
-                    .where { (BookChapterTable.id eq chapterId) and (BookChapterTable.bookId eq bookId) }.firstOrNull()
+                BookChapterTable
+                    .selectAll()
+                    .where {
+                        (BookChapterTable.id eq chapterId) and (BookChapterTable.bookId eq bookId) and (BookChapterTable.status eq BookStatus.PUBLISHED)
+                    }.firstOrNull()
             }
             if (result == null) {
                 throw IllegalArgumentException("书籍内容遍历攻击")
@@ -107,9 +116,10 @@ class BookService(private val application: Application) {
 
     suspend fun getBookSelect(category: String, offSet: Int, limit: Int): List<Book> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
-            BookTable.selectAll().where { (BookTable.category eq category) }.offset(start = offSet.toLong())
-                .limit(count = limit).map { it.toBook() }
-                .map { it.copy(cover = "${application.appConfig.serverUrl}/static/book/${it.id}/cover.webp") }
+            BookTable.selectAll()
+                .where { (BookTable.category eq category) and (BookTable.status eq BookStatus.PUBLISHED) }
+                .offset(start = offSet.toLong())
+                .limit(count = limit).map { it.toBook(application.appConfig.serverUrl) }
         }
     }
 }
