@@ -80,7 +80,6 @@ CREATE TABLE IF NOT EXISTS `book`
     `wordsCount`    INT          NOT NULL DEFAULT 0,
     `isActive`      TINYINT(1)   NOT NULL DEFAULT 1,
     `isEnded`       TINYINT(1)   NOT NULL DEFAULT 0,
-    `parentId`      INT              NULL DEFAULT NULL,
     `status`        ENUM ('PENDING', 'REVIEWING', 'APPROVED', 'REJECTED', 'PUBLISHED') NOT NULL DEFAULT 'PENDING',
     PRIMARY KEY (`id`),
     INDEX `idx_book_name` (`name`),
@@ -320,30 +319,3 @@ CREATE TABLE IF NOT EXISTS `user_reading_progress`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
-
--- ============================================================
--- Data migration from beta database
--- ============================================================
-INSERT INTO `permission` (`name`, `resourceType`, `action`, `scope`, `bitPosition`, `createdAt`, `updatedAt`)
-SELECT `name`, `resource_type`, `action`, `scope`, `bit_position`, `created_at`, `updated_at`
-FROM `beta`.`permission`;
-
-INSERT INTO `role` (`name`, `code`, `description`, `createdAt`, `updatedAt`)
-SELECT `name`, `code`, `description`, `created_at`, `updated_at`
-FROM `beta`.`role`;
-
-INSERT INTO `role_inheritance` (`childId`, `parentId`, `createdAt`)
-SELECT `child_id`, `parent_id`, `created_at`
-FROM `beta`.`role_inheritance`;
-
-INSERT INTO `role_permission` (`roleId`, `permissionId`, `createdAt`)
-SELECT `role_id`, `permission_id`, `created_at`
-FROM `beta`.`role_permission`;
-
-INSERT INTO `book` (`name`, `author`, `cover`, `description`, `category`, `tags`, `totalChapter`, `createdAt`, `updatedAt`)
-SELECT `name`, `author`, `cover`, `description`, `category`, `tags`, `total_chapter`, `created_at`, `updated_at`
-FROM `beta`.`book`;
-
-INSERT INTO `book_chapter` (`id`, `bookId`, `title`,`wordCount`, `status`,`isActive`,`order`,`createdAt`, `updatedAt`)
-SELECT `id`, `book_id`, `title`, `word_count`, `status`, `is_active`, `order`, `created_at`, `updated_at`
-FROM `beta`.`book_chapter`;
