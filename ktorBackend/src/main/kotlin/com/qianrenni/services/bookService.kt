@@ -105,12 +105,12 @@ class BookService(private val application: Application) {
             if (result == null) {
                 throw IllegalArgumentException("书籍内容遍历攻击")
             }
-            val chapterStore = ChapterStoreService(
+            ChapterStoreService(
                 bookId = bookId,
                 baseDir = application.appConfig.contentDir + "/book",
-            )
-            chapterStore.loadIndex()
-            chapterStore.readChapter(chapterId)
+            ).use {
+                it.readChapter(chapterId)
+            }
         }
     }
 

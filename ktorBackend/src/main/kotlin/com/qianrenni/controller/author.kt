@@ -244,7 +244,9 @@ fun Routing.author() {
             get("/content") {}
 
             // GET /author/draft/chapter - 获取草稿章节
-            get("/draft/chapter") {}
+            route("/draft") {
+                get("/chapter") {}
+            }
             route("/status") {
                 // PATCH /author/status/chapter - 更新章节状态
                 patch("chapter") {}

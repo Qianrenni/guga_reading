@@ -2,6 +2,8 @@ package com.qianrenni.services
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import net.jpountz.lz4.LZ4Factory
 import org.msgpack.core.MessagePack
@@ -9,30 +11,97 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousFileChannel
-import java.nio.file.*
-import kotlin.io.path.exists
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.io.path.Path
 
-class ChapterStoreService(
-    bookId: Int,
-    baseDir: String,
+/**
+ * 允许并发读、互斥写的协程同步器。
+ * - 读锁之间不互斥
+ * - 写锁与所有读锁及写锁互斥
+ * - 写锁会等待所有已持有读锁释放后再获取
+ */
+class CoroutineReadWriteLock {
+    private val readMutex = Mutex()
+    private val writeMutex = Mutex()
+    private var readers = 0
+
+    private suspend fun readLock() {
+        readMutex.withLock {
+            readers++
+            if (readers == 1) writeMutex.lock()   // 第一个读者锁住写
+        }
+    }
+
+    private suspend fun readUnlock() {
+        readMutex.withLock {
+            readers--
+            if (readers == 0) writeMutex.unlock() // 最后一个读者释放写
+        }
+    }
+
+    suspend fun <T> withReadLock(block: suspend () -> T): T {
+        readLock()
+        try {
+            return block()
+        } finally {
+            readUnlock()
+        }
+    }
+
+    suspend fun <T> withWriteLock(block: suspend () -> T): T {
+        writeMutex.lock()
+        try {
+            return block()
+        } finally {
+            writeMutex.unlock()
+        }
+    }
+}
+
+/**
+ * 封装同一本书的所有同步状态和文件操作。
+ * 该对象全局唯一（由 ChapterStoreManager 保证），
+ * 同一本书的所有操作都必须通过此单元进行。
+ */
+class ChapterStoreSync(
+    val dir: Path,
+    val dataFile: File,
+    val indexFile: File,
+    val compressThreshold: Int = 1024
 ) {
-    // 二进制记录头格式：小端字节序
-    // I: uint32 (chapterId, 4字节)
-    // I: uint32 (contentSize, 4字节)
-    // I: uint32 (originalSize, 4字节)
-    // ?: bool (isDelete, 1字节)
-    // ?: bool (isCompress,1字节)
-    // Q: uint64 (timestamp 微秒级, 8字节)
-    // 总计: 4+4+4+1+1+8 = 22 字节
-    private val recordHeaderSize = 22
-    private val dir: Path = Paths.get(baseDir, "$bookId")
-    private val dataFile: File
-    private val indexFile: File
-    private val compressThreshold = 1024
+    companion object {
+        // 二进制记录头大小
+        private const val RECORD_HEADER_SIZE = 22
+    }
 
-    /**
-     * 章节记录元数据
-     */
+    private val refCount = AtomicInteger(0)
+
+    fun acquire() = refCount.incrementAndGet()
+    fun release(): Int = refCount.decrementAndGet()
+
+    // ---- 同步原语 ----
+    val writeMutex = Mutex()                 // 写写互斥
+    val rwLock = CoroutineReadWriteLock()    // 读写隔离（主要用于 compact）
+
+    @Volatile
+    var indexSnapshot: Map<Int, Record> = emptyMap()
+        private set
+
+    // LZ4 工厂（线程安全，可共享）
+    val lz4Factory: LZ4Factory = LZ4Factory.fastestInstance()
+
+    // 索引是否已加载
+    private val loadLock = Mutex()
+
+    @Volatile
+    private var loaded = false
+
+    // 章节记录元数据（与原始定义完全一致）
     data class Record(
         val offset: Long,
         val contentSize: Int,
@@ -42,28 +111,92 @@ class ChapterStoreService(
         val timestamp: Long
     )
 
-    // 内存索引：chapterId -> RecordMeta
-    private val indexes = mutableMapOf<Int, Record>()
-    val factory: LZ4Factory = LZ4Factory.fastestInstance()
-
-    init {
-        if (!dir.parent.exists()) {
-            throw IllegalStateException("内容存储位置不存在")
+    suspend fun ensureLoaded() {
+        if (loaded) return
+        loadLock.withLock {
+            if (loaded) return
+            loadIndexInternal()
+            loaded = true
         }
-        dir.toFile().mkdirs()
-        dataFile = dir.resolve("data.log").toFile()
-        indexFile = dir.resolve("index.idx").toFile()
     }
 
-    /**
-     * 将内存中的索引持久化到 index.idx 文件(使用 msgpack 二进制格式)
-     */
-    private suspend fun saveIndex() {
+    private suspend fun loadIndexInternal() {
+        // 1. 优先从 index.idx 快速加载
+        if (indexFile.exists()) {
+            withContext(Dispatchers.IO) {
+                val data = indexFile.readBytes()
+                if (data.isNotEmpty()) {
+                    val unpacker = MessagePack.newDefaultUnpacker(data)
+                    val mapSize = unpacker.unpackArrayHeader()
+                    val map = mutableMapOf<Int, Record>()
+                    repeat(mapSize) {
+                        val chapterId = unpacker.unpackInt()
+                        map[chapterId] = Record(
+                            offset = unpacker.unpackLong(),
+                            contentSize = unpacker.unpackInt(),
+                            originalSize = unpacker.unpackInt(),
+                            isDelete = unpacker.unpackBoolean(),
+                            isCompress = unpacker.unpackBoolean(),
+                            timestamp = unpacker.unpackLong()
+                        )
+                    }
+                    indexSnapshot = map
+                }
+            }
+            return
+        }
+
+        // 2. 回退：从 data.log 重建索引
+        if (!dataFile.exists()) return
+
+        withContext(Dispatchers.IO) {
+            val channel = AsynchronousFileChannel.open(
+                dataFile.toPath(), StandardOpenOption.READ
+            )
+            channel.use { ch ->
+                var position = 0L
+                val headerBuf = ByteBuffer.allocate(RECORD_HEADER_SIZE)
+                val map = mutableMapOf<Int, Record>()
+
+                while (isActive) {
+                    headerBuf.clear()
+                    val bytesRead = ch.read(headerBuf, position).get()
+                    if (bytesRead < RECORD_HEADER_SIZE) break
+                    headerBuf.flip()
+
+                    val chapterId = headerBuf.int
+                    val contentSize = headerBuf.int
+                    val originalSize = headerBuf.int
+                    val deleted = headerBuf.get() != 0.toByte()
+                    val isCompress = headerBuf.get() != 0.toByte()
+                    val timestamp = headerBuf.long
+                    val offset = position + RECORD_HEADER_SIZE
+
+                    map[chapterId] = Record(
+                        offset = offset,
+                        contentSize = contentSize,
+                        originalSize = originalSize,
+                        isDelete = deleted,
+                        isCompress = isCompress,
+                        timestamp = timestamp
+                    )
+                    position += RECORD_HEADER_SIZE + contentSize
+                }
+                indexSnapshot = map
+            }
+        }
+
+        // 重建后立即持久化索引，加速下次启动
+        saveIndexSnapshot(indexSnapshot)
+    }
+
+    // -------------------- 索引持久化 --------------------
+    private suspend fun saveIndexSnapshot(snapshot: Map<Int, Record>) {
         withContext(Dispatchers.IO) {
             val out = ByteArrayOutputStream()
             val packer = MessagePack.newDefaultPacker(out)
-            packer.packArrayHeader(indexes.size)
-            indexes.forEach { (chapterId, record) ->
+            packer.packArrayHeader(snapshot.size)
+            snapshot.forEach { (chapterId, record) ->
                 packer.packInt(chapterId)
                 packer.packLong(record.offset)
                 packer.packInt(record.contentSize)
@@ -74,291 +207,320 @@ class ChapterStoreService(
             }
             packer.close()
             indexFile.writeBytes(out.toByteArray())
-
         }
     }
 
-    /**
-     * 启动时加载索引：
-     * 1. 优先尝试从 index.idx 快速加载
-     * 2. 若文件不存在或损坏,则回退到扫描 data.log 重建索引
-     */
-    suspend fun loadIndex() {
-        indexes.clear()
-        // 尝试从持久化索引加载(快速路径)
-        if (indexFile.exists()) {
-            withContext(Dispatchers.IO) {
-                val data = indexFile.readBytes()
-                if (data.isNotEmpty()) {
-                    val unpacker = MessagePack.newDefaultUnpacker(data)
-                    val mapSize = unpacker.unpackArrayHeader()
-                    repeat(mapSize) {
-                        val chapterId = unpacker.unpackInt()
-                        indexes[chapterId] = Record(
-                            offset = unpacker.unpackLong(),
-                            contentSize = unpacker.unpackInt(),
-                            originalSize = unpacker.unpackInt(),
-                            isDelete = unpacker.unpackBoolean(),
-                            isCompress = unpacker.unpackBoolean(),
-                            timestamp = unpacker.unpackLong()
-                        )
-                    }
-                }
-            }
-            return
-        }
-        // 回退：从 data.log 重建索引(慢路径)
-        if (!dataFile.exists()) {
-            return
-        }
-
-        withContext(Dispatchers.IO) {
-            val asynchronousFileChannel = AsynchronousFileChannel.open(dataFile.toPath(), StandardOpenOption.READ)
-            asynchronousFileChannel.use { channel ->
-                var position = 0L
-                val buffer = ByteBuffer.allocate(recordHeaderSize)
-                while (isActive) {
-                    buffer.clear()
-                    val bytesRead = channel.read(buffer, position).get()
-                    if (bytesRead < recordHeaderSize) {
-                        break
-                    }
-                    buffer.flip()
-                    val chapterId = buffer.int
-                    val contentSize = buffer.int
-                    val originalSize = buffer.int
-                    val deleted = buffer.get() != 0.toByte()
-                    val isCompress = buffer.get() != 0.toByte()
-                    val timestamp = buffer.long
-                    val offset = position + recordHeaderSize
-
-                    indexes[chapterId] = Record(
-                        offset = offset,
-                        contentSize = contentSize,
-                        originalSize = originalSize,
-                        isDelete = deleted,
-                        isCompress = isCompress,
-                        timestamp = timestamp
-                    )
-                    position += recordHeaderSize + contentSize
-                }
-            }
-        }
-
-        // 重建完成后,立即持久化索引,加速下次启动
-        saveIndex()
-    }
-
-    /**
-     * 追加一条新记录到 data.log 末尾,并更新内存索引。
-     * 所有写操作(create/update/delete)最终都调用此方法。
-     */
-    private suspend fun appendRecord(
-        filePath: Path = dataFile.toPath(),
+    // （追加记录）
+    suspend fun appendRecord(
         chapterId: Int,
         content: String,
         deleted: Boolean = false
     ) {
-        val ts = System.currentTimeMillis() // 时间戳
+        // 确保索引已加载（若首次使用）
+        ensureLoaded()
+
+        val ts = System.currentTimeMillis()
         var data = content.toByteArray(Charsets.UTF_8)
         val originalSize = data.size
-        val isCompress = if (data.size > compressThreshold) 1.toByte() else 0.toByte()
-        var compressLength: Int?
-        if (isCompress == 1.toByte()) {
-            val compressor = factory.fastCompressor()
-            val tempArray = ByteArray(compressor.maxCompressedLength(data.size))
-            compressLength = compressor.compress(data, 0, data.size, tempArray, 0, tempArray.size)
-            data = tempArray.copyOf(compressLength)
+        val isCompressByte = if (data.size > compressThreshold) 1.toByte() else 0.toByte()
+
+        if (isCompressByte == 1.toByte()) {
+            val compressor = lz4Factory.fastCompressor()
+            val maxLen = compressor.maxCompressedLength(data.size)
+            val temp = ByteArray(maxLen)
+            val compressedLen = compressor.compress(data, 0, data.size, temp, 0, maxLen)
+            data = temp.copyOf(compressedLen)
         }
-        // 打包二进制头(小端字节序)
-        val header = ByteBuffer.allocate(recordHeaderSize).apply {
+
+        val header = ByteBuffer.allocate(RECORD_HEADER_SIZE).apply {
             putInt(chapterId)
             putInt(data.size)
             putInt(originalSize)
             put(if (deleted) 1.toByte() else 0.toByte())
-            put(isCompress)
+            put(isCompressByte)
             putLong(ts)
             flip()
         }
-        var offset = 0L
-        withContext(Dispatchers.IO) {
-            // 注意：AsynchronousFileChannel 不支持 APPEND 选项
-            // 需要先获取文件大小,然后手动定位到末尾写入
-            val channel = AsynchronousFileChannel.open(
-                filePath,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.WRITE
-            )
-            channel.use { channel ->
-                val fileSize = channel.size()
-                offset = fileSize
 
-                // 写入 header
-                channel.write(header, offset).get()
-                val contentOffset = offset + recordHeaderSize
+        // 在写锁保护下进行文件追加和索引更新
+        writeMutex.withLock {
+            var recordOffset: Long
+            withContext(Dispatchers.IO) {
+                val channel = AsynchronousFileChannel.open(
+                    dataFile.toPath(),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.WRITE
+                )
+                channel.use { ch ->
+                    val fileSize = ch.size()
+                    recordOffset = fileSize + RECORD_HEADER_SIZE
 
-                // 写入 content
-                val contentBuffer = ByteBuffer.wrap(data)
-                channel.write(contentBuffer, contentOffset).get()
+                    // 写入 header
+                    ch.write(header, fileSize).get()
+                    // 写入 content
+                    val contentBuf = ByteBuffer.wrap(data)
+                    ch.write(contentBuf, fileSize + RECORD_HEADER_SIZE).get()
+                }
             }
-        }
 
-        // 更新内存索引
-        indexes[chapterId] = Record(
-            offset = offset + recordHeaderSize,
-            contentSize = data.size,
-            originalSize = originalSize,
-            isDelete = deleted,
-            isCompress = isCompress == 1.toByte(),
-            timestamp = ts
-        )
-        // 持久化索引
-        saveIndex()
+            // 更新不可变索引快照
+            val newMap = indexSnapshot.toMutableMap()
+            newMap[chapterId] = Record(
+                offset = recordOffset,
+                contentSize = data.size,
+                originalSize = originalSize,
+                isDelete = deleted,
+                isCompress = isCompressByte == 1.toByte(),
+                timestamp = ts
+            )
+            indexSnapshot = newMap
+
+            // 持久化索引（可优化为批量/异步）
+            saveIndexSnapshot(newMap)
+        }
     }
 
-    /**
-     * 读取指定章节内容。
-     * 若章节不存在或已被删除,抛出异常
-     */
+    // -------------------- 读操作 --------------------
     suspend fun readChapter(chapterId: Int): String {
-        val meta = indexes[chapterId]
-        meta?.let {
-            if (it.isDelete) {
-                return ""
-            }
-            return withContext(Dispatchers.IO) {
-                val channel = AsynchronousFileChannel.open(dataFile.toPath(), StandardOpenOption.READ)
-                channel.use { channel ->
-                    val buffer = ByteBuffer.allocate(meta.contentSize)
-                    val bytesRead = channel.read(buffer, it.offset).get()
-                    if (bytesRead <= 0) {
+        ensureLoaded()
+
+        return rwLock.withReadLock {
+            val snap = indexSnapshot
+            val record = snap[chapterId] ?: return@withReadLock ""
+            if (record.isDelete) return@withReadLock ""
+
+            return@withReadLock withContext(Dispatchers.IO) {
+                val channel = AsynchronousFileChannel.open(
+                    dataFile.toPath(), StandardOpenOption.READ
+                )
+                channel.use { ch ->
+                    val buf = ByteBuffer.allocate(record.contentSize)
+                    val bytesRead = ch.read(buf, record.offset).get()
+                    if (bytesRead <= 0)
                         throw IllegalStateException("Unexpected end of file while reading chapter $chapterId")
-                    }
-                    buffer.flip()
-                    var targetArray = buffer.array()
-                    if (it.isCompress) {
-                        val deCompressor = factory.fastDecompressor()
-                        val restoreArray = ByteArray(it.originalSize)
-                        deCompressor.decompress(buffer.array(), 0, restoreArray, 0, it.originalSize)
-                        targetArray = restoreArray
+                    buf.flip()
+
+                    var targetArray = buf.array()
+                    if (record.isCompress) {
+                        val decompressor = lz4Factory.fastDecompressor()
+                        val restored = ByteArray(record.originalSize)
+                        decompressor.decompress(buf.array(), 0, restored, 0, record.originalSize)
+                        targetArray = restored
                     }
                     String(targetArray, Charsets.UTF_8)
                 }
             }
         }
-        return ""
     }
 
-    /**
-     * 更新现有章节内容。
-     */
+    // -------------------- 更新与删除 --------------------
     suspend fun update(chapterId: Int, content: String) {
         appendRecord(chapterId = chapterId, content = content, deleted = false)
     }
 
-    /**
-     * 删除章节(逻辑删除)。
-     * 幂等操作：多次删除无副作用。
-     */
     suspend fun delete(chapterId: Int) {
-        val meta = indexes[chapterId]
-        meta?.let {
-            if (it.isDelete) {
-                return
-            }
-        }
-        // 写入一个空内容的删除标记
+        val currentSnap = indexSnapshot
+        if (currentSnap[chapterId]?.isDelete == true) return // 幂等
         appendRecord(chapterId = chapterId, content = "", deleted = true)
     }
 
-    /**
-     * 返回所有有效章节 ID 列表(按 chapterId 升序)。
-     */
+    // -------------------- 章节列表 --------------------
     fun toList(): List<Int> {
-        return indexes
+        return indexSnapshot
             .filter { !it.value.isDelete }
             .keys
             .sorted()
     }
 
-    /**
-     * 执行 compaction(压缩/清理)：
-     * - 仅保留未删除的最新章节
-     * - 重写 data.log,移除历史版本和删除标记
-     * - 减小文件体积,提升读取效率
-     */
+    // -------------------- 压缩整理 --------------------
     suspend fun compact() {
-        if (!dataFile.exists()) {
-            return
-        }
-        // 第一步：收集所有有效章节内容
-        val validRecords = mutableListOf<Pair<Int, String>>()
-        for ((chapterId, record) in indexes) {
-            if (!record.isDelete) {
-                val content = readChapter(chapterId)
-                validRecords.add(chapterId to content)
-            }
-        }
-        // 第二步：写入临时文件
-        val tempPath = dir.resolve("data.log.tmp")
-        val newIndex = mutableMapOf<Int, Record>()
-        var currentOffset = 0L
+        ensureLoaded()
 
-        withContext(Dispatchers.IO) {
-            val asynchronousFileChannel = AsynchronousFileChannel.open(
-                tempPath,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.WRITE
-            )
-            asynchronousFileChannel.use { channel ->
-                for ((chapterId, content) in validRecords) {
-                    val ts = System.currentTimeMillis()
-                    var data = content.toByteArray(Charsets.UTF_8)
-                    val originalSize = data.size
-                    val isCompress = if (data.size > compressThreshold) 1.toByte() else 0.toByte()
-                    var compressLength: Int?
-                    if (isCompress == 1.toByte()) {
-                        val compressor = factory.fastCompressor()
-                        val tempArray = ByteArray(compressor.maxCompressedLength(data.size))
-                        compressLength = compressor.compress(data, 0, data.size, tempArray, 0, tempArray.size)
-                        data = tempArray.copyOf(compressLength)
+        // 写锁保证没有其他写操作，读写锁的写锁等待所有读完成并阻止新读
+        writeMutex.withLock {
+            rwLock.withWriteLock {
+                val validRecords = mutableListOf<Pair<Int, String>>()
+                val snap = indexSnapshot
+                for ((chapterId, record) in snap) {
+                    if (!record.isDelete) {
+                        val content = readChapterUnsafe(record) // 内部无锁读取
+                        validRecords.add(chapterId to content)
                     }
-                    val header = ByteBuffer.allocate(recordHeaderSize).apply {
-                        putInt(chapterId)
-                        putInt(data.size)
-                        putInt(originalSize)
-                        put(0.toByte()) // not deleted
-                        put(isCompress)
-                        putLong(ts)
-                        flip()
-                    }
-
-                    channel.write(header, currentOffset).get()
-                    val contentOffset = currentOffset + recordHeaderSize
-
-                    val contentBuffer = ByteBuffer.wrap(data)
-                    channel.write(contentBuffer, contentOffset).get()
-
-                    newIndex[chapterId] = Record(
-                        offset = contentOffset,
-                        contentSize = data.size,
-                        originalSize = originalSize,
-                        isDelete = false,
-                        isCompress = isCompress == 1.toByte(),
-                        timestamp = ts
-                    )
-                    currentOffset += recordHeaderSize + data.size
                 }
+
+                // 写入临时文件
+                val tempPath = dir.resolve("data.log.tmp")
+                val newMap = mutableMapOf<Int, Record>()
+                var currentOffset = 0L
+
+                withContext(Dispatchers.IO) {
+                    val channel = AsynchronousFileChannel.open(
+                        tempPath,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.WRITE
+                    )
+                    channel.use { ch ->
+                        for ((chapterId, content) in validRecords) {
+                            val ts = System.currentTimeMillis()
+                            var data = content.toByteArray(Charsets.UTF_8)
+                            val originalSize = data.size
+                            val isCompressByte = if (data.size > compressThreshold) 1.toByte() else 0.toByte()
+
+                            if (isCompressByte == 1.toByte()) {
+                                val compressor = lz4Factory.fastCompressor()
+                                val maxLen = compressor.maxCompressedLength(data.size)
+                                val temp = ByteArray(maxLen)
+                                val compressedLen = compressor.compress(data, 0, data.size, temp, 0, maxLen)
+                                data = temp.copyOf(compressedLen)
+                            }
+
+                            val header = ByteBuffer.allocate(RECORD_HEADER_SIZE).apply {
+                                putInt(chapterId)
+                                putInt(data.size)
+                                putInt(originalSize)
+                                put(0.toByte()) // not deleted
+                                put(isCompressByte)
+                                putLong(ts)
+                                flip()
+                            }
+
+                            ch.write(header, currentOffset).get()
+                            val contentOffset = currentOffset + RECORD_HEADER_SIZE
+                            ch.write(ByteBuffer.wrap(data), contentOffset).get()
+
+                            newMap[chapterId] = Record(
+                                offset = contentOffset,
+                                contentSize = data.size,
+                                originalSize = originalSize,
+                                isDelete = false,
+                                isCompress = isCompressByte == 1.toByte(),
+                                timestamp = ts
+                            )
+                            currentOffset += RECORD_HEADER_SIZE + data.size
+                        }
+                    }
+                }
+
+                // 原子替换原文件
+                withContext(Dispatchers.IO) {
+                    Files.move(
+                        tempPath, dataFile.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE
+                    )
+                }
+
+                // 更新快照并持久化
+                indexSnapshot = newMap
+                saveIndexSnapshot(newMap)
             }
         }
+    }
 
-        // 第三步：原子替换原文件
-        withContext(Dispatchers.IO) {
-            Files.move(tempPath, dataFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+    // 内部使用：无需加锁，仅用于 compact 时读取已验证记录
+    private suspend fun readChapterUnsafe(record: Record): String {
+        return withContext(Dispatchers.IO) {
+            val channel = AsynchronousFileChannel.open(
+                dataFile.toPath(), StandardOpenOption.READ
+            )
+            channel.use { ch ->
+                val buf = ByteBuffer.allocate(record.contentSize)
+                ch.read(buf, record.offset).get()
+                buf.flip()
+                var target = buf.array()
+                if (record.isCompress) {
+                    val decompressor = lz4Factory.fastDecompressor()
+                    val restored = ByteArray(record.originalSize)
+                    decompressor.decompress(buf.array(), 0, restored, 0, record.originalSize)
+                    target = restored
+                }
+                String(target, Charsets.UTF_8)
+            }
         }
-        // 第四步：更新内存索引并持久化
-        indexes.clear()
-        indexes.putAll(newIndex)
-        saveIndex()
+    }
+}
+
+/**
+ * 管理所有书籍的同步单元，确保每个 (baseDir, bookId) 全局只有一个同步单元。
+ */
+object ChapterStoreManager {
+    private val stores = ConcurrentHashMap<Path, ChapterStoreSync>()
+
+    /**
+     * 获取或创建指定书籍的同步单元。
+     * 该方法是线程安全的，但不会自动加载索引，索引加载由各自的 ensureLoaded 按需触发。
+     */
+    fun getOrCreateSync(bookId: Int, baseDir: String): ChapterStoreSync {
+        val dir = Path(baseDir, bookId.toString())
+        return stores.compute(dir) { path, existing ->
+            if (existing != null) {
+                existing.acquire()
+                existing
+            } else {
+                // 创建目录和文件路径
+                path.toFile().mkdirs()
+                val dataFile = path.resolve("data.log").toFile()
+                val indexFile = path.resolve("index.idx").toFile()
+                val sync = ChapterStoreSync(path, dataFile, indexFile)
+                sync.acquire()
+                sync
+            }
+        }!!
+    }
+
+    fun releaseSync(bookId: Int, baseDir: String) {
+        val dir = Path(baseDir, bookId.toString())
+        stores.computeIfPresent(dir) { _, sync ->
+            val count = sync.release()
+            if (count <= 0) {
+                // 可以在这里做额外清理，如关闭文件（目前无持久打开）
+                null
+            } else {
+                sync
+            }
+        }
+    }
+
+    /** 测试用：判断指定书籍的同步单元是否已缓存 */
+    internal fun containsSync(bookId: Int, baseDir: String): Boolean {
+        val dir = Path(baseDir, bookId.toString())
+        return stores.containsKey(dir)
+    }
+
+    /** 测试用：清空所有缓存（注意：仅应在测试中调用） */
+    internal fun resetForTest() {
+        stores.clear()
+    }
+}
+
+/**
+ * 章节存储服务。
+ * 可以创建多个实例，但同一本书的操作最终共享同一个底层同步单元。
+ * 使用方式与原类完全一致，但内部已是多协程安全。
+ */
+class ChapterStoreService(
+    private val bookId: Int,
+    private val baseDir: String
+) : AutoCloseable {
+    private val sync: ChapterStoreSync = ChapterStoreManager.getOrCreateSync(bookId, baseDir)
+
+    // 显式初始化索引（可在应用启动时调用，非必须，因为后续操作会延迟加载）
+
+    /** 读取章节内容，若已删除返回空字符串 */
+    suspend fun readChapter(chapterId: Int): String = sync.readChapter(chapterId)
+
+    /** 新增或更新章节 */
+    suspend fun update(chapterId: Int, content: String) = sync.update(chapterId, content)
+
+    /** 逻辑删除章节（幂等） */
+    suspend fun delete(chapterId: Int) = sync.delete(chapterId)
+
+    /** 获取所有有效章节 ID 列表（升序） */
+    fun toList(): List<Int> = sync.toList()
+
+    /** 执行 compact 整理 */
+    suspend fun compact() = sync.compact()
+    override fun close() {
+        ChapterStoreManager.releaseSync(bookId, baseDir)
     }
 }

@@ -70,6 +70,9 @@ class DatabaseManager(private val config: AppConfig) {
 
     suspend fun <T> suspendedTransaction(readOnly: Boolean = false, block: suspend () -> T): T {
         return newSuspendedTransaction(db = getDatabase(), context = Dispatchers.IO, readOnly = readOnly) {
+            if (config.environment == "dev") {
+                addLogger(StdOutSqlLogger)
+            }
             block()
         }
     }
