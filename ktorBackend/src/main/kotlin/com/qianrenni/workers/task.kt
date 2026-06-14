@@ -10,20 +10,45 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+suspend fun aggregateUserReadStatistics(
+    endTime: LocalDateTime,
+    databaseManager: DatabaseManager
+) {
+    var startTime: LocalDateTime? = null
+    do {
+        startTime?.let {
+            aggregateHourlyStatistics(it, it.plusHours(1), databaseManager)
+        }
+        startTime = null
+        databaseManager.suspendedTransaction(readOnly = true) {
+            UserReadEventTable
+                .select(UserReadEventTable.eventTime)
+                .where { UserReadEventTable.eventTime less endTime }
+                .orderBy(UserReadEventTable.eventTime to SortOrder.ASC)
+                .limit(1)
+                .firstOrNull()
+                ?.let {
+                    startTime = it[UserReadEventTable.eventTime].truncatedTo(ChronoUnit.HOURS)
+                }
+        }
+    } while (startTime != null)
+}
 /**
  * 将指定时间段内的 UserReadEvent 聚合到 ChapterReadStatistics
  * @param startTime 小时窗口开始 (含)
  * @param endTime   小时窗口结束 (不含)
  */
-suspend fun aggregateHourlyStatistics(
+private suspend fun aggregateHourlyStatistics(
     startTime: LocalDateTime,
     endTime: LocalDateTime,
     databaseManager: DatabaseManager
 ) {
+
+
     databaseManager.suspendedTransaction {
         // 1. 统计 PV 和 UV (仅 ENTER 事件)
-        val pvCount = UserReadEventTable.userId.count().alias("pv")
-        val uvCount = UserReadEventTable.userId.countDistinct().alias("uv")
+        val pvCount = UserReadEventTable.userId.count()
+        val uvCount = UserReadEventTable.userId.countDistinct()
         val pvUvRows = UserReadEventTable
             .select(
                 UserReadEventTable.bookId,
@@ -118,9 +143,9 @@ suspend fun aggregateHourlyStatistics(
                 it[bookId] = key.first
                 it[chapterId] = key.second
                 it[hourStart] = startTime
-                it[pageViewCount] = (value["pv"] as? Int ?: 0)
-                it[uniqueReaderCount] = (value["uv"] as? Int ?: 0)
-                it[totalDuration] = (value["totalDuration"] as? Int ?: 0).toFloat()
+                it[pageViewCount] = value["pv"]!!.toInt()
+                it[uniqueReaderCount] = value["uv"]!!.toInt()
+                it[totalDuration] = value["totalDuration"]!!.toFloat()
             }
         }
         // 4. 删除已聚合的原始事件

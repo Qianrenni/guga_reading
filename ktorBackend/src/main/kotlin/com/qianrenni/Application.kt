@@ -10,7 +10,7 @@ import com.qianrenni.services.TaskConfig
 import com.qianrenni.services.configService
 import com.qianrenni.services.registerTaskManager
 import com.qianrenni.services.taskManager
-import com.qianrenni.workers.aggregateHourlyStatistics
+import com.qianrenni.workers.aggregateUserReadStatistics
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -52,8 +52,7 @@ private fun Application.configureScheduledTasks() {
                 cronExpression = "0 5 * * * ?"
             ) { triggerTime ->
                 val hourEnd = triggerTime.toLocalDateTime().truncatedTo(ChronoUnit.HOURS)
-                val hourStart = hourEnd.minusHours(1)
-                aggregateHourlyStatistics(hourStart, hourEnd, databaseManager)
+                aggregateUserReadStatistics(hourEnd, databaseManager)
             }
         )
         start()
