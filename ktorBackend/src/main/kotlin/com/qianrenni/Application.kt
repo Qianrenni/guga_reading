@@ -4,11 +4,17 @@ import com.qianrenni.config.loadConfig
 import com.qianrenni.controller.configureRouting
 import com.qianrenni.database.configureDatabase
 import com.qianrenni.database.configureRedis
+import com.qianrenni.database.databaseManager
 import com.qianrenni.plugins.*
+import com.qianrenni.services.TaskConfig
 import com.qianrenni.services.configService
+import com.qianrenni.services.registerTaskManager
+import com.qianrenni.services.taskManager
+import com.qianrenni.workers.aggregateHourlyStatistics
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import java.time.temporal.ChronoUnit
 
 /**
  * 应用主入口
@@ -29,8 +35,32 @@ fun Application.main() {
     configureRouting()
     configureMetrics()
     configService()
+    // 4. 注册并启动定时任务
+    registerTaskManager()
+    configureScheduledTasks()
+}
+
+/**
+ * 配置定时任务
+ */
+private fun Application.configureScheduledTasks() {
+    taskManager.apply {
+        // 每小时整点执行统计聚合（秒 分 时 日 月 周）
+        register(
+            TaskConfig(
+                name = "每小时阅读统计聚合",
+                cronExpression = "0 5 * * * ?"
+            ) { triggerTime ->
+                val hourEnd = triggerTime.toLocalDateTime().truncatedTo(ChronoUnit.HOURS)
+                val hourStart = hourEnd.minusHours(1)
+                aggregateHourlyStatistics(hourStart, hourEnd, databaseManager)
+            }
+        )
+        start()
+    }
 }
 fun main(args: Array<String>) {
+
     embeddedServer(Netty, port = 8000, host = "0.0.0.0", module = Application::main)
         .start(wait = true)
 }

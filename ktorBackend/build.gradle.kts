@@ -81,6 +81,7 @@ dependencies {
     // msgpack 序列化
     implementation("org.msgpack:msgpack-core:0.9.8")
     implementation("org.lz4:lz4-java:1.8.0")
+    implementation("com.cronutils:cron-utils:9.2.0")
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }

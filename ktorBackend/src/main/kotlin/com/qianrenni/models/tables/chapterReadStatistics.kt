@@ -9,5 +9,5 @@ object ChapterReadStatisticsTable : IntIdTable(name = "chapter_read_statistics")
     val hourStart = datetime("hourStart")
     val uniqueReaderCount = integer("uniqueReaderCount")
     val pageViewCount = integer("pageViewCount")
-    val totalDuration = decimal("totalDuration", 10, 2)
+    val totalDuration = float("totalDuration")
 }

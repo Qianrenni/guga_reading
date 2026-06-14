@@ -1,0 +1,90 @@
+package com.qianrenni.services
+
+import com.qianrenni.workers.cronFlow
+import io.ktor.server.application.*
+import io.ktor.util.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.catch
+import java.time.ZoneId
+import java.time.ZonedDateTime
+
+/**
+ * 定时任务配置
+ * @param name 任务名称，用于日志标识
+ * @param cronExpression cron 表达式（Quartz 格式，支持秒）
+ * @param zone 时区，默认系统时区
+ * @param handler 任务触发时的处理函数，接收触发时间 [ZonedDateTime]
+ */
+data class TaskConfig(
+    val name: String,
+    val cronExpression: String,
+    val zone: ZoneId = ZoneId.systemDefault(),
+    val handler: suspend (ZonedDateTime) -> Unit
+)
+
+/**
+ * 定时任务管理器
+ * 基于 cronFlow 构建，通过 cron 表达式注册定时任务。
+ *
+ * 用法：
+ * ```kotlin
+ * application.taskManager.register(
+ *     TaskConfig(name = "每小时统计", cronExpression = "0 0 * * * ?") {
+ *         aggregateHourlyStatistics(...)
+ *     }
+ * )
+ * application.taskManager.start()
+ * ```
+ */
+class TaskManager(private val application: Application) {
+    private val tasks = mutableListOf<TaskConfig>()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * 注册一个定时任务
+     */
+    fun register(task: TaskConfig) {
+        tasks.add(task)
+    }
+
+    /**
+     * 启动所有已注册的定时任务
+     */
+    fun start() {
+        // 监听应用停止事件，自动清理协程
+        application.monitor.subscribe(ApplicationStopping) {
+            scope.cancel()
+        }
+
+        tasks.forEach { task ->
+            scope.launch {
+                runTask(task)
+            }
+        }
+        application.log.info("已启动 ${tasks.size} 个定时任务")
+    }
+
+    private suspend fun runTask(task: TaskConfig) {
+        cronFlow(task.cronExpression, task.zone)
+            .catch { e ->
+                application.log.error("定时任务 [${task.name}] cron 表达式解析失败: ${e.message}", e)
+            }
+            .collect { triggerTime ->
+                try {
+                    application.log.info("定时任务 [${task.name}] 触发于 {}", triggerTime)
+                    task.handler(triggerTime)
+                } catch (e: Exception) {
+                    application.log.error("定时任务 [${task.name}] 执行异常: ${e.message}", e)
+                }
+            }
+    }
+}
+
+private val TaskManagerAttributeKey = AttributeKey<TaskManager>("TaskManager")
+
+val Application.taskManager: TaskManager
+    get() = attributes[TaskManagerAttributeKey]
+
+fun Application.registerTaskManager() {
+    attributes.put(TaskManagerAttributeKey, TaskManager(this))
+}
