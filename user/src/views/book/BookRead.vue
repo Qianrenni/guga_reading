@@ -131,6 +131,7 @@
       <QDrawer
         :visible="shwoBottomSettings && isCanShowBottomSettings"
         direction="bottom"
+        :show-close="false"
         :close-on-click-overlay="true"
         @close="shwoBottomSettings = false"
         :overlay="false"
@@ -445,6 +446,7 @@ onBeforeUnmount(() => {
   }
 
   .book-read-catalog-container {
+    min-width: unset;
     width: 70vw;
   }
 }
