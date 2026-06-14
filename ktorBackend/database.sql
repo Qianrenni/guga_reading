@@ -89,8 +89,11 @@ CREATE TABLE IF NOT EXISTS `book`
     INDEX `idx_book_wordsCount` (`wordsCount`),
     INDEX `idx_book_isEnded` (`isEnded`),
     INDEX `idx_category_isEnded` (`category`, `isEnded`),
-    INDEX `idx_category_wordsCount` (`category`, `wordsCount`),
-    CONSTRAINT `fk_book_parent` FOREIGN KEY (`parentId`) REFERENCES `book` (`id`)
+    INDEX `idx_category_wordsCount`
+(
+    `category`,
+    `wordsCount`
+)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
