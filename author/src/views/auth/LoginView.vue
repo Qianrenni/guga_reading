@@ -1,7 +1,7 @@
 <template>
   <div class="content-container">
     <div class="container-column bg-card">
-      <h3 class="text-center">用户登录</h3>
+      <h3 class="text-center">作者登录</h3>
       <QFormText
         prefixIcon="User"
         v-model="form.username"

@@ -1,7 +1,6 @@
 package com.qianrenni.controller
 
 import com.qianrenni.models.domain.FullUser
-import com.qianrenni.schemas.CountResponseModel
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.cacheService
 import com.qianrenni.services.captchaService
@@ -39,7 +38,7 @@ fun Routing.user() {
         get("/count") {
             val count = application.userService.getUserCount()
             call.respond(
-                ResponseModel.Success(data = CountResponseModel(count))
+                ResponseModel.Success(data = count)
             )
         }
 

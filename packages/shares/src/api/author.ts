@@ -3,7 +3,7 @@ import type { Book, BookChapter } from '@guga-reading/types';
 export const useApiAuthor = {
   prefix: '/author',
   getAuthorCount: async function () {
-    return await get<{ count: number }>(`${this.prefix}/count`);
+    return await get<number>(`${this.prefix}/count`);
   },
   getBook: async function (id: number = -1) {
     return await get<Book[]>(

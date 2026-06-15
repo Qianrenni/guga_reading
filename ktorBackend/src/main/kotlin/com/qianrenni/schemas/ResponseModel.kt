@@ -48,8 +48,3 @@ sealed class ResponseModel<out T> : ResponseContract<T> {
         override val data: Nothing? = null
     ) : ResponseModel<Nothing>()
 }
-
-@Serializable
-data class CountResponseModel(
-     val count: Int
-)

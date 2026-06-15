@@ -55,7 +55,7 @@ export const useAuthStore = defineStore('auth', {
           this.getAccessToken!,
         );
         if (success) {
-          this.setUser(data.user);
+          this.setUser(data!);
           axios.defaults.headers.common['Authorization'] =
             `${this.getTokenType} ${this.getAccessToken!}`;
           return true;
@@ -66,9 +66,9 @@ export const useAuthStore = defineStore('auth', {
         );
         if (result.success) {
           this.setToken(
-            result.data!.access_token,
-            result.data!.refresh_token,
-            result.data!.token_type,
+            result.data!.accessToken,
+            result.data!.refreshToken,
+            result.data!.tokenType,
           );
           this.setUser(result.data!.user);
           axios.defaults.headers.common['Authorization'] =
@@ -114,11 +114,7 @@ export const useAuthStore = defineStore('auth', {
         this.refreshToken!,
       );
       if (success) {
-        this.setToken(
-          data!.access_token,
-          data!.refresh_token,
-          data!.token_type,
-        );
+        this.setToken(data!.accessToken, data!.refreshToken, data!.tokenType);
       } else {
         console.error(message);
       }

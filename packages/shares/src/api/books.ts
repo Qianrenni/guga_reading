@@ -4,7 +4,7 @@ import type { Book, BookChapter, Catalog } from '@guga-reading/types';
 export const useApiBooks = {
   prefix: '/book',
   getBookCount: async function () {
-    return await get<{ count: number }>(`${this.prefix}/count`);
+    return await get<number>(`${this.prefix}/count`);
   },
   getBooksByList: async function (bookIds: number[]) {
     return await get<Book[]>(

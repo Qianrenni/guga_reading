@@ -22,12 +22,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-import {
-  useApiAuthor,
-  useApiBooks,
-  useApiSystem,
-  useApiUser,
-} from '@guga-reading/shares';
+import { useApiAuthor, useApiBooks, useApiUser } from '@guga-reading/shares';
 import type { SystemInfo } from '@guga-reading/types';
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 const systemInfo = ref<SystemInfo>({} as SystemInfo);
@@ -36,22 +31,22 @@ const bookCount = ref(0);
 const userCount = ref(0);
 const task = () => {
   useApiAuthor.getAuthorCount().then((res) => {
-    authorCount.value = res.data['count'];
+    authorCount.value = res.data;
   });
   useApiBooks.getBookCount().then((res) => {
-    bookCount.value = res.data['count'];
+    bookCount.value = res.data;
   });
   useApiUser.getUserCount().then((res) => {
-    userCount.value = res.data['count'];
+    userCount.value = res.data;
   });
-  useApiSystem.getSystemInfo().then((res) => {
-    systemInfo.value = res.data;
-  });
+  // useApiSystem.getSystemInfo().then((res) => {
+  //   systemInfo.value = res.data;
+  // });
 };
 let timer: number | null = null;
 onBeforeMount(() => {
   task();
-  timer = setInterval(task, 3000);
+  // timer = setInterval(task, 3000);
 });
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer);

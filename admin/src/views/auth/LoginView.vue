@@ -1,18 +1,18 @@
 <template>
   <div class="content-container">
-    <div class="container-column bg-card radius-rem">
+    <div class="container-column bg-card">
       <h3 class="text-center">管理员登录</h3>
       <QFormText
+        prefixIcon="User"
         v-model="form.username"
         type="email"
-        label="用户名"
         placeholder="请输入用户名"
         name="username"
       />
       <QFormText
+        prefixIcon="Lock"
         v-model="form.password"
         type="password"
-        label="密码"
         placeholder="请输入密码"
         name="password"
       />
@@ -20,7 +20,6 @@
         <QFormText
           v-model="form.captcha"
           type="text"
-          label="验证码"
           placeholder="请输入验证码"
           name="captcha"
         />
@@ -39,21 +38,10 @@
           style="padding: 0"
         />
       </div>
-      <QFormButton type="button" class="button-primary" @click="() => run()">
+      <QFormButton type="button" class="button-primary" @click="run">
         <QLoading v-if="loading" type="breathing" />
         <span v-else>登录</span>
       </QFormButton>
-      <p
-        class="mouse-cursor text-08rem link-primary"
-        @click="
-          () => {
-            form.username = '1093171693@qq.com';
-            form.password = '654321';
-          }
-        "
-      >
-        使用测试账号?
-      </p>
     </div>
   </div>
 </template>
@@ -85,7 +73,7 @@ const form = ref({
   password: '',
   captcha: '',
   x_captcha_id: '',
-  remember: [],
+  remember: ['remember'],
 });
 const loading = ref(false);
 const refreshCaptcha = async () => {
@@ -108,9 +96,9 @@ const run = async () => {
     useMessage.success('登录成功');
     authStore.setRemeber(form.value.remember.length > 0);
     authStore.setToken(
-      data!.access_token!,
-      data!.refresh_token!,
-      data!.token_type!,
+      data!.accessToken!,
+      data!.refreshToken!,
+      data!.tokenType!,
     );
     authStore.setUser(data!.user!);
     axios.defaults.headers.common['Authorization'] =
@@ -124,26 +112,38 @@ const run = async () => {
 
 watch(
   () => authStore.isLogin,
-  () => {
+  (newValue) => {
+    if (!newValue) {
+      return;
+    }
     if (authStore.redictUrl !== null) {
       const url = authStore.redictUrl;
       authStore.setRedictUrl(null);
       router.replace(url);
     } else {
-      router.back();
+      router.replace({
+        path: '/',
+      });
     }
   },
 );
+const globalKeyUp = (event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    run();
+  }
+};
 onBeforeMount(() => {
   authStore.initial();
 });
 onMounted(async () => {
   refreshCaptcha();
+  document.addEventListener('keyup', globalKeyUp);
 });
 onBeforeUnmount(() => {
   if (image.value) {
     URL.revokeObjectURL(image.value);
   }
+  document.removeEventListener('keyup', globalKeyUp);
 });
 </script>
 

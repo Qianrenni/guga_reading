@@ -3,7 +3,7 @@ import { get, patch, useValidate } from '../utils';
 export const useApiUser = {
   prefix: '/user',
   getUserCount: async function () {
-    return await get<{ count: number }>(`${this.prefix}/count`);
+    return await get<number>(`${this.prefix}/count`);
   },
   /**
    * 获取忘记密码的邮件,里面有验证码用于表单提交

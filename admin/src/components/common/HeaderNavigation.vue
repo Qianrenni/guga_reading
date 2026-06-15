@@ -8,7 +8,7 @@
     />
     <div class="container-center">
       <QAvatar url="/admin/figure.webp" size="30px" />
-      <span>{{ userStore.getUser?.username || 'Author' }}</span>
+      <span>{{ userStore.getUser?.userName || 'Author' }}</span>
       <QThemeToggle :size="24" />
     </div>
     <QDrawer v-model:visible="showMenu" direction="left">
