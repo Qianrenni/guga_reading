@@ -91,8 +91,8 @@ export interface ChapterReadStatistic {
   id: number;
   bookId: number;
   chapterId: number;
-  hour_start: string;
-  unique_reader_count: number;
-  page_view_count: number;
-  total_duration: number;
+  hourStart: string;
+  uniqueReader_count: number;
+  pageViewCount: number;
+  totalDuration: number;
 }

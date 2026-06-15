@@ -183,10 +183,10 @@ const processHeatMapData = (data: ChapterReadStatistic[]) => {
   const pvDict = {} as Record<number, Map<string, number>>;
   const hoursData = {} as Record<string, number>;
   for (const item of data) {
-    const d = new UseTimeUtils(`${item.hour_start}`);
+    const d = new UseTimeUtils(`${item.hourStart}`);
     const year = d.getFullYear();
     const hourWeek = `${d.getDay()}/${d.getHours()}`;
-    hoursData[hourWeek] = (hoursData[hourWeek] || 0) + item.page_view_count;
+    hoursData[hourWeek] = (hoursData[hourWeek] || 0) + item.pageViewCount;
     if (!yearDict[year]) {
       yearDict[year] = new Map<string, number>();
     }
@@ -196,9 +196,9 @@ const processHeatMapData = (data: ChapterReadStatistic[]) => {
     const day = d.format('YYYY-MM-DD');
     yearDict[year].set(
       day,
-      (yearDict[year].get(day) || 0) + item.total_duration,
+      (yearDict[year].get(day) || 0) + item.totalDuration,
     );
-    pvDict[year].set(day, (pvDict[year].get(day) || 0) + item.page_view_count);
+    pvDict[year].set(day, (pvDict[year].get(day) || 0) + item.pageViewCount);
   }
   const years = Object.keys(yearDict).map((year) => parseInt(year));
   for (const year of years) {

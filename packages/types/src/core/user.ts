@@ -8,7 +8,7 @@
  */
 export interface User {
   id: number;
-  username: string;
+  userName: string;
   email: string;
   avatar: string;
   isActive: boolean;

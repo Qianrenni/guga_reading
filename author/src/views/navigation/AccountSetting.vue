@@ -5,7 +5,7 @@
       <div class="grid-2 text-muted text-085rem">
         <div>
           <p>昵称</p>
-          <p>{{ authStore.getUser?.username || '--' }}</p>
+          <p>{{ authStore.getUser?.userName || '--' }}</p>
         </div>
         <div>
           <p>邮箱</p>
