@@ -5,7 +5,7 @@
         {{ TranslationStatus[row.status as StatusEnum] }}
       </template>
       <template #type="{ row }">
-        {{ row.parentId != null ? '更新' : '创建' }}
+        {{ row.id < 0 ? '更新' : '创建' }}
       </template>
       <template #createdAt="{ row }">
         <span>

@@ -40,6 +40,8 @@
                   path: `/chapter-audit`,
                   query: {
                     chapterId: row.id,
+                    order: row.order,
+                    bookId: row.bookId,
                   },
                 });
               }

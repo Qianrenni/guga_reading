@@ -27,10 +27,10 @@ export interface DiskStatus {
  * @param disks  DiskStatus[]  磁盘状态列表
  */
 export interface SystemInfo {
-  cpu_percent: number;
-  memory_total: number;
-  memory_used: number;
-  swap_total: number;
-  swap_used: number;
+  cpuPercent: number;
+  memoryTotal: number;
+  memoryUsed: number;
+  swapTotal: number;
+  swapUsed: number;
   disks: DiskStatus[];
 }

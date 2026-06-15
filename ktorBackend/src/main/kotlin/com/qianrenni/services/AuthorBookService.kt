@@ -95,42 +95,62 @@ class AuthorBookService(private val application: Application) {
             val alreadyBook = BookTable.selectAll().where { BookTable.id eq bookId }.firstOrNull()
                 ?.toBook(application.appConfig.serverUrl)
             when (alreadyBook) {
-                null -> {
-                    targetId = BookTable.insertAndGetId {
-                        it[BookTable.id] = (-bookId)
-                        it[BookTable.name] = bookName
-                        it[BookTable.author] = author
-                        it[BookTable.tags] = tags
-                        it[BookTable.description] = description
-                        it[BookTable.category] = category
-                        it[BookTable.status] = BookStatus.PENDING
-                    }.value
-                    AuthorBookTable.insert {
-                        it[AuthorBookTable.userId] = userId
-                        it[AuthorBookTable.bookId] = targetId!!
-                    }
-
-                }
-
+                null -> {}
                 else -> {
-                    BookTable.update({ BookTable.id eq alreadyBook.id }) {
-                        it[BookTable.name] = bookName
-                        it[BookTable.author] = author
-                        it[BookTable.tags] = tags
-                        it[BookTable.description] = description
-                        it[BookTable.category] = category
-                        it[BookTable.status] = BookStatus.PENDING
+                    when (alreadyBook.status) {
+                        BookStatus.PENDING, BookStatus.REJECTED -> {
+                            BookTable.update({ BookTable.id eq alreadyBook.id }) {
+                                it[BookTable.name] = bookName
+                                it[BookTable.author] = author
+                                it[BookTable.tags] = tags
+                                it[BookTable.description] = description
+                                it[BookTable.category] = category
+                                it[BookTable.status] = BookStatus.PENDING
+                            }
+                            targetId = alreadyBook.id
+                        }
+
+                        BookStatus.PUBLISHED -> {
+                            targetId = BookTable.insertAndGetId {
+                                it[BookTable.id] = (-bookId)
+                                it[BookTable.name] = bookName
+                                it[BookTable.author] = author
+                                it[BookTable.tags] = tags
+                                it[BookTable.wordsCount] = alreadyBook.wordsCount
+                                it[BookTable.totalChapter] = alreadyBook.totalChapter
+                                it[BookTable.description] = description
+                                it[BookTable.category] = category
+                                it[BookTable.status] = BookStatus.PENDING
+                            }.value
+                            AuthorBookTable.insert {
+                                it[AuthorBookTable.userId] = userId
+                                it[AuthorBookTable.bookId] = targetId
+                            }
+                        }
+
+                        else -> {}
                     }
-                    targetId = alreadyBook.id
                 }
             }
         }
         withContext(Dispatchers.IO) {
-            coverFile?.copyTo(
-                Path(application.appConfig.staticDir + "/book/${targetId}/cover.webp").toFile(),
-                overwrite = true
-            )
-            coverFile?.deleteOnExit()
+            when (coverFile) {
+                null -> {
+                    File(application.appConfig.staticDir + "/book/${bookId}/cover.webp").copyTo(
+                        Path(application.appConfig.staticDir + "/book/${targetId}/cover.webp").toFile(),
+                        overwrite = true
+                    )
+                }
+
+                else -> {
+                    coverFile.copyTo(
+                        Path(application.appConfig.staticDir + "/book/${targetId}/cover.webp").toFile(),
+                        overwrite = true
+                    )
+                    coverFile.deleteOnExit()
+                }
+            }
+
         }
     }
 
@@ -209,10 +229,8 @@ class AuthorBookService(private val application: Application) {
                 bookId = requestUpdateBookChapter.bookId,
                 baseDir = application.appConfig.contentDir + "/book"
             )
-        withContext(Dispatchers.IO) {
-            chapterStore.use {
-                targetId?.let { chapterStore.update(targetId, requestUpdateBookChapter.content) }
-            }
+        chapterStore.use {
+            targetId?.let { chapterStore.update(targetId, requestUpdateBookChapter.content) }
         }
     }
     suspend fun deleteBookChapter(
@@ -230,10 +248,8 @@ class AuthorBookService(private val application: Application) {
         if (deleteCount > 0) {
             val chapterStoreService =
                 ChapterStoreService(bookId = bookId, baseDir = application.appConfig.contentDir + "/book")
-            withContext(Dispatchers.IO) {
-                chapterStoreService.use {
-                    it.delete(chapterId)
-                }
+            chapterStoreService.use {
+                it.delete(chapterId)
             }
         }
     }
@@ -247,10 +263,8 @@ class AuthorBookService(private val application: Application) {
             bookId = bookId,
             baseDir = application.appConfig.contentDir + "/book"
         )
-        return withContext(Dispatchers.IO) {
-            chapterStoreService.use {
-                chapterIds.map { chapterStoreService.readChapter(it) }
-            }
+        return chapterStoreService.use {
+            chapterIds.map { chapterStoreService.readChapter(it) }
         }
     }
     suspend fun getBookReadStatistic(userId: Int, bookId: Int): List<ChapterReadStatistics> {
@@ -302,6 +316,11 @@ class AuthorBookService(private val application: Application) {
                                 .insert {
                                     it[AuditBookChapterTable.bookChapterId] = chapterId
                                     it[AuditBookChapterTable.userId] = auditorId
+                                }
+                            AuditBookTable
+                                .insert {
+                                    it[AuditBookTable.bookId] = bookId
+                                    it[AuditBookTable.userId] = auditorId
                                 }
                             targetId = auditorId
                         }

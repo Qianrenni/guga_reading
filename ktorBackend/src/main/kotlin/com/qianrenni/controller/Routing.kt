@@ -18,6 +18,7 @@ fun Application.configureRouting() {
         shelf()
         admin()
         author()
+        system()
         if (application.appConfig.environment == "dev") {
             test()
         }

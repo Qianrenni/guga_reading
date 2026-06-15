@@ -1,3 +1,4 @@
+/* eslint-disable css/no-invalid-properties */
 body {
   height: 100vh;
   width: 100vw;
@@ -120,15 +121,30 @@ body {
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.15),
     inset 0 0 0 1px rgba(139, 69, 19, 0.1);
-  /* eslint-disable-next-line css/no-invalid-properties */
+
   background: var(--content-editor-background-color);
-  /* eslint-disable-next-line css/no-invalid-properties */
+
   color: var(--content-editor-color); /* 深墨色 */
   outline: none;
   border: none;
-  /* eslint-disable-next-line css/no-invalid-properties */
+
   caret-color: var(--content-editor-pointer-color); /* 棕褐色光标 */
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   line-break: anywhere;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background-color: var(--secondary-background-color);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #06b6d4, #3b82f6);
+  transition: width 0.5s ease;
 }

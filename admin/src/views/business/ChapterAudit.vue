@@ -1,6 +1,6 @@
 <template>
   <div class="container-column container-w100 container-h100">
-    <div class="show-768">
+    <div class="show-768" v-if="isUpdate">
       <QFormSelect v-model="select" :options="options" />
     </div>
     <div class="inner-container container-flex-1">
@@ -30,7 +30,7 @@
       <QFormButton
         @click="
           () => {
-            useApiAudit.updateChapter(chapter.id, true).then((res) => {
+            useApiAudit.updateChapter(bookId, chapter.id, true).then((res) => {
               if (res.success) {
                 useMessage.success('审批通过');
                 router.replace({
@@ -47,7 +47,7 @@
       <QFormButton
         @click="
           () => {
-            useApiAudit.updateChapter(chapter.id, false).then((res) => {
+            useApiAudit.updateChapter(bookId, chapter.id, false).then((res) => {
               if (res.success) {
                 useMessage.success('成功驳回');
                 router.replace({
@@ -66,7 +66,7 @@
 </template>
 <script lang="ts" setup>
 import router from '@/route';
-import { useApiAudit, useApiBooks } from '@guga-reading/shares';
+import { useApiAudit } from '@guga-reading/shares';
 import type { BookChapter } from '@guga-reading/types';
 import { onBeforeMount, ref, watch } from 'vue';
 import ContentEditor from '@/components/common/ContentEditor.vue';
@@ -78,7 +78,8 @@ import {
   useMessage,
 } from 'qyani-components';
 const chapter = ref<BookChapter>({} as BookChapter);
-const chapterId = parseInt(router.currentRoute.value.query.chapterId as string);
+const bookId = parseInt(router.currentRoute.value.query.bookId as string);
+const order = parseInt(router.currentRoute.value.query.order as string);
 const isMobile = useScreenSize.getWidth(768);
 const select = ref<string>('after');
 const options = [
@@ -92,7 +93,7 @@ const options = [
   },
 ];
 const content = ref<string>('');
-const isUpdate = ref<boolean>(false);
+const isUpdate = ref<boolean>(order < 0);
 const srcChapter = ref<BookChapter>({} as BookChapter);
 const srcContent = ref<string>('');
 const latestContent = ref<string>('');
@@ -112,32 +113,40 @@ watch(
     }
   },
 );
+watch(
+  () => isMobile.value,
+  () => {
+    if (isUpdate) {
+      chapter.value = latestChapter.value;
+      content.value = latestContent.value;
+    }
+  },
+);
 onBeforeMount(() => {
   useApiAudit
-    .getAuditBookChapter([chapterId])
+    .getAuditBookChapterByOrders(
+      bookId,
+      isUpdate.value ? [order, -order] : [order],
+    )
     .then((res) => {
-      chapter.value = res.data[0] as BookChapter;
-      latestChapter.value = res.data[0] as BookChapter;
-      return chapter.value;
-    })
-    .then((res: BookChapter) => {
-      if (res.order < 0) {
-        isUpdate.value = true;
-        useApiBooks
-          .getBookChapterByOrder(res.bookId, -res.order)
-          .then((res) => {
-            srcChapter.value = res.data;
-          });
-        useApiBooks
-          .getBookChapterContentByOrder(res.bookId, -res.order)
-          .then((res) => {
-            srcContent.value = res.data;
-          });
+      if (isUpdate.value) {
+        srcChapter.value = res.data[1] as BookChapter;
+        latestChapter.value = res.data[0] as BookChapter;
+        chapter.value = latestChapter.value;
+      } else {
+        chapter.value = res.data[0] as BookChapter;
       }
     });
-  useApiAudit.getChapterContent(chapterId).then((res) => {
-    content.value = res.data;
-    latestContent.value = res.data;
-  });
+  useApiAudit
+    .getChapterContent(bookId, isUpdate.value ? [order, -order] : [order])
+    .then((res) => {
+      if (isUpdate.value) {
+        srcContent.value = res.data[1] as string;
+        latestContent.value = res.data[0] as string;
+        content.value = latestContent.value;
+      } else {
+        content.value = res.data[0] as string;
+      }
+    });
 });
 </script>

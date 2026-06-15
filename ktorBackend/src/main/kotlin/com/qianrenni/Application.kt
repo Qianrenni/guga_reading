@@ -6,10 +6,7 @@ import com.qianrenni.database.configureDatabase
 import com.qianrenni.database.configureRedis
 import com.qianrenni.database.databaseManager
 import com.qianrenni.plugins.*
-import com.qianrenni.services.TaskConfig
-import com.qianrenni.services.configService
-import com.qianrenni.services.registerTaskManager
-import com.qianrenni.services.taskManager
+import com.qianrenni.services.*
 import com.qianrenni.workers.aggregateUserReadStatistics
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -35,6 +32,7 @@ fun Application.main() {
     configureRouting()
     configureMetrics()
     configService()
+    registerSystemService()
     // 4. 注册并启动定时任务
     registerTaskManager()
     configureScheduledTasks()

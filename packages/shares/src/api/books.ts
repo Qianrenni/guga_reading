@@ -1,5 +1,5 @@
 import { get } from '../utils';
-import type { Book, BookChapter, Catalog } from '@guga-reading/types';
+import type { Book, Catalog } from '@guga-reading/types';
 
 export const useApiBooks = {
   prefix: '/book',
@@ -42,19 +42,5 @@ export const useApiBooks = {
   },
   getRecommendBook: async function (tags: string) {
     return await get<Book[]>(`${this.prefix}/recommend?query=${tags}`);
-  },
-  getBookChapterByOrder: async function (bookId: number, order: number) {
-    return await get<BookChapter>(
-      `${this.prefix}/chapter-order?bookId=${bookId}&order=${order}`,
-    );
-  },
-  getBookChapterContentByOrder: async function (
-    bookId: number,
-    order?: number,
-    chapterId?: number,
-  ) {
-    return await get<string>(
-      `${this.prefix}/content/chapter?bookId=${bookId}${order ? `&order=${order}` : ''}${chapterId ? `&chapterId=${chapterId}` : ''}`,
-    );
   },
 };

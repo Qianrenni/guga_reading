@@ -83,14 +83,13 @@ import { QLazyImage, QFormButton, useMessage } from 'qyani-components';
 const bookId = parseInt(router.currentRoute.value.query.bookId as string);
 const book = ref<Book>({} as Book);
 const books = ref<Book[]>([]);
-const isUpdate = ref(false);
+const isUpdate = ref(bookId < 0);
 onBeforeMount(() => {
   useApiAudit.getAuditBook([bookId]).then((res) => {
     book.value = res.data[0] as Book;
     books.value = [book.value, ...books.value];
-    if (book.value.parentId != null) {
-      isUpdate.value = true;
-      useApiBooks.getBookById(book.value.parentId).then((res) => {
+    if (isUpdate.value) {
+      useApiBooks.getBookById(-bookId).then((res) => {
         books.value = [res.data, ...books.value];
       });
     }
