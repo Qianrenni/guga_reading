@@ -20,7 +20,7 @@
       <template #response="{ row }">
         <div class="inner-container">
           <QIcon
-            v-if="['pending', 'rejected'].includes(row.status)"
+            v-if="['PENDING', 'REJECTED'].includes(row.status)"
             icon="Edit"
             size="16px"
             title="编辑"
@@ -45,7 +45,7 @@
             @click="
               () => {
                 useApiAuthor
-                  .updateStatusBookChapter(row.bookId, row.id, row.status)
+                  .updateStatusBookChapter(row.bookId, row.id)
                   .then((res) => {
                     if (res.success) {
                       useMessage.success('提交成功');

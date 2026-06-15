@@ -63,7 +63,7 @@ fun Routing.author() {
                     when (part) {
                         is PartData.FormItem -> {
                             when (part.name) {
-                                "bookName" -> {
+                                "name" -> {
                                     bookName = part.value
                                 }
 
@@ -136,11 +136,11 @@ fun Routing.author() {
                     when (part) {
                         is PartData.FormItem -> {
                             when (part.name) {
-                                "bookId" -> {
+                                "id" -> {
                                     bookId = part.value.toInt()
                                 }
 
-                                "bookName" -> {
+                                "name" -> {
                                     bookName = part.value
                                 }
 
@@ -184,7 +184,6 @@ fun Routing.author() {
                     && description != null
                     && category != null
                     && tags != null
-                    && cover != null
                 ) {
                     application.authorBookService.updateBook(
                         userId = user.id,
@@ -201,7 +200,12 @@ fun Routing.author() {
             }
 
             // DELETE /author/book - 删除作者图书
-            delete("/book") {}
+            delete("/book") {
+                val user = call.getCurrentUser()
+                val bookId = call.requireQueryParameter("id").toInt()
+                application.authorBookService.deleteBook(userId = user.id, bookId = bookId)
+                call.respond(ResponseModel.Empty(message = "删除成功"))
+            }
 
             // GET /author/chapter - 获取作者图书章节
             get("/chapter") {
@@ -229,7 +233,15 @@ fun Routing.author() {
 
             // DELETE /author/chapter - 删除作者图书章节
             delete("/chapter") {
-
+                val user = call.getCurrentUser()
+                val chapterId = call.requireQueryParameter("chapterId").toInt()
+                val bookId = call.requireQueryParameter("bookId").toInt()
+                application.authorBookService.deleteBookChapter(
+                    userId = user.id,
+                    chapterId = chapterId,
+                    bookId = bookId
+                )
+                call.respond(ResponseModel.Empty(message = "删除成功"))
             }
 
             // GET /author/book-statistics - 获取作者图书阅读数据
@@ -263,11 +275,24 @@ fun Routing.author() {
             }
             route("/status") {
                 // PATCH /author/status/chapter - 更新章节状态
-                patch("chapter") {}
+                patch("chapter") {
+                    val user = call.getCurrentUser()
+                    val bookId = call.requireQueryParameter("bookId").toInt()
+                    val chapterId = call.requireQueryParameter("chapterId").toInt()
+                    application.authorBookService.updateStatusChapter(
+                        userId = user.id,
+                        bookId = bookId,
+                        chapterId = chapterId
+                    )
+                    call.respond(ResponseModel.Empty(message = "更新成功"))
+                }
 
                 // PATCH /author/status/book - 更新书籍状态
                 patch("/book") {
-
+                    val user = call.getCurrentUser()
+                    val bookId = call.requireQueryParameter("bookId").toInt()
+                    application.authorBookService.updateStatusBook(userId = user.id, bookId = bookId)
+                    call.respond(ResponseModel.Empty(message = "更新成功"))
                 }
             }
 

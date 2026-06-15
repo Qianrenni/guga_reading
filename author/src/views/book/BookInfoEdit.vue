@@ -17,7 +17,7 @@ import { letIfNotNull, QFormButton, useMessage } from 'qyani-components';
 import { onBeforeMount, reactive, useTemplateRef } from 'vue';
 import { router } from '@/route';
 import type { Book, BookMeta as BookMetaType } from '@guga-reading/types';
-import { useApiAuthor, useApiBooks } from '@guga-reading/shares';
+import { useApiAuthor } from '@guga-reading/shares';
 import { useAuthStore } from '@/store';
 const props = reactive<BookMetaType>({
   name: '',
@@ -51,7 +51,7 @@ const submit = () => {
     .updateBook(
       id,
       form.name.value,
-      useAuthStore().getUser!.username,
+      useAuthStore().getUser!.userName,
       form.cover.value!,
       form.description.value,
       form.category.value,
@@ -70,14 +70,17 @@ const submit = () => {
     });
 };
 onBeforeMount(() => {
-  useApiBooks.getBookById(id).then((res) => {
-    letIfNotNull<Book, void>(res.data, (data) => {
-      props.name = data.name;
-      props.cover = data.cover;
-      props.description = data.description;
-      props.category = data.category;
-      props.tags = data.tags.split(',').join(' ');
-    });
+  useApiAuthor.getBook().then((res) => {
+    letIfNotNull<Book, void>(
+      res.data.find((book) => book.id === id),
+      (data) => {
+        props.name = data.name;
+        props.cover = data.cover;
+        props.description = data.description;
+        props.category = data.category;
+        props.tags = data.tags.split(',').join(' ');
+      },
+    );
   });
 });
 </script>

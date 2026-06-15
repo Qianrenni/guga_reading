@@ -8,7 +8,7 @@ import org.jetbrains.exposed.sql.ResultRow
 data class UserRole(
     val userId: Int,
     val roleId: Int,
-    val grantedBy: Int,
+    val grantedBy: Int?,
     val grantedAt: String
 )
 

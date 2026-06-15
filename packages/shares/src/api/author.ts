@@ -92,21 +92,12 @@ export const useApiAuthor = {
   getAuthorDraftChapter: async function () {
     return await get<BookChapter[]>(`${this.prefix}/draft/chapter`);
   },
-  updateStatusBookChapter: async function (
-    bookId: number,
-    chapterId: number,
-    status: string,
-  ) {
-    return await patch<null>(`${this.prefix}/status/chapter`, {
-      bookId: bookId,
-      chapterId: chapterId,
-      status,
-    });
+  updateStatusBookChapter: async function (bookId: number, chapterId: number) {
+    return await patch<null>(
+      `${this.prefix}/status/chapter?bookId=${bookId}&chapterId=${chapterId}`,
+    );
   },
-  updateStatusBook: async function (bookId: number, status: string) {
-    return await patch<null>(`${this.prefix}/status/book`, {
-      bookId: bookId,
-      status,
-    });
+  updateStatusBook: async function (bookId: number) {
+    return await patch<null>(`${this.prefix}/status/book?bookId=${bookId}`);
   },
 };

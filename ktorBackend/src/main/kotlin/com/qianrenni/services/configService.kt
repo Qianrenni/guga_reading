@@ -15,4 +15,5 @@ fun Application.configService() {
     registerShelfService()
     registerAdminService()
     registerAuthorBookService()
+    registerAuditBookService()
 }

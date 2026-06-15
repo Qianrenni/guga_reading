@@ -18,7 +18,7 @@
         {{ TranslationStatus[row.status as StatusEnum] }}
       </template>
       <template #action="{ row }">
-        {{ row.parentId === null ? '创建' : '更新' }}
+        {{ row.id > 0 ? '创建' : '更新' }}
       </template>
       <template #cover="{ row }">
         <QLazyImage :src="row.cover" :height="128" :width="72" />
@@ -53,7 +53,7 @@
       <template #response="{ row }">
         <div class="inner-container">
           <QIcon
-            v-if="['update', 'create'].includes(row.action as ActionEnum)"
+            v-if="['PENDING', 'REJECTED'].includes(row.status)"
             icon="Edit"
             size="16px"
             title="编辑"
@@ -76,16 +76,14 @@
             class="hover-color-primary"
             @click="
               () => {
-                useApiAuthor
-                  .updateStatusBook(row.id, row.status)
-                  .then((res) => {
-                    if (res.success) {
-                      useMessage.success('提交成功');
-                      refresh();
-                    } else {
-                      useMessage.error(res.message || '提交失败');
-                    }
-                  });
+                useApiAuthor.updateStatusBook(row.id).then((res) => {
+                  if (res.success) {
+                    useMessage.success('提交成功');
+                    refresh();
+                  } else {
+                    useMessage.error(res.message || '提交失败');
+                  }
+                });
               }
             "
           />
@@ -115,7 +113,6 @@ import { useApiAuthor } from '@guga-reading/shares';
 import { onBeforeMount, ref } from 'vue';
 import {
   TranslationStatus,
-  type ActionEnum,
   type Book,
   type StatusEnum,
 } from '@guga-reading/types';

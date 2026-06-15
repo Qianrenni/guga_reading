@@ -10,7 +10,7 @@
               : userStore.getUser?.avatar!
           "
         />
-        <h2>{{ userStore.getUser?.username }}</h2>
+        <h2>{{ userStore.getUser?.userName }}</h2>
         <p :style="{ color: userStore.getUser?.isActive ? 'green' : 'red' }">
           {{ userStore.getUser?.isActive ? 'Active' : 'Inactive' }}
         </p>

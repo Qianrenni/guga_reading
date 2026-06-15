@@ -42,7 +42,7 @@ const submit = () => {
   useApiAuthor
     .createBook(
       form.name.value,
-      useAuthStore().getUser!.username,
+      useAuthStore().getUser!.userName,
       form.cover.value!,
       form.description.value,
       form.category.value,
