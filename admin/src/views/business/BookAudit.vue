@@ -7,7 +7,7 @@
       >
         <p v-if="isUpdate" class="text-center">
           <span class="text-12rem">{{
-            book.status == 'published' ? '修改前' : '修改后'
+            book.status == 'PUBLISHED' ? '修改前' : '修改后'
           }}</span>
         </p>
         <p>

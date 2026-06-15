@@ -1,9 +1,9 @@
 export type StatusEnum =
-  | 'pending'
-  | 'approved'
-  | 'rejected'
-  | 'reviewing'
-  | 'published';
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'REVIEWING'
+  | 'PUBLISHED';
 
 /**
  * 状态枚举
@@ -13,11 +13,11 @@ export type StatusEnum =
     - reviewing: 审核中
  */
 export const TranslationStatus: Record<StatusEnum, string> = {
-  pending: '搁置',
-  approved: '审核通过',
-  rejected: '审核拒绝',
-  reviewing: '审核中',
-  published: '已发布',
+  PENDING: '搁置',
+  APPROVED: '审核通过',
+  REJECTED: '审核拒绝',
+  REVIEWING: '审核中',
+  PUBLISHED: '已发布',
 };
 
 /**
@@ -26,10 +26,10 @@ export const TranslationStatus: Record<StatusEnum, string> = {
     - update: 修改
     - delete: 删除
  */
-export type ActionEnum = 'create' | 'update' | 'delete' | 'publish';
+export type ActionEnum = 'CREATE' | 'UPDATE' | 'DELETE' | 'PUBLISH';
 export const TranslationAction: Record<ActionEnum, string> = {
-  create: '创建',
-  update: '修改',
-  delete: '删除',
-  publish: '发布',
+  CREATE: '创建',
+  UPDATE: '修改',
+  DELETE: '删除',
+  PUBLISH: '发布',
 };

@@ -241,11 +241,25 @@ fun Routing.author() {
             }
 
             // GET /author/content - 获取章节内容
-            get("/content") {}
+            get("/content") {
+                val user = call.getCurrentUser()
+                val chapterIds = call.request.queryParameters.getAll("chapterId")?.map { it.toInt() } ?: emptyList()
+                val bookId = call.requireQueryParameter("bookId").toInt()
+                val result = application.authorBookService.getChapterContent(
+                    userId = user.id,
+                    chapterIds = chapterIds,
+                    bookId = bookId
+                )
+                call.respond(ResponseModel.Success(result))
+            }
 
             // GET /author/draft/chapter - 获取草稿章节
             route("/draft") {
-                get("/chapter") {}
+                get("/chapter") {
+                    val user = call.getCurrentUser()
+                    val result = application.authorBookService.getDraftChapter(userId = user.id)
+                    call.respond(ResponseModel.Success(result))
+                }
             }
             route("/status") {
                 // PATCH /author/status/chapter - 更新章节状态

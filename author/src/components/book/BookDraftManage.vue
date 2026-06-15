@@ -181,7 +181,7 @@ const refresh = () => {
     .then((res) => {
       const temp = [];
       for (const book of res.data) {
-        if (book.status !== 'published') {
+        if (book.status !== 'PUBLISHED') {
           temp.push(book);
         }
       }

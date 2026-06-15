@@ -92,7 +92,7 @@ const columns: TableColumn[] = [
 ];
 onBeforeMount(() => {
   useApiAudit.getAuditBook().then((res) => {
-    books.value = res.data.filter((item) => item.status !== 'published');
+    books.value = res.data.filter((item) => item.status !== 'PUBLISHED');
   });
 });
 </script>

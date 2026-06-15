@@ -66,7 +66,7 @@ const saveChapter = () => {
       bookId,
       title.value || '',
       content.value || '',
-      item.status == 'published' ? -Math.abs(item.order) : item.order,
+      item.status == 'PUBLISHED' ? -Math.abs(item.order) : item.order,
     )
     .then((res) => {
       if (res.success) {

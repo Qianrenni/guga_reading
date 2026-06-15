@@ -286,7 +286,7 @@ class ChapterStoreSync(
 
         return rwLock.withReadLock {
             val snap = indexSnapshot
-            val record = snap[chapterId] ?: return@withReadLock ""
+            val record = snap[chapterId] ?: throw IllegalStateException("Chapter $chapterId not found")
             if (record.isDelete) return@withReadLock ""
 
             return@withReadLock withContext(Dispatchers.IO) {

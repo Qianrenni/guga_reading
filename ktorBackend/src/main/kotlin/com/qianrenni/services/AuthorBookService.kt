@@ -3,6 +3,7 @@ package com.qianrenni.services
 import com.qianrenni.config.appConfig
 import com.qianrenni.controller.RequestUpdateBookChapter
 import com.qianrenni.database.databaseManager
+import com.qianrenni.enums.BookStatus
 import com.qianrenni.models.domain.*
 import com.qianrenni.models.tables.*
 import io.ktor.server.application.*
@@ -11,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.io.File
 import kotlin.io.path.Path
 
@@ -34,9 +34,9 @@ class AuthorBookService(private val application: Application) {
 
     suspend fun getBook(userId: Int): List<Book> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
-            BookTable.innerJoin(
-                AuthorBookTable, onColumn = { AuthorBookTable.bookId eq BookTable.id },
-            ).selectAll().where({ AuthorBookTable.userId eq userId }).map { it.toBook(application.appConfig.serverUrl) }
+            BookTable.innerJoin(AuthorBookTable, { BookTable.id }, { AuthorBookTable.bookId })
+                .selectAll().where { AuthorBookTable.userId eq userId }
+                .map { it.toBook(application.appConfig.serverUrl) }
         }
     }
 
@@ -168,12 +168,33 @@ class AuthorBookService(private val application: Application) {
             }
         }
         val chapterStore =
-            ChapterStoreService(bookId = requestUpdateBookChapter.bookId, baseDir = application.appConfig.contentDir)
+            ChapterStoreService(
+                bookId = requestUpdateBookChapter.bookId,
+                baseDir = application.appConfig.contentDir + "/book"
+            )
         withContext(Dispatchers.IO) {
-            targetId?.let { chapterStore.update(it, requestUpdateBookChapter.content) }
+            chapterStore.use {
+                targetId?.let { chapterStore.update(targetId, requestUpdateBookChapter.content) }
+            }
         }
     }
 
+    suspend fun getChapterContent(
+        userId: Int,
+        bookId: Int,
+        chapterIds: List<Int>
+    ): List<String> {
+        checkAuthor(userId, bookId)
+        val chapterStoreService = ChapterStoreService(
+            bookId = bookId,
+            baseDir = application.appConfig.contentDir + "/book"
+        )
+        return withContext(Dispatchers.IO) {
+            chapterStoreService.use {
+                chapterIds.map { chapterStoreService.readChapter(it) }
+            }
+        }
+    }
     suspend fun getBookReadStatistic(userId: Int, bookId: Int): List<ChapterReadStatistics> {
         checkAuthor(userId, bookId)
         return application.databaseManager.suspendedTransaction(readOnly = true) {
@@ -182,6 +203,20 @@ class AuthorBookService(private val application: Application) {
             }.map {
                 it.toChapterReadStatistics()
             }
+        }
+    }
+    suspend fun getDraftChapter(
+        userId: Int,
+    ): List<BookCatalogItem> {
+        return application.databaseManager.suspendedTransaction(readOnly = true) {
+            BookChapterTable
+                .innerJoin(AuthorBookTable, { BookChapterTable.bookId }, { AuthorBookTable.bookId })
+                .selectAll()
+                .where {
+                    (AuthorBookTable.userId eq userId) and (BookChapterTable.status neq BookStatus.PUBLISHED)
+                }.map {
+                    it.toBookCatalogItem()
+                }
         }
     }
 

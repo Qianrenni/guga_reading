@@ -1,18 +1,18 @@
 <template>
   <div class="content-container">
-    <div class="container-column bg-card radius-rem">
-      <h3 class="text-center">作者登录</h3>
+    <div class="container-column bg-card">
+      <h3 class="text-center">用户登录</h3>
       <QFormText
+        prefixIcon="User"
         v-model="form.username"
         type="email"
-        label="用户名"
         placeholder="请输入用户名"
         name="username"
       />
       <QFormText
+        prefixIcon="Lock"
         v-model="form.password"
         type="password"
-        label="密码"
         placeholder="请输入密码"
         name="password"
       />
@@ -20,7 +20,6 @@
         <QFormText
           v-model="form.captcha"
           type="text"
-          label="验证码"
           placeholder="请输入验证码"
           name="captcha"
         />
@@ -43,17 +42,6 @@
         <QLoading v-if="loading" type="breathing" />
         <span v-else>登录</span>
       </QFormButton>
-      <p
-        class="mouse-cursor text-08rem link-primary"
-        @click="
-          () => {
-            form.username = '1093171693@qq.com';
-            form.password = '654321';
-          }
-        "
-      >
-        使用测试账号?
-      </p>
     </div>
   </div>
 </template>
@@ -108,9 +96,9 @@ const run = async () => {
     useMessage.success('登录成功');
     authStore.setRemeber(form.value.remember.length > 0);
     authStore.setToken(
-      data!.access_token!,
-      data!.refresh_token!,
-      data!.token_type!,
+      data!.accessToken!,
+      data!.refreshToken!,
+      data!.tokenType!,
     );
     authStore.setUser(data!.user!);
     axios.defaults.headers.common['Authorization'] =

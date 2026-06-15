@@ -325,7 +325,6 @@ class RightService(private val application: Application) {
                 UserRoleTable.insert {
                     it[UserRoleTable.userId] = userId
                     it[UserRoleTable.roleId] = role.id
-                    it[UserRoleTable.grantedBy] = userId
                 }
                 return true
             }
