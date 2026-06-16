@@ -49,7 +49,6 @@ import {
   QLazyImage,
   QDialog,
   QFormTextarea,
-  useMessage,
 } from 'qyani-components';
 defineOptions({ name: 'BookMeta' });
 const props = withDefaults(defineProps<Partial<BookMeta>>(), {
@@ -103,10 +102,6 @@ watch(
   () => form.cover.value,
   (cover) => {
     if (cover) {
-      if ((cover as File).size > 0.5 * 1024 * 1024) {
-        useMessage.error('封面大小不能超过0.5M');
-        form.cover.value = null;
-      }
       previewImageSrc.value = URL.createObjectURL(cover);
     } else {
       previewImageSrc.value = '';
