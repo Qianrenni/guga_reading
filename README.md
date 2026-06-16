@@ -3,9 +3,13 @@
 [![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![Vue](https://img.shields.io/badge/vue-3.5+-brightgreen.svg)](https://vuejs.org/)
+[![Ktor](https://img.shields.io/badge/ktor-3.5+-blueviolet.svg)](https://ktor.io/)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.1+-orange.svg)](https://kotlinlang.org/)
 [![FastAPI](https://img.shields.io/badge/fastapi-0.119+-teal.svg)](https://fastapi.tiangolo.com/)
 
-An online reading platform with multiple roles based on **FastAPI + Vue 3**, supporting full functionality for users, authors, and administrators.
+An online reading platform with multiple roles based on **Ktor / FastAPI + Vue 3**, featuring two backend implementations — Ktor (Kotlin) and FastAPI (Python) — supporting full functionality for users, authors, and administrators.
+
+> **Note**: The primary backend is now `ktorBackend` (Kotlin/Ktor). The legacy FastAPI (Python) backend and its frontend applications (user, author, admin) have been moved to the `release_python_backend` branch.
 
 English | [中文版](./README.zh-CN.md)
 
@@ -42,13 +46,13 @@ GUGA Reading is a modern online reading system that provides reading, creation, 
 │  │   Client    │  │   Client    │  │   Panel     │    │
 │  └─────────────┘  └─────────────┘  └─────────────┘    │
 ├─────────────────────────────────────────────────────────┤
-│  Backend (FastAPI + SQLAlchemy)                         │
+│  Backend (Ktor + Exposed)                               │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │  API Gateway / Authentication / Rate Limiting   │   │
 │  └─────────────────────────────────────────────────┘   │
 │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────┐  │
-│  │  Book   │ │  User   │ │Recommend│ │  Statistics │  │
-│  │ Service │ │ Service │ │ Service │ │   Service   │  │
+│  │  Book   │ │  User   │ │  Shelf  │ │  Statistics  │  │
+│  │ Service │ │ Service │ │ Service │ │   Service    │  │
 │  └─────────┘ └─────────┘ └─────────┘ └─────────────┘  │
 ├─────────────────────────────────────────────────────────┤
 │  Data Layer                                             │
@@ -62,36 +66,34 @@ GUGA Reading is a modern online reading system that provides reading, creation, 
 ### Architecture Diagram Notes
 
 - **Frontend Layer**: Three independent Vue 3 applications, each serving a different role
-- **Backend Layer**: FastAPI providing RESTful APIs, including multiple microservice modules
+- **Backend Layer**: Ktor (Kotlin) providing RESTful APIs, including multiple service modules
 - **Data Layer**: MySQL for persistent storage, Redis for caching acceleration, object storage for file management
+- **Legacy Note**: The legacy FastAPI (Python) backend and its frontend apps have been moved to the `release_python_backend` branch
 
 ## 📁 Project Structure
 
 ```
 guga_reading/
-├── backend/                          # Backend service (FastAPI)
-│   ├── app/
-│   │   ├── api/v1/                   # API v1 definitions
-│   │   ├── core/                     # Core functionality (config, database, security)
-│   │   ├── models/                   # SQLAlchemy data models
-│   │   ├── schema/                   # Pydantic data validation schemas
+├── ktorBackend/                      # **Current primary backend** (Ktor + Kotlin)
+│   ├── src/main/kotlin/com/qianrenni/
+│   │   ├── controller/               # API route controllers
 │   │   ├── services/                 # Business logic service layer
-│   │   ├── algorithm/                # Recommendation algorithm (TF-IDF)
-│   │   ├── middleware/               # Middleware (logging, rate limiting)
+│   │   ├── models/                   # Data models (domain + tables)
+│   │   ├── plugins/                  # Plugin configuration (auth, rate limiting, CORS, etc.)
+│   │   ├── database/                 # Database and Redis clients
+│   │   ├── schemas/                  # Response models
+│   │   ├── enums/                    # Enum definitions
 │   │   ├── utils/                    # Utility functions
-│   │   └── enum/                     # Enum definitions
-│   ├── alembic/                      # Database migration tool
-│   ├── static/                       # Static assets (book files)
-│   ├── store/                        # Data storage directory
-│   ├── logs/                         # Log files
-│   ├── test/                         # Test code (pytest)
-│   ├── scripts/                      # Script tools
-│   ├── requirements.txt              # Python dependencies
-│   ├── pyproject.toml                # Python project configuration
-│   ├── docker-compose.yml            # Docker orchestration
-│   └── run.py                        # Startup script
+│   │   └── workers/                  # Scheduled tasks
+│   ├── build.gradle.kts              # Gradle build configuration
+│   └── Dockerfile                    # Docker deployment
 │
-├── author/                           # Author client app (Vue 3)
+├── backend/                          # **Legacy backend (FastAPI/Python)** - no longer maintained
+│                                      # Moved to `release_python_backend` branch
+│   ├── app/
+│
+├── author/                           # Author client app (Vue 3) [Legacy]
+│                                      # Moved to `release_python_backend` branch
 │   ├── src/
 │   │   ├── components/               # Vue components
 │   │   ├── views/                    # Page views
@@ -102,7 +104,8 @@ guga_reading/
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── user/                             # User client app (Vue 3)
+├── user/                             # User client app (Vue 3) [Legacy]
+│                                      # Moved to `release_python_backend` branch
 │   ├── src/
 │   │   ├── components/               # Vue components
 │   │   ├── views/                    # Page views
@@ -111,7 +114,8 @@ guga_reading/
 │   ├── public/                       # Public assets
 │   └── package.json
 │
-├── admin/                            # Admin panel (Vue 3)
+├── admin/                            # Admin panel (Vue 3) [Legacy]
+│                                      # Moved to `release_python_backend` branch
 │   ├── src/
 │   │   └── views/                    # Page views
 │   ├── public/                       # Public assets
@@ -131,7 +135,7 @@ guga_reading/
 └── README.md                         # Project documentation
 ```
 
-> 💡 **Note**: This project uses pnpm workspace to manage multiple frontend applications, enabling code sharing and unified management.
+> 💡 **Note**: The primary backend is now `ktorBackend` (Ktor + Kotlin). The legacy Python (FastAPI) backend and its frontend apps (user, author, admin) have been moved to the `release_python_backend` branch. This project uses pnpm workspace to manage frontend applications.
 
 ## 🎯 Feature Modules
 
@@ -161,18 +165,30 @@ guga_reading/
 
 ## 🛠️ Tech Stack
 
-### Backend Technologies
+### Backend Technologies (Current Primary)
 
-| Technology          | Version            | Description                      |
-| ------------------- | ------------------ | -------------------------------- |
-| **Framework**       | FastAPI 0.119.0    | Asynchronous web framework       |
-| **Database**        | MySQL              | Primary data storage             |
-| **Cache**           | Redis 6.4.0        | Caching, rate limiting, sessions |
-| **ORM**             | SQLAlchemy 2.0.44  | Asynchronous ORM                 |
-| **Recommendation**  | TF-IDF + NumPy     | Personalized recommendations     |
-| **Auth**            | PyJWT 2.10.1       | JWT authentication               |
-| **Task Scheduling** | APScheduler 3.11.2 | Scheduled tasks                  |
-| **Deployment**      | Docker + Gunicorn  | Containerized deployment         |
+| Technology        | Version               | Description                      |
+| ----------------- | --------------------- | -------------------------------- |
+| **Framework**     | Ktor 3.5.0            | Asynchronous web framework       |
+| **Language**      | Kotlin 2.1+           | JVM programming language         |
+| **Database**      | MySQL                 | Primary data storage             |
+| **Cache**         | Redis 6.4.0           | Caching, rate limiting, sessions |
+| **ORM**           | Exposed               | Kotlin ORM framework             |
+| **Auth**          | Ktor Auth + JWT       | JWT authentication               |
+| **Rate Limiting** | flaxoos-rate-limiting | Redis token bucket algorithm     |
+| **Build Tool**    | Gradle + Kotlin DSL   | Project build                    |
+| **Deployment**    | Docker                | Containerized deployment         |
+
+### Backend Technologies (Legacy - moved to `release_python_backend` branch)
+
+| Technology          | Version            | Description                  |
+| ------------------- | ------------------ | ---------------------------- |
+| **Framework**       | FastAPI 0.119.0    | Asynchronous web framework   |
+| **Language**        | Python 3.8+        | Programming language         |
+| **ORM**             | SQLAlchemy 2.0.44  | Asynchronous ORM             |
+| **Recommendation**  | TF-IDF + NumPy     | Personalized recommendations |
+| **Task Scheduling** | APScheduler 3.11.2 | Scheduled tasks              |
+| **Deployment**      | Gunicorn + Uvicorn | Containerized deployment     |
 
 ### Frontend Technologies
 
@@ -204,54 +220,51 @@ guga_reading/
 
 ### Requirements
 
-- **Backend**: Python 3.8+
+- **Backend (Ktor)**: JDK 21+, Gradle 8.0+
 - **Frontend**: Node.js >= 16.0.0, pnpm >= 8.0.0
 - **Database**: MySQL 5.7+
 - **Cache**: Redis 5.0+
 - **Mobile**: Android Studio Hedgehog+, JDK 11+
+- **Legacy Python Backend**: Python 3.8+ (on `release_python_backend` branch)
 
-### Backend Setup
+### Backend Setup (Current Primary - Ktor)
 
 #### Option 1: Local Run
 
-1. **Install dependencies**
+1. **Configure environment variables**
 
 ```bash
-cd backend
-pip install -r requirements.txt
-```
-
-2. **Configure environment variables**
-
-```bash
+cd ktorBackend
 # Copy and edit the configuration file
 cp .env.example .env
 # Edit .env to set database, Redis, email, etc.
 ```
 
-3. **Initialize database**
+2. **Initialize database**
 
 ```bash
-# Run database migrations
-alembic upgrade head
+# Run SQL initialization script
+mysql -u root -p < ktorBackend/database.sql
 ```
 
-4. **Run the service**
+3. **Run the service**
 
 ```bash
-python run.py
-# Or for production with gunicorn
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000
+cd ktorBackend
+./gradlew run
 ```
 
 #### Option 2: Docker Deployment
 
 ```bash
-cd backend
-docker-compose up -d
+cd ktorBackend
+docker build -t guga_backend .
+docker run -p 8000:8000 guga_backend
 ```
 
-Access API docs: http://localhost:8000/docs
+Access API docs (Swagger UI): http://localhost:8000/swagger
+
+> **Note**: The legacy FastAPI (Python) backend has been moved to the `release_python_backend` branch.
 
 ### Frontend Setup
 
@@ -413,10 +426,9 @@ APK locations:
 
 ## 📝 API Documentation
 
-After starting the backend service, visit the following addresses to view API docs:
+After starting the backend service, visit the following address to view API docs:
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:8000/swagger
 
 The API documentation provides complete endpoint descriptions, request parameters, response examples, and online testing.
 
@@ -425,11 +437,16 @@ The API documentation provides complete endpoint descriptions, request parameter
 ### Backend Testing
 
 ```bash
-cd backend
-pytest
-# Or specify a test file
-pytest test/api/v1/test_book.py
+cd ktorBackend
+./gradlew test
 ```
+
+> **Legacy backend testing**: Tests for the FastAPI (Python) backend have been moved to the `release_python_backend` branch. To run them:
+>
+> ```bash
+> cd backend
+> pytest
+> ```
 
 ### Frontend Testing
 
@@ -466,7 +483,7 @@ pnpm run lint
           ┌────────────────┼────────────────┐
           │                │                │
     ┌─────▼─────┐   ┌─────▼─────┐   ┌─────▼─────┐
-    │ FastAPI   │   │ FastAPI   │   │ FastAPI   │
+    │   Ktor    │   │   Ktor    │   │   Ktor    │
     │ Instance 1│   │ Instance 2│   │ Instance 3│
     └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
           │                │                │
@@ -513,7 +530,7 @@ pnpm run lint
                ▼
     ┌─────────────────────┐
     │   Backend API       │
-    │   (FastAPI)         │
+    │   (Ktor)            │
     └─────────────────────┘
 ```
 
