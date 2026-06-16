@@ -17,9 +17,20 @@ import kotlin.time.Duration.Companion.minutes
 
 fun Routing.book() {
     route("/book") {
-        get("/count") {
-            val result = application.bookService.getBookCount()
-            call.respond(ResponseModel.Success(result))
+        authenticate("auth-jwt") {
+            get("/count") {
+                call.requirePermission(
+                    listOf(
+                        generatePermissionCode(
+                            resource = ResourceTypeEnum.PERMISSION,
+                            action = ActionEnum.READ,
+                            scope = ScopeEnum.ALL
+                        )
+                    )
+                )
+                val result = application.bookService.getBookCount()
+                call.respond(ResponseModel.Success(result))
+            }
         }
         get("/category") {
             val result = application.bookService.getCategory()

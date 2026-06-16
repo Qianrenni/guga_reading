@@ -1,16 +1,19 @@
 package com.qianrenni.controller
 
+import com.qianrenni.enums.ActionEnum
+import com.qianrenni.enums.ResourceTypeEnum
+import com.qianrenni.enums.ScopeEnum
 import com.qianrenni.models.domain.FullUser
+import com.qianrenni.plugins.requirePermission
 import com.qianrenni.schemas.ResponseModel
-import com.qianrenni.services.cacheService
-import com.qianrenni.services.captchaService
-import com.qianrenni.services.emailService
-import com.qianrenni.services.userService
+import com.qianrenni.services.*
 import io.ktor.http.*
+import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+
 @Serializable
 data class RegisterUser(
      val user: FullUser,
@@ -35,12 +38,35 @@ data class ForgotPasswordRequest(
 fun Routing.user() {
     route("/user") {
         // GET /user/count - 获取用户数量
-        get("/count") {
-            val count = application.userService.getUserCount()
-            call.respond(
-                ResponseModel.Success(data = count)
-            )
+        authenticate("auth-jwt") {
+            get("/count") {
+                call.requirePermission(
+                    listOf(
+                        generatePermissionCode(
+                            resource = ResourceTypeEnum.PERMISSION,
+                            action = ActionEnum.READ,
+                            scope = ScopeEnum.ALL
+                        )
+                    )
+                )
+                val count = application.userService.getUserCount()
+                call.respond(
+                    ResponseModel.Success(data = count)
+                )
+            }
+            // PATCH /user/update-password - 更新密码
+            patch("/update-password") {
+                val request = call.receive<UserPasswordUpdate>()
+
+                application.userService.updatePassword(
+                    userEmail = request.userName,
+                    oldPassword = request.oldPassword,
+                    newPassword = request.newPassword
+                )
+                call.respond(HttpStatusCode.NoContent)
+            }
         }
+
 
         // POST /user/register - 用户注册
         post("/register") {
@@ -77,17 +103,7 @@ fun Routing.user() {
             call.respond(HttpStatusCode.Created)
         }
 
-        // PATCH /user/update-password - 更新密码
-        patch("/update-password") {
-            val request = call.receive<UserPasswordUpdate>()
 
-            application.userService.updatePassword(
-                userEmail = request.userName,
-                oldPassword = request.oldPassword,
-                newPassword = request.newPassword
-            )
-            call.respond(HttpStatusCode.NoContent)
-        }
 
         // GET /user/forgot-password - 获取忘记密码验证码
         get("/forgot-password") {
