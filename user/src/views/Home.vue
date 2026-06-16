@@ -9,7 +9,7 @@ import {
   watch,
 } from 'vue';
 import BookItem from '@/components/BookItem.vue';
-import { QScrollContainer } from 'qyani-components';
+import { QScrollContainer, QSkeleton } from 'qyani-components';
 
 defineOptions({
   name: 'Home',
@@ -78,6 +78,7 @@ onActivated(() => {
         :width="width"
         :height="height"
       />
+      <QSkeleton v-show="bookStore.$state.loading" v-for="_ in 25" />
     </QScrollContainer>
   </div>
 </template>
