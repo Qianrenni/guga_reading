@@ -45,7 +45,8 @@ fun Routing.author() {
             // GET /author/book - 获取作者图书列表
             get("/book") {
                 val user = call.getCurrentUser()
-                val result = application.authorBookService.getBook(userId = user.id)
+                val bookIds = call.request.queryParameters.getAll("id")?.map { it.toInt() } ?: emptyList()
+                val result = application.authorBookService.getBook(userId = user.id, bookIds = bookIds)
                 call.respond(ResponseModel.Success(result))
             }
 

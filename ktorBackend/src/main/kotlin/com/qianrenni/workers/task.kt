@@ -171,7 +171,7 @@ private suspend fun aggregateHourlyStatistics(
 suspend fun publishBook(databaseManager: DatabaseManager, appConfig: AppConfig) {
     var books = emptyList<Book>()
     databaseManager.suspendedTransaction {
-        val books = BookTable
+        books = BookTable
             .selectAll()
             .where { BookTable.status eq BookStatus.APPROVED }
             .map { it.toBook(appConfig.serverUrl) }
@@ -251,6 +251,17 @@ suspend fun publishBook(databaseManager: DatabaseManager, appConfig: AppConfig) 
                 BookChapterTable.id inList positiveChapters.map { it.id }
             }) {
                 it[BookChapterTable.status] = BookStatus.PUBLISHED
+            }
+        }
+        val countChapter = BookChapterTable.id.count()
+        val bookChapterCount = BookChapterTable
+            .select(BookChapterTable.bookId, countChapter)
+            .where { BookChapterTable.bookId inList chapters.map { it.bookId } }
+            .groupBy(BookChapterTable.bookId)
+            .associate { it[BookChapterTable.bookId] to it[countChapter].toInt() }
+        bookChapterCount.forEach { (bookId, count) ->
+            BookTable.update({ BookTable.id eq bookId }) {
+                it[BookTable.totalChapter] = count
             }
         }
     }

@@ -35,10 +35,18 @@ class AuthorBookService(private val application: Application) {
         }
     }
 
-    suspend fun getBook(userId: Int): List<Book> {
+    suspend fun getBook(userId: Int, bookIds: List<Int>): List<Book> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
-            BookTable.innerJoin(AuthorBookTable, { BookTable.id }, { AuthorBookTable.bookId })
-                .selectAll().where { AuthorBookTable.userId eq userId }
+            BookTable
+                .innerJoin(AuthorBookTable, { BookTable.id }, { AuthorBookTable.bookId })
+                .selectAll()
+                .where {
+                    if (bookIds.isEmpty()) {
+                        AuthorBookTable.userId eq userId
+                    } else {
+                        (AuthorBookTable.userId eq userId) and (AuthorBookTable.bookId inList bookIds)
+                    }
+                }
                 .map { it.toBook(application.appConfig.serverUrl) }
         }
     }
