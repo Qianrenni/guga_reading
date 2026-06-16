@@ -44,6 +44,19 @@
             <span>退出登录</span>
           </QFormButton>
         </div>
+        <div class="inner-container container-w100">
+          <QFormButton
+            type="button"
+            class="button-primary"
+            :disabled="authorStatus === 'approved'"
+            @click="openApplyDialog"
+          >
+            <div class="container-center">
+              <QIcon icon="Draft" size="16px" />
+              <span>{{ authorBtnText }}</span>
+            </div>
+          </QFormButton>
+        </div>
       </div>
       <div class="left-top bg-card shadow-black">
         <div class="container container-w100 gap-half">
@@ -126,15 +139,17 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onBeforeMount } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 import { useAuthStore } from '@/store';
 import { useReadingHistoryStore } from '@/store';
+import { useApiAuthorApplication } from '@guga-reading/shares';
 import {
   QIcon,
   QFormButton,
   QLazyImage,
   QAvatar,
   QTag,
+  useMessage,
 } from 'qyani-components';
 import router from '@/route';
 
@@ -145,6 +160,44 @@ const currentRead = computed(() => {
 });
 const width = 64;
 const height = 96;
+
+// 作者申请相关
+const authorStatus = ref<string | null>(null);
+const authorBtnText = computed(() => {
+  if (authorStatus.value === 'approved') return '已是作者';
+  if (authorStatus.value === 'pending') return '申请审核中';
+  if (authorStatus.value === 'rejected') return '重新申请';
+  return '申请成为作者';
+});
+
+const openApplyDialog = async () => {
+  if (authorStatus.value === 'approved') {
+    useMessage.info('您已经是作者了');
+    return;
+  }
+  const reason = prompt('请输入申请理由：');
+  if (!reason || reason.trim() === '') {
+    useMessage.warning('请输入申请理由');
+    return;
+  }
+  const { success, message } = await useApiAuthorApplication.apply(
+    reason.trim(),
+  );
+  if (success) {
+    useMessage.success('申请已提交，请等待管理员审核');
+    authorStatus.value = 'pending';
+  } else {
+    useMessage.error(message);
+  }
+};
+
+const loadAuthorApplication = async () => {
+  const { success, data } = await useApiAuthorApplication.getMyApplication();
+  if (success && data) {
+    authorStatus.value = data.status;
+  }
+};
+
 const exitHandler = () => {
   userStore.clearUser();
   userStore.clearToken();
@@ -152,6 +205,7 @@ const exitHandler = () => {
 };
 onBeforeMount(() => {
   readhistoryStore.get();
+  loadAuthorApplication();
 });
 </script>
 

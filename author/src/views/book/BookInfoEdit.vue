@@ -49,12 +49,10 @@ const submit = async () => {
   }
   let uploadCover: File | null = null;
   if (form.cover.value != null) {
-    console.info('ImageSrc Size', (form.cover.value as File).size);
-    const imageBlob = await transformImage(form.cover.value, 'webp', 0.75);
+    const imageBlob = await transformImage(form.cover.value, 'webp', 0.3);
     uploadCover = new File([imageBlob], (form.cover.value as File).name, {
       type: 'image/webp',
     });
-    console.info('UploadCover Size', uploadCover!.size);
   }
   useApiAuthor
     .updateBook(

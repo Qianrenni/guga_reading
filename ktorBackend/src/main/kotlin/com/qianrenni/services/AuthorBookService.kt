@@ -144,10 +144,12 @@ class AuthorBookService(private val application: Application) {
         withContext(Dispatchers.IO) {
             when (coverFile) {
                 null -> {
-                    File(application.appConfig.staticDir + "/book/${bookId}/cover.webp").copyTo(
-                        Path(application.appConfig.staticDir + "/book/${targetId}/cover.webp").toFile(),
-                        overwrite = true
-                    )
+                    if (targetId != bookId) {
+                        File(application.appConfig.staticDir + "/book/${bookId}/cover.webp").copyTo(
+                            Path(application.appConfig.staticDir + "/book/${targetId}/cover.webp").toFile(),
+                            overwrite = true
+                        )
+                    }
                 }
 
                 else -> {
@@ -176,6 +178,9 @@ class AuthorBookService(private val application: Application) {
                 .firstOrNull()
                 ?.toBook(application.appConfig.serverUrl)
             book?.let {
+                AuditBookTable.deleteWhere {
+                    AuditBookTable.bookId eq book.id
+                }
                 AuthorBookTable.deleteWhere {
                     (AuthorBookTable.userId eq userId) and (AuthorBookTable.bookId eq book.id)
                 }

@@ -297,6 +297,67 @@ CREATE TABLE IF NOT EXISTS `user_read_event`
     CONSTRAINT `fk_user_read_event_user` FOREIGN KEY (`userId`) REFERENCES `user` (`id`),
     CONSTRAINT `fk_user_read_event_book` FOREIGN KEY (`bookId`) REFERENCES `book` (`id`),
     CONSTRAINT `fk_user_read_event_chapter` FOREIGN KEY (`chapterId`) REFERENCES `book_chapter` (`id`)
+    ) ENGINE = InnoDB
+    DEFAULT CHARSET = utf8mb4
+    COLLATE = utf8mb4_0900_ai_ci;
+
+-- ============================================================
+-- author_application
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `author_application`
+(
+    `id`
+    INT
+    NOT
+    NULL
+    AUTO_INCREMENT,
+    `userId`
+    INT
+    NOT
+    NULL,
+    `reason`
+    VARCHAR
+(
+    500
+) NOT NULL,
+    `status` VARCHAR
+(
+    50
+) NOT NULL DEFAULT 'pending',
+    `handledBy` INT NULL DEFAULT NULL,
+    `rejectReason` VARCHAR
+(
+    500
+) NULL DEFAULT NULL,
+    `handledAt` DATETIME NULL DEFAULT NULL,
+    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY
+(
+    `id`
+),
+    INDEX `idx_author_application_userId`
+(
+    `userId`
+),
+    INDEX `idx_author_application_status`
+(
+    `status`
+),
+    CONSTRAINT `fk_author_application_user` FOREIGN KEY
+(
+    `userId`
+) REFERENCES `user`
+(
+    `id`
+),
+    CONSTRAINT `fk_author_application_handler` FOREIGN KEY
+(
+    `handledBy`
+) REFERENCES `user`
+(
+    `id`
+)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;

@@ -6,7 +6,7 @@ import org.jetbrains.exposed.sql.ResultRow
 
 @Serializable
 data class FullUser(
-    val id:Int,
+    val id: Int = -1,
      val userName: String = "",
     val email: String = "",
      val isActive: Boolean = true,

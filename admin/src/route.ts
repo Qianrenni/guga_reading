@@ -48,6 +48,10 @@ const routes = [
         path: 'book-audit',
         component: () => import('@/views/business/BookAudit.vue'),
       },
+      {
+        path: 'author-audit',
+        component: () => import('@/views/business/AuthorAudit.vue'),
+      },
     ],
   },
   {

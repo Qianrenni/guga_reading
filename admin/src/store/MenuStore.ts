@@ -20,6 +20,11 @@ export const useMenuStore = defineStore('menu', {
         icon: 'Draft',
       },
       {
+        name: '作者审核',
+        path: '/author-audit',
+        icon: 'Star',
+      },
+      {
         name: '用户管理',
         path: '/user-manage',
         icon: 'AccountSetting',

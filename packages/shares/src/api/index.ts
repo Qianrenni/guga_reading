@@ -9,3 +9,4 @@ export * from './report';
 export * from './bookShelf';
 export * from './admin';
 export * from './system';
+export * from './authorApplication';
