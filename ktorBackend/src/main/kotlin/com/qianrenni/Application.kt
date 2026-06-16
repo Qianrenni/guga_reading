@@ -1,5 +1,6 @@
 package com.qianrenni
 
+import com.qianrenni.config.appConfig
 import com.qianrenni.config.loadConfig
 import com.qianrenni.controller.configureRouting
 import com.qianrenni.database.configureDatabase
@@ -8,6 +9,7 @@ import com.qianrenni.database.databaseManager
 import com.qianrenni.plugins.*
 import com.qianrenni.services.*
 import com.qianrenni.workers.aggregateUserReadStatistics
+import com.qianrenni.workers.publishBook
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -51,6 +53,14 @@ private fun Application.configureScheduledTasks() {
             ) { triggerTime ->
                 val hourEnd = triggerTime.toLocalDateTime().truncatedTo(ChronoUnit.HOURS)
                 aggregateUserReadStatistics(hourEnd, databaseManager)
+            }
+        )
+        register(
+            TaskConfig(
+                name = "每小时发布内容",
+                cronExpression = "0 30 * * * ?"
+            ) {
+                publishBook(databaseManager, appConfig)
             }
         )
         start()
