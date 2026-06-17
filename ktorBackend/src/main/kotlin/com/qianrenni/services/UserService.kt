@@ -34,7 +34,9 @@ class UserService(private val application: Application) {
         }
         val fullUser = user?.toFullUser()
             ?: throw IllegalArgumentException("用户不存在")
-        val rolIds = application.rightService.getUserRoles(fullUser.id)
+        val rolIds =
+            application.rightService.getUserRoles(listOf(fullUser.id))[fullUser.id]?.map { it.roleId } ?: emptyList()
+        check(rolIds.isNotEmpty()) { "用户没有无权限" }
         return fullUser.copy(right = application.rightService.getRolesSegments((rolIds)))
     }
 
@@ -66,7 +68,9 @@ class UserService(private val application: Application) {
                     false->throw IllegalArgumentException("密码错误")
                     else -> {
                         val res = user.toFullUser()
-                        val roleIds = application.rightService.getUserRoles(res.id)
+                        val roleIds = application.rightService.getUserRoles(listOf(res.id))[res.id]?.map { it.roleId }
+                            ?: emptyList()
+                        check(roleIds.isNotEmpty()) { "用户没有无权限" }
                         res.copy(right = application.rightService.getRolesSegments(roleIds))
                     }
                 }

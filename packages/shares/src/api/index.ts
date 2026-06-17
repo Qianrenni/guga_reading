@@ -10,3 +10,4 @@ export * from './bookShelf';
 export * from './audit';
 export * from './system';
 export * from './authorApplication';
+export * from './right';

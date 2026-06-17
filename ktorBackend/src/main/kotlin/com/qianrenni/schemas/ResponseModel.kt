@@ -39,3 +39,11 @@ sealed class ResponseModel<out T> : ResponseContract<T> {
         override val data: Nothing? = null
     ) : ResponseModel<Nothing>()
 }
+
+@Serializable
+data class PageResult<T>(
+    val items: List<T>,
+    val total: Int,
+    val page: Int,
+    val size: Int
+)

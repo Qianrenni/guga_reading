@@ -11,8 +11,9 @@ import io.ktor.server.application.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 
 /**
  * 权限服务类:用于预加载权限数据、构建角色权限位图,并提供高效的权限校验能力。
@@ -319,10 +320,11 @@ class RightService(private val application: Application) {
      */
     suspend fun addUserRole(adminId: Int? = null, updateUserId: Int, roleCode: RoleEnum): Boolean {
         adminId?.let {
-            require(
-                getUserRoles(it).maxOf { roleId -> roleLevels[roleId]!! }
-                        >= getUserRoles(updateUserId).maxOf { roleId -> roleLevels[roleId]!! }
-            )
+            val p = getUserRoles(listOf(it, updateUserId))
+            val adminLevel = p[adminId]?.maxOf { userRole -> roleLevels[userRole.roleId]!! }
+            val userLevel = p[updateUserId]?.maxOf { userRole -> roleLevels[userRole.roleId]!! }
+            require(adminLevel != null && userLevel != null) { "用户权限不足" }
+            require(adminLevel >= userLevel) { "权限不足" }
         }
         for (role in roleDict.values) {
             logger.debug(
@@ -346,13 +348,198 @@ class RightService(private val application: Application) {
      * @param userId 用户ID
      * @return 用户角色 ID 列表
      */
-    suspend fun getUserRoles(userId: Int): List<Int> {
+    suspend fun getUserRoles(userId: List<Int>): Map<Int, List<UserRole>> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
             UserRoleTable
                 .selectAll()
-                .where { UserRoleTable.userId eq userId }
-                .map { it[UserRoleTable.roleId] }
+                .where { UserRoleTable.userId inList userId }
+                .map { it.toUserRole() }
+                .groupBy { it.userId }
         }
+    }
+
+    /**
+     * 添加用户角色（按角色ID）
+     */
+    suspend fun addUserRoleById(adminId: Int? = null, updateUserId: Int, roleId: Int) {
+        val role = roleDict[roleId]
+        require(role != null)
+        application.databaseManager.suspendedTransaction {
+            addUserRole(adminId, updateUserId, role.code)
+        }
+    }
+
+    // ==================== 角色CRUD ====================
+
+    /**
+     * 创建角色
+     */
+    suspend fun createRole(name: String, code: String, description: String? = null): Role {
+        // 检查编码是否已存在
+        require(roleDict.filter { it.value.code.code == code }.isEmpty())
+        //TODO()
+        return roleDict.values.first { it.code.code == code }
+    }
+
+    /**
+     * 更新角色
+     */
+    suspend fun updateRole(roleId: Int, name: String? = null, description: String? = null): Role {
+        require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
+        application.databaseManager.suspendedTransaction {
+            RoleTable.update({ RoleTable.id eq roleId }) {
+                name?.let { newName -> it[RoleTable.name] = newName }
+                description?.let { newDesc -> it[RoleTable.description] = newDesc }
+            }
+        }
+        restart()
+        return roleDict[roleId]!!
+    }
+
+    /**
+     * 删除角色
+     */
+    suspend fun deleteRole(roleId: Int) {
+        require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
+        // 检查引用
+        application.databaseManager.suspendedTransaction(readOnly = true) {
+            val userCount = UserRoleTable.selectAll().where { UserRoleTable.roleId eq roleId }.count()
+            if (userCount > 0) {
+                throw IllegalArgumentException("该角色仍有 $userCount 个用户关联，请先解除用户角色绑定")
+            }
+            val inheritCount = RoleInheritanceTable.selectAll()
+                .where { (RoleInheritanceTable.childId eq roleId) or (RoleInheritanceTable.parentId eq roleId) }
+                .count()
+            if (inheritCount > 0) {
+                throw IllegalArgumentException("该角色仍有 $inheritCount 个继承关系，请先解除角色继承")
+            }
+        }
+        application.databaseManager.suspendedTransaction {
+            RolePermissionTable.deleteWhere { RolePermissionTable.roleId eq roleId }
+            RoleTable.deleteWhere { RoleTable.id eq roleId }
+        }
+        restart()
+    }
+
+    // ==================== 角色继承管理 ====================
+
+    /**
+     * 添加角色继承关系
+     */
+    suspend fun addRoleInheritance(childId: Int, parentId: Int) {
+        require(childId != parentId) { "子角色和父角色不能相同" }
+        require(roleDict.containsKey(childId)) { "子角色不存在: $childId" }
+        require(roleDict.containsKey(parentId)) { "父角色不存在: $parentId" }
+        // 检查是否已存在
+        application.databaseManager.suspendedTransaction(readOnly = true) {
+            val exists = RoleInheritanceTable.selectAll()
+                .where { (RoleInheritanceTable.childId eq childId) and (RoleInheritanceTable.parentId eq parentId) }
+                .count() > 0
+            if (exists) {
+                throw IllegalArgumentException("该继承关系已存在")
+            }
+        }
+        // 循环继承检测
+        val ancestors = roleInheritanceDict[parentId] ?: listOf(parentId)
+        if (childId in ancestors) {
+            throw IllegalArgumentException("循环继承检测失败：父角色已继承自该子角色")
+        }
+        application.databaseManager.suspendedTransaction {
+            RoleInheritanceTable.insert {
+                it[RoleInheritanceTable.childId] = childId
+                it[RoleInheritanceTable.parentId] = parentId
+            }
+        }
+        restart()
+    }
+
+    /**
+     * 移除角色继承关系
+     */
+    suspend fun removeRoleInheritance(childId: Int, parentId: Int) {
+        application.databaseManager.suspendedTransaction {
+            RoleInheritanceTable.deleteWhere {
+                (RoleInheritanceTable.childId eq childId) and (RoleInheritanceTable.parentId eq parentId)
+            }
+        }
+        restart()
+    }
+
+    // ==================== 权限分配/回收 ====================
+
+    /**
+     * 为角色批量分配权限
+     */
+    suspend fun assignPermissionsToRole(roleId: Int, permissionIds: List<Int>) {
+        require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
+        application.databaseManager.suspendedTransaction {
+            for (permId in permissionIds) {
+                require(permissionDict.containsKey(permId)) { "权限不存在: $permId" }
+                val exists = RolePermissionTable.selectAll()
+                    .where { (RolePermissionTable.roleId eq roleId) and (RolePermissionTable.permissionId eq permId) }
+                    .count() > 0
+                if (!exists) {
+                    RolePermissionTable.insert {
+                        it[RolePermissionTable.roleId] = roleId
+                        it[RolePermissionTable.permissionId] = permId
+                    }
+                }
+            }
+        }
+        restart()
+    }
+
+    /**
+     * 批量回收角色权限
+     */
+    suspend fun revokePermissionsFromRole(roleId: Int, permissionIds: List<Int>) {
+        require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
+        application.databaseManager.suspendedTransaction {
+            RolePermissionTable.deleteWhere {
+                (RolePermissionTable.roleId eq roleId) and (RolePermissionTable.permissionId inList permissionIds)
+            }
+        }
+        restart()
+    }
+
+    /**
+     * 获取角色的权限列表
+     */
+    suspend fun getRolePermissions(roleId: Int): List<Permission> {
+        return application.databaseManager.suspendedTransaction(readOnly = true) {
+            RolePermissionTable
+                .selectAll()
+                .where { RolePermissionTable.roleId eq roleId }
+                .map { permissionDict[it[RolePermissionTable.permissionId]]!! }
+        }
+    }
+
+    // ==================== 用户角色管理增强 ====================
+
+    /**
+     * 移除用户角色
+     */
+    suspend fun removeUserRole(adminId: Int? = null, userId: Int, roleId: Int) {
+        adminId?.let {
+            val p = getUserRoles(listOf(it, userId))
+            val adminLevel = p[adminId]?.maxOf { userRole -> roleLevels[userRole.roleId]!! }
+            val userLevel = p[userId]?.maxOf { userRole -> roleLevels[userRole.roleId]!! }
+            require(adminLevel != null && userLevel != null) { "用户权限不足" }
+            require(adminLevel >= userLevel) { "权限不足" }
+        }
+        application.databaseManager.suspendedTransaction {
+            UserRoleTable.deleteWhere {
+                (UserRoleTable.userId eq userId) and (UserRoleTable.roleId eq roleId)
+            }
+        }
+    }
+
+
+    /**
+     * 重新加载权限缓存
+     */
+    suspend fun restart() {
+        start()
     }
 }
 
