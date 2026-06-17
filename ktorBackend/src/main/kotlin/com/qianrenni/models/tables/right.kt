@@ -44,7 +44,7 @@ object RolePermissionTable : Table(name = "role_permission") {
 object UserRoleTable : Table(name = "user_role") {
     val userId = integer("userId").references(UserTable.id)
     val roleId = integer("roleId").references(RoleTable.id)
-    val grantedBy = integer("grantedBy").references(UserTable.id)
+    val grantedBy = integer("grantedBy").references(UserTable.id).nullable()
     val grantedAt = datetime(name = "grantedAt").clientDefault { LocalDateTime.now() }
 }
 

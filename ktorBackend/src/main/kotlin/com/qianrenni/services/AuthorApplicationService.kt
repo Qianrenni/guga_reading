@@ -106,7 +106,11 @@ class AuthorApplicationService(private val application: Application) {
                 }
 
                 // 添加作者角色
-                application.rightService.addUserRole(userId, RoleEnum.AUTHOR)
+                application.rightService.addUserRole(
+                    adminId = adminId,
+                    updateUserId = userId,
+                    roleCode = RoleEnum.AUTHOR
+                )
             }
         }
     }

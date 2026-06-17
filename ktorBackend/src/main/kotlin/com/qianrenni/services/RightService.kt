@@ -48,6 +48,8 @@ class RightService(private val application: Application) {
     var roleSegmentDict: Map<Int, List<Int>> = emptyMap()
         private set
 
+    var roleLevels: Map<Int, Int> = emptyMap()
+        private set
     /**
      * 将一组 bitPosition 设置到位图段列表中。
      *
@@ -112,7 +114,7 @@ class RightService(private val application: Application) {
      */
     private fun flattenInheritRole(
         roleInheritanceList: List<RoleInheritance>
-    ): Map<Int, List<Int>> {
+    ): Pair<Map<Int, List<Int>>, Map<Int, Int>> {
         // child -> parents
         val childToParents = mutableMapOf<Int, MutableList<Int>>()
         // parent -> children
@@ -136,12 +138,13 @@ class RightService(private val application: Application) {
         // 初始化结果
         val result = mutableMapOf<Int, List<Int>>()
         val queue = ArrayDeque<Int>()
-
+        val levels = mutableMapOf<Int, Int>()
         // 入度为 0 的角色(根)
         for (role in allRoles) {
             if (inDegree.getOrDefault(role, 0) == 0) {
                 queue.add(role)
                 result[role] = mutableListOf(role)
+                levels[role] = 0
             }
         }
 
@@ -165,11 +168,11 @@ class RightService(private val application: Application) {
                 if (inDegree[child] == 0) {
                     queue.add(child)
                     result[child] = listOf(child)
+                    levels[child] = levels.getOrDefault(role, 0) + 1
                 }
             }
         }
-
-        return result.toMap()
+        return Pair(result, levels)
     }
 
     /**
@@ -213,7 +216,9 @@ class RightService(private val application: Application) {
 
             }
 
-            roleInheritanceDict = flattenInheritRole(roleInheritanceList)
+            val result = flattenInheritRole(roleInheritanceList)
+            roleInheritanceDict = result.first
+            roleLevels = result.second
             for ((roleId, ancestors) in roleInheritanceDict) {
                 for (ancestor in ancestors) {
                     roleSegmentMap[roleId] = mergeSegment(
@@ -225,8 +230,9 @@ class RightService(private val application: Application) {
             roleSegmentDict = roleSegmentMap.toMap()
             logger.info("权限信息加载完成")
             logger.info("权限字典: {}", permissionCodeDict)
-            logger.info("权限集成关系: {}", roleInheritanceDict)
+            logger.info("权限继承关系: {}", roleInheritanceDict)
             logger.info("角色权限位图: {}", roleSegmentDict)
+            logger.info("角色级别: {}", roleLevels)
         }
     }
 
@@ -307,19 +313,26 @@ class RightService(private val application: Application) {
     /**
      * 为用户添加角色
      *
-     * @param userId 用户ID
+     * @param updateUserId 用户ID
      * @param roleCode 角色编码
      * @return 是否添加成功
      */
-    fun addUserRole(userId: Int, roleCode: RoleEnum): Boolean {
+    suspend fun addUserRole(adminId: Int? = null, updateUserId: Int, roleCode: RoleEnum): Boolean {
+        adminId?.let {
+            require(
+                getUserRoles(it).maxOf { roleId -> roleLevels[roleId]!! }
+                        >= getUserRoles(updateUserId).maxOf { roleId -> roleLevels[roleId]!! }
+            )
+        }
         for (role in roleDict.values) {
             logger.debug(
-                "add user role user:id:$userId role:${role.code.name}:${role.code.code} need role:${roleCode.name}:${roleCode.code}"
+                "add user role user:id:$updateUserId role:${role.code.name}:${role.code.code} need role:${roleCode.name}:${roleCode.code}"
             )
             if (role.code == roleCode) {
                 UserRoleTable.insert {
-                    it[UserRoleTable.userId] = userId
+                    it[UserRoleTable.userId] = updateUserId
                     it[UserRoleTable.roleId] = role.id
+                    it[UserRoleTable.grantedBy] = adminId
                 }
                 return true
             }
