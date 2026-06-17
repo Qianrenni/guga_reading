@@ -14,6 +14,9 @@ import org.jetbrains.exposed.sql.selectAll
 
 
 class ShelfService(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<ShelfService>("ShelfService")
+    }
     suspend fun get(userId: Int): List<Shelf> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
             ShelfTable.selectAll().where { ShelfTable.userId eq userId }.map { it.toShelf() }
@@ -36,11 +39,10 @@ class ShelfService(private val application: Application) {
     }
 }
 
-private val ShelfServiceAttributeKey = AttributeKey<ShelfService>("ShelfService")
 
 val Application.shelfService: ShelfService
-    get() = attributes[ShelfServiceAttributeKey]
+    get() = attributes[ShelfService.attributeKey]
 
 fun Application.registerShelfService() {
-    attributes.put(ShelfServiceAttributeKey, ShelfService(this))
+    attributes.put(ShelfService.attributeKey, ShelfService(this))
 }

@@ -4,7 +4,6 @@ import com.qianrenni.config.appConfig
 import com.qianrenni.controller.RequestUpdateBookChapter
 import com.qianrenni.database.databaseManager
 import com.qianrenni.enums.BookStatus
-import com.qianrenni.models.domain.*
 import com.qianrenni.models.tables.*
 import io.ktor.server.application.*
 import io.ktor.util.*
@@ -18,7 +17,10 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.io.File
 import kotlin.io.path.Path
 
-class AuthorBookService(private val application: Application) {
+class AuthorService(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<AuthorService>("AuthorBookService")
+    }
     suspend fun checkAuthor(userId: Int, bookId: Int) {
         application.databaseManager.suspendedTransaction(readOnly = true) {
             require(
@@ -318,13 +320,13 @@ class AuthorBookService(private val application: Application) {
             }) {
                 it[BookChapterTable.status] = BookStatus.REVIEWING
             }
-            val chapterAuditUserId = application.auditBookService.checkAuditChapter(chapterId)
-            val bookAuditUserId = application.auditBookService.checkAuditBook(bookId)
+            val chapterAuditUserId = application.auditService.checkAuditChapter(chapterId)
+            val bookAuditUserId = application.auditService.checkAuditBook(bookId)
             when (chapterAuditUserId) {
                 null -> {
                     when (bookAuditUserId) {
                         null -> {
-                            val auditorId = application.auditBookService.getAbsentAuditor()
+                            val auditorId = application.auditService.getAbsentAuditor()
                             AuditBookChapterTable
                                 .insert {
                                     it[AuditBookChapterTable.bookChapterId] = chapterId
@@ -381,10 +383,10 @@ class AuthorBookService(private val application: Application) {
             }) {
                 it[BookTable.status] = BookStatus.REVIEWING
             }
-            val bookAuditUserId = application.auditBookService.checkAuditBook(bookId)
+            val bookAuditUserId = application.auditService.checkAuditBook(bookId)
             when (bookAuditUserId) {
                 null -> {
-                    val auditorId = application.auditBookService.getAbsentAuditor()
+                    val auditorId = application.auditService.getAbsentAuditor()
                     AuditBookTable
                         .insert {
                             it[AuditBookTable.bookId] = bookId
@@ -413,11 +415,10 @@ class AuthorBookService(private val application: Application) {
     }
 }
 
-private val AuthorBookServiceAttributeKey = AttributeKey<AuthorBookService>("AuthorBookService")
 
-val Application.authorBookService: AuthorBookService
-    get() = attributes[AuthorBookServiceAttributeKey]
+val Application.authorService: AuthorService
+    get() = attributes[AuthorService.attributeKey]
 
 fun Application.registerAuthorBookService() {
-    attributes[AuthorBookServiceAttributeKey] = AuthorBookService(this)
+    attributes[AuthorService.attributeKey] = AuthorService(this)
 }

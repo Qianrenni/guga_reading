@@ -10,6 +10,9 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 class ReadProgressService(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<ReadProgressService>("ReadProgressService")
+    }
     suspend fun get(userId: Int): List<UserReadingProgress> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
             UserReadingProgressTable.selectAll().where { UserReadingProgressTable.userId eq userId }
@@ -44,11 +47,9 @@ class ReadProgressService(private val application: Application) {
     }
 }
 
-private val ReadProgressServiceAttributeKey = AttributeKey<ReadProgressService>("ReadProgressService")
-
 val Application.readProgressService: ReadProgressService
-    get() = attributes[ReadProgressServiceAttributeKey]
+    get() = attributes[ReadProgressService.attributeKey]
 
 fun Application.registerReadProgressService() {
-    attributes.put(ReadProgressServiceAttributeKey, ReadProgressService(this))
+    attributes[ReadProgressService.attributeKey] = ReadProgressService(this)
 }

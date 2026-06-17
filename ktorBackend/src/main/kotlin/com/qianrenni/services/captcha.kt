@@ -11,6 +11,9 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
 
 class CaptchaService(val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<CaptchaService>("CaptchaService")
+    }
 
     /**
      * 生成随机验证码文本
@@ -82,11 +85,10 @@ class CaptchaService(val application: Application) {
         return false
     }
 }
-private val CaptchaServiceAttributeKey = AttributeKey<CaptchaService>("CaptchaService")
 
 val Application.captchaService: CaptchaService
-    get() = attributes[CaptchaServiceAttributeKey]
+    get() = attributes[CaptchaService.attributeKey]
 
 fun Application.registerCaptchaService() {
-    attributes[CaptchaServiceAttributeKey] = CaptchaService(this)
+    attributes[CaptchaService.attributeKey] = CaptchaService(this)
 }

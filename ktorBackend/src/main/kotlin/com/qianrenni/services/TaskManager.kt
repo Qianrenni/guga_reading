@@ -37,6 +37,9 @@ data class TaskConfig(
  * ```
  */
 class TaskManager(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<TaskManager>("TaskManager")
+    }
     private val tasks = mutableListOf<TaskConfig>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -79,12 +82,9 @@ class TaskManager(private val application: Application) {
             }
     }
 }
-
-private val TaskManagerAttributeKey = AttributeKey<TaskManager>("TaskManager")
-
 val Application.taskManager: TaskManager
-    get() = attributes[TaskManagerAttributeKey]
+    get() = attributes[TaskManager.attributeKey]
 
 fun Application.registerTaskManager() {
-    attributes.put(TaskManagerAttributeKey, TaskManager(this))
+    attributes.put(TaskManager.attributeKey, TaskManager(this))
 }

@@ -8,6 +8,9 @@ import io.ktor.util.*
 import org.jetbrains.exposed.sql.insert
 
 class StatisticsService(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<StatisticsService>("StatisticsService")
+    }
     suspend fun addUserReadEvent(userId: Int, bookId: Int, chapterId: Int, eventType: ReportEnum) {
         application.databaseManager.suspendedTransaction {
             UserReadEventTable.insert {
@@ -19,12 +22,9 @@ class StatisticsService(private val application: Application) {
         }
     }
 }
-
-private val StatisticsServiceAttributeKey = AttributeKey<StatisticsService>("statisticsService")
-
 val Application.statisticsService: StatisticsService
-    get() = attributes[StatisticsServiceAttributeKey]
+    get() = attributes[StatisticsService.attributeKey]
 
 fun Application.registerStatisticsService() {
-    attributes.put(StatisticsServiceAttributeKey, StatisticsService(this))
+    attributes.put(StatisticsService.attributeKey, StatisticsService(this))
 }

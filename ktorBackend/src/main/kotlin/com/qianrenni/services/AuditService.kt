@@ -4,14 +4,16 @@ import com.qianrenni.config.appConfig
 import com.qianrenni.database.databaseManager
 import com.qianrenni.enums.BookStatus
 import com.qianrenni.enums.RoleEnum
-import com.qianrenni.models.domain.*
 import com.qianrenni.models.tables.*
 import io.ktor.server.application.*
 import io.ktor.util.*
 import org.jetbrains.exposed.sql.*
 
 
-class AuditBookService(private val application: Application) {
+class AuditService(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<AuditService>("AuditBookService")
+    }
     suspend fun checkAuditor(userId: Int, bookId: Int) {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
             require(
@@ -161,10 +163,9 @@ class AuditBookService(private val application: Application) {
     }
 }
 
-private val AuditBookServiceAttributeKey = AttributeKey<AuditBookService>("AuditBookService")
-val Application.auditBookService: AuditBookService
-    get() = attributes[AuditBookServiceAttributeKey]
+val Application.auditService: AuditService
+    get() = attributes[AuditService.attributeKey]
 
 fun Application.registerAuditBookService() {
-    attributes[AuditBookServiceAttributeKey] = AuditBookService(this)
+    attributes[AuditService.attributeKey] = AuditService(this)
 }

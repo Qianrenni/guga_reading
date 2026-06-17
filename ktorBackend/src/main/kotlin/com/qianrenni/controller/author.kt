@@ -7,7 +7,7 @@ import com.qianrenni.plugins.PermissionCheck
 import com.qianrenni.plugins.getCurrentUser
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.authorApplicationService
-import com.qianrenni.services.authorBookService
+import com.qianrenni.services.authorService
 import com.qianrenni.services.generatePermissionCode
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -52,7 +52,7 @@ fun Routing.author() {
                 )
             }
             get("/count") {
-                val result = application.authorBookService.getAuthorCount()
+                val result = application.authorService.getAuthorCount()
                 call.respond(ResponseModel.Success(result))
             }
 
@@ -60,7 +60,7 @@ fun Routing.author() {
             get("/book") {
                 val user = call.getCurrentUser()
                 val bookIds = call.request.queryParameters.getAll("id")?.map { it.toInt() } ?: emptyList()
-                val result = application.authorBookService.getBook(userId = user.id, bookIds = bookIds)
+                val result = application.authorService.getBook(userId = user.id, bookIds = bookIds)
                 call.respond(ResponseModel.Success(result))
             }
 
@@ -123,7 +123,7 @@ fun Routing.author() {
                     && tags != null
                     && cover != null
                 ) {
-                    application.authorBookService.createBook(
+                    application.authorService.createBook(
                         userId = user.id,
                         bookName = bookName,
                         author = author,
@@ -200,7 +200,7 @@ fun Routing.author() {
                     && category != null
                     && tags != null
                 ) {
-                    application.authorBookService.updateBook(
+                    application.authorService.updateBook(
                         userId = user.id,
                         bookId = bookId,
                         bookName = bookName,
@@ -218,7 +218,7 @@ fun Routing.author() {
             delete("/book") {
                 val user = call.getCurrentUser()
                 val bookId = call.requireQueryParameter("id").toInt()
-                application.authorBookService.deleteBook(userId = user.id, bookId = bookId)
+                application.authorService.deleteBook(userId = user.id, bookId = bookId)
                 call.respond(ResponseModel.Empty(message = "删除成功"))
             }
 
@@ -227,7 +227,7 @@ fun Routing.author() {
                 val user = call.getCurrentUser()
                 val bookId = call.requireQueryParameter("bookId").toInt()
                 val chapterId = call.request.queryParameters.getAll("chapterId")?.map { it.toInt() }
-                val result = application.authorBookService.getBookChapter(
+                val result = application.authorService.getBookChapter(
                     userId = user.id,
                     bookId = bookId,
                     chapterId = chapterId
@@ -239,7 +239,7 @@ fun Routing.author() {
             patch("/chapter") {
                 val user = call.getCurrentUser()
                 val requestUpdateBookChapter = call.receive<RequestUpdateBookChapter>()
-                application.authorBookService.updateBookChapter(
+                application.authorService.updateBookChapter(
                     userId = user.id,
                     requestUpdateBookChapter = requestUpdateBookChapter
                 )
@@ -251,7 +251,7 @@ fun Routing.author() {
                 val user = call.getCurrentUser()
                 val chapterId = call.requireQueryParameter("chapterId").toInt()
                 val bookId = call.requireQueryParameter("bookId").toInt()
-                application.authorBookService.deleteBookChapter(
+                application.authorService.deleteBookChapter(
                     userId = user.id,
                     chapterId = chapterId,
                     bookId = bookId
@@ -263,7 +263,7 @@ fun Routing.author() {
             get("/book-statistics") {
                 val user = call.getCurrentUser()
                 val bookId = call.requireQueryParameter("bookId").toInt()
-                val result = application.authorBookService.getBookReadStatistic(userId = user.id, bookId = bookId)
+                val result = application.authorService.getBookReadStatistic(userId = user.id, bookId = bookId)
                 call.respond(ResponseModel.Success(result))
             }
 
@@ -272,7 +272,7 @@ fun Routing.author() {
                 val user = call.getCurrentUser()
                 val chapterIds = call.request.queryParameters.getAll("chapterId")?.map { it.toInt() } ?: emptyList()
                 val bookId = call.requireQueryParameter("bookId").toInt()
-                val result = application.authorBookService.getChapterContent(
+                val result = application.authorService.getChapterContent(
                     userId = user.id,
                     chapterIds = chapterIds,
                     bookId = bookId
@@ -284,7 +284,7 @@ fun Routing.author() {
             route("/draft") {
                 get("/chapter") {
                     val user = call.getCurrentUser()
-                    val result = application.authorBookService.getDraftChapter(userId = user.id)
+                    val result = application.authorService.getDraftChapter(userId = user.id)
                     call.respond(ResponseModel.Success(result))
                 }
             }
@@ -294,7 +294,7 @@ fun Routing.author() {
                     val user = call.getCurrentUser()
                     val bookId = call.requireQueryParameter("bookId").toInt()
                     val chapterId = call.requireQueryParameter("chapterId").toInt()
-                    application.authorBookService.updateStatusChapter(
+                    application.authorService.updateStatusChapter(
                         userId = user.id,
                         bookId = bookId,
                         chapterId = chapterId
@@ -306,7 +306,7 @@ fun Routing.author() {
                 patch("/book") {
                     val user = call.getCurrentUser()
                     val bookId = call.requireQueryParameter("bookId").toInt()
-                    application.authorBookService.updateStatusBook(userId = user.id, bookId = bookId)
+                    application.authorService.updateStatusBook(userId = user.id, bookId = bookId)
                     call.respond(ResponseModel.Empty(message = "更新成功"))
                 }
             }

@@ -17,6 +17,9 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class CacheService(val application: Application) {
 
+    companion object {
+        val attributeKey = AttributeKey<CacheService>("CacheService")
+    }
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     private fun md5(input: String): String {
@@ -231,12 +234,12 @@ class CacheService(val application: Application) {
     }
 }
 
-private val CacheServiceAttributeKey = AttributeKey<CacheService>("CacheService")
+
 val Application.cacheService: CacheService
-    get() = attributes[CacheServiceAttributeKey]
+    get() = attributes[CacheService.attributeKey]
 
 fun Application.registerCacheService() {
-    this.attributes[CacheServiceAttributeKey] = CacheService(this)
+    this.attributes[CacheService.attributeKey] = CacheService(this)
 }
 
 /**

@@ -6,7 +6,6 @@ import com.qianrenni.enums.ActionEnum
 import com.qianrenni.enums.ResourceTypeEnum
 import com.qianrenni.enums.RoleEnum
 import com.qianrenni.enums.ScopeEnum
-import com.qianrenni.models.domain.*
 import com.qianrenni.models.tables.*
 import io.ktor.server.application.*
 import io.ktor.util.*
@@ -28,7 +27,7 @@ class RightService(private val application: Application) {
     private val appConfig = application.appConfig
 
     companion object {
-        val RightServiceKey = AttributeKey<RightService>("RightService")
+        val attributeKey = AttributeKey<RightService>("RightService")
     }
 
     // 权限 ID 到 PermissionDao 对象的映射
@@ -386,11 +385,11 @@ fun generatePermissionCode(
 }
 
 val Application.rightService: RightService
-    get() = attributes[RightService.RightServiceKey]
+    get() = attributes[RightService.attributeKey]
 
 fun Application.registerRightService() {
     val rightService = RightService(this)
-    attributes.put(RightService.RightServiceKey, rightService)
+    attributes.put(RightService.attributeKey, rightService)
     monitor.subscribe(ApplicationStarted) {
         runBlocking(Dispatchers.Default) {
             rightService.prepareInfo()

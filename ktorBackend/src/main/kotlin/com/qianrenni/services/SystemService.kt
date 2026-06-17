@@ -15,6 +15,9 @@ import kotlin.math.round
  */
 class SystemService {
 
+    companion object {
+        val attributeKey = AttributeKey<SystemService>("SystemService")
+    }
     private val si = SystemInfo()
 
     @Volatile
@@ -101,14 +104,11 @@ class SystemService {
     }
 }
 
-/** 服务属性键 */
-private val SystemServiceAttributeKey = AttributeKey<SystemService>("systemService")
-
 /** Application 扩展属性，方便控制器中访问 */
 val Application.systemService: SystemService
-    get() = attributes[SystemServiceAttributeKey]
+    get() = attributes[SystemService.attributeKey]
 
 /** 注册 SystemService 到 Application 属性 */
 fun Application.registerSystemService() {
-    attributes.put(SystemServiceAttributeKey, SystemService())
+    attributes.put(SystemService.attributeKey, SystemService())
 }

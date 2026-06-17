@@ -14,6 +14,9 @@ import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 
 class BookService(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<BookService>("bookServiceAttributeKey")
+    }
     suspend fun getBookCount(): Long {
         return application.cache(
             keyPrefix = "book_service",
@@ -119,11 +122,10 @@ class BookService(private val application: Application) {
     }
 }
 
-private val BookServiceAttributeKey = AttributeKey<BookService>("bookServiceAttributeKey")
 
 val Application.bookService: BookService
-    get() = attributes[BookServiceAttributeKey]
+    get() = attributes[BookService.attributeKey]
 
 fun Application.registerBookService() {
-    attributes[BookServiceAttributeKey] = BookService(this)
+    attributes[BookService.attributeKey] = BookService(this)
 }

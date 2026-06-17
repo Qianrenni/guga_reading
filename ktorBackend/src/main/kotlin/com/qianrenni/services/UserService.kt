@@ -16,6 +16,9 @@ import org.jetbrains.exposed.sql.update
 
 
 class UserService(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<UserService>("UserService")
+    }
 
     /**
      * 根据用户ID获取用户信息
@@ -186,9 +189,8 @@ class UserService(private val application: Application) {
         return true
     }
 }
-private  val UserServiceAttributeKey = AttributeKey<UserService>("UserService")
 val Application.userService: UserService
-    get() = attributes[UserServiceAttributeKey]
+    get() = attributes[UserService.attributeKey]
 fun Application.registerUserService() {
-    attributes.put(UserServiceAttributeKey, UserService(this))
+    attributes.put(UserService.attributeKey, UserService(this))
 }

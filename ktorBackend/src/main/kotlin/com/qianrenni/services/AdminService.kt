@@ -4,15 +4,15 @@ import io.ktor.server.application.*
 import io.ktor.util.*
 
 class AdminService(private val application: Application) {
-
+    companion object {
+        val attributeKey = AttributeKey<AdminService>("AdminService")
+    }
 
 }
 
-private val AdminServiceAttributeKey = AttributeKey<AdminService>("AdminService")
-
 val Application.adminService: AdminService
-    get() = attributes[AdminServiceAttributeKey]
+    get() = attributes[AdminService.attributeKey]
 
 fun Application.registerAdminService() {
-    attributes[AdminServiceAttributeKey] = AdminService(this)
+    attributes[AdminService.attributeKey] = AdminService(this)
 }

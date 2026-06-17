@@ -6,8 +6,12 @@ import com.qianrenni.models.tables.*
 import io.ktor.server.application.*
 import io.ktor.util.*
 import org.jetbrains.exposed.sql.*
+import java.time.LocalDateTime
 
 class AuthorApplicationService(private val application: Application) {
+    companion object {
+        val attributeKey = AttributeKey<AuthorApplicationService>("AuthorApplicationService")
+    }
 
     /**
      * 用户提交作者申请
@@ -79,38 +83,31 @@ class AuthorApplicationService(private val application: Application) {
      */
     suspend fun approve(adminId: Int, applicationId: Int) {
         application.databaseManager.suspendedTransaction {
-            val app = AuthorApplicationTable.selectAll()
-                .where { AuthorApplicationTable.id eq applicationId }
-                .firstOrNull()
-                ?: throw IllegalArgumentException("申请不存在")
-
-            val status = app[AuthorApplicationTable.status]
-            if (status != "pending") {
-                throw IllegalArgumentException("该申请已处理，无法再次审核")
-            }
-
-            val userId = app[AuthorApplicationTable.userId]
-
             // 更新申请状态
-            AuthorApplicationTable.update({ AuthorApplicationTable.id eq applicationId }) {
+            val updateCount =
+                AuthorApplicationTable.update({ (AuthorApplicationTable.id eq applicationId) and (AuthorApplicationTable.status eq "pending") }) {
                 it[AuthorApplicationTable.status] = "approved"
                 it[AuthorApplicationTable.handledBy] = adminId
-                it[AuthorApplicationTable.handledAt] = java.time.LocalDateTime.now()
+                    it[AuthorApplicationTable.handledAt] = LocalDateTime.now()
             }
 
-            // 创建作者记录
-            val userRow = UserTable.selectAll().where { UserTable.id eq userId }.single()
-            val userName = userRow[UserTable.userName]
-            val alreadyAuthor = AuthorTable.selectAll().where { AuthorTable.userId eq userId }.firstOrNull()
-            if (alreadyAuthor == null) {
-                AuthorTable.insert {
-                    it[AuthorTable.userId] = userId
-                    it[AuthorTable.name] = userName
+            if (updateCount == 1) {
+                // 创建作者记录
+                val userId = AuthorApplicationTable.selectAll().where { AuthorApplicationTable.id eq applicationId }
+                    .single()[AuthorApplicationTable.userId]
+                val userRow = UserTable.selectAll().where { UserTable.id eq userId }.single()
+                val userName = userRow[UserTable.userName]
+                val alreadyAuthor = AuthorTable.selectAll().where { AuthorTable.userId eq userId }.firstOrNull()
+                if (alreadyAuthor == null) {
+                    AuthorTable.insert {
+                        it[AuthorTable.userId] = userId
+                        it[AuthorTable.name] = userName
+                    }
                 }
-            }
 
-            // 添加作者角色
-            application.rightService.addUserRole(userId, RoleEnum.AUTHOR)
+                // 添加作者角色
+                application.rightService.addUserRole(userId, RoleEnum.AUTHOR)
+            }
         }
     }
 
@@ -119,31 +116,20 @@ class AuthorApplicationService(private val application: Application) {
      */
     suspend fun reject(adminId: Int, applicationId: Int, rejectReason: String?) {
         application.databaseManager.suspendedTransaction {
-            val app = AuthorApplicationTable.selectAll()
-                .where { AuthorApplicationTable.id eq applicationId }
-                .firstOrNull()
-                ?: throw IllegalArgumentException("申请不存在")
-
-            val status = app[AuthorApplicationTable.status]
-            if (status != "pending") {
-                throw IllegalArgumentException("该申请已处理，无法再次审核")
-            }
-
-            AuthorApplicationTable.update({ AuthorApplicationTable.id eq applicationId }) {
+            AuthorApplicationTable.update({ (AuthorApplicationTable.id eq applicationId) and (AuthorApplicationTable.status eq "pending") }) {
                 it[AuthorApplicationTable.status] = "rejected"
                 it[AuthorApplicationTable.handledBy] = adminId
                 it[AuthorApplicationTable.rejectReason] = rejectReason
-                it[AuthorApplicationTable.handledAt] = java.time.LocalDateTime.now()
+                it[AuthorApplicationTable.handledAt] = LocalDateTime.now()
             }
         }
     }
 }
 
-private val AuthorApplicationServiceAttributeKey = AttributeKey<AuthorApplicationService>("AuthorApplicationService")
 
 val Application.authorApplicationService: AuthorApplicationService
-    get() = attributes[AuthorApplicationServiceAttributeKey]
+    get() = attributes[AuthorApplicationService.attributeKey]
 
 fun Application.registerAuthorApplicationService() {
-    attributes[AuthorApplicationServiceAttributeKey] = AuthorApplicationService(this)
+    attributes[AuthorApplicationService.attributeKey] = AuthorApplicationService(this)
 }
