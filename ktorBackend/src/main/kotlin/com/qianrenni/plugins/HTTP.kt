@@ -10,8 +10,6 @@ import io.ktor.server.plugins.autohead.*
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.swagger.*
-import io.ktor.server.routing.*
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -68,17 +66,6 @@ fun Application.configureHTTP() {
 //    // 转发头支持(反向代理场景)
 //    install(ForwardedHeaders) // WARNING: for security, do not include this if not behind a reverse proxy
 //    install(XForwardedHeaders)
-    routing {
-        swaggerUI(path = "openapi") {
-            /*
-             Documentation source configuration goes here.
-
-             This can be from file (documentation.yaml), or it can be served dynamically from your sources using the
-             `describe {}` API on routes.  When `openApi` enabled in Gradle, these calls will be automatically injected
-             based on your code and comments.
-             */
-        }
-    }
 //    install(CachingHeaders) {
 //        options { call, outgoingContent ->
 //            when (outgoingContent.contentType?.withoutParameters()) {

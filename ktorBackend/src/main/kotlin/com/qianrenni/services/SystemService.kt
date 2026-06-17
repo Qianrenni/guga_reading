@@ -77,15 +77,15 @@ class SystemService {
                 }
 
                 DiskStatus(
-                    mountpoint = store.mount,
+                    mountPoint = store.mount,
                     device = store.name,
-                    fstype = store.type,
+                    fStype = store.type,
                     total = total,
                     used = used,
                     free = free,
                     percent = round(percent * 10.0) / 10.0,
                 )
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }

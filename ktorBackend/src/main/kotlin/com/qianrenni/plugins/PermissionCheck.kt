@@ -13,7 +13,6 @@ val PermissionCheck = createRouteScopedPlugin(
 ) {
     on(AuthenticationChecked) { call ->
         // 在认证后的阶段执行
-        call.application.log.debug("PermissionCheck started")
         call.requirePermission(pluginConfig.requiredPermissions)
     }
 }

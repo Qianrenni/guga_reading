@@ -2,7 +2,7 @@ import { get, patch } from '../utils';
 import { Book, BookChapter } from '@guga-reading/types';
 
 export const useApiAudit = {
-  prefix: '/admin',
+  prefix: '/audit',
   getAuditBookChapter: async function () {
     return await get<BookChapter[]>(`${this.prefix}/chapter`);
   },

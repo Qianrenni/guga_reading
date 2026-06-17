@@ -3,9 +3,9 @@ package com.qianrenni.services
 import com.qianrenni.controller.RequestTokenGet
 import com.qianrenni.database.databaseManager
 import com.qianrenni.enums.RoleEnum
-import com.qianrenni.models.domain.FullUser
-import com.qianrenni.models.domain.toFullUser
+import com.qianrenni.models.tables.FullUser
 import com.qianrenni.models.tables.UserTable
+import com.qianrenni.models.tables.toFullUser
 import com.qianrenni.utils.PasswordUtils
 import io.ktor.server.application.*
 import io.ktor.util.*

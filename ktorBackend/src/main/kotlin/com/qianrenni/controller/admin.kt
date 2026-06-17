@@ -15,7 +15,7 @@ import io.ktor.server.routing.*
 
 
 fun Routing.admin() {
-    route("/admin") {
+    route("/audit") {
 
         authenticate("auth-jwt") {
             // GET /admin/book - 获取审核中的书

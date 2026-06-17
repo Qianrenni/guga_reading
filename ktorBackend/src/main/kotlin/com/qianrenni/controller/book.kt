@@ -85,7 +85,9 @@ fun Routing.book() {
         get("/{bookId}") {
             val bookId = call.requirePathParameter("bookId").toInt()
             val result = application.bookService.getBookList(listOf(bookId))
-            call.respond(ResponseModel.Success(result.first()))
+            call.respond(
+                ResponseModel.Success(result.first()),
+            )
         }
     }
 }

@@ -1,9 +1,9 @@
 package com.qianrenni.services
 
 import com.qianrenni.database.databaseManager
-import com.qianrenni.models.domain.UserReadingProgress
-import com.qianrenni.models.domain.toUserReadingProgress
+import com.qianrenni.models.tables.UserReadingProgress
 import com.qianrenni.models.tables.UserReadingProgressTable
+import com.qianrenni.models.tables.toUserReadingProgress
 import io.ktor.server.application.*
 import io.ktor.util.*
 import org.jetbrains.exposed.sql.*

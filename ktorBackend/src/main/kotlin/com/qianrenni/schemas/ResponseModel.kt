@@ -2,15 +2,6 @@ package com.qianrenni.schemas
 
 import kotlinx.serialization.Serializable
 
-/**
- * 响应状态码枚举
- */
-@Serializable
-enum class ResponseCode(val code: Int) {
-    SUCCESS(0),
-    ERROR(1);
-}
-
 
 /**
  * 定义响应契约接口

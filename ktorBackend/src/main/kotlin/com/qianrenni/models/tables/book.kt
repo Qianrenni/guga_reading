@@ -1,7 +1,9 @@
 package com.qianrenni.models.tables
 
 import com.qianrenni.enums.BookStatus
+import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
@@ -9,7 +11,6 @@ import java.time.LocalDateTime
 object BookTable : IntIdTable(name = "book") {
     val name = varchar("name", 255)
     val author = varchar("author", 255)
-    val cover = varchar("cover", 255)
     val description = text("description")
     val category = varchar("category", 25)
     val tags = varchar("tags", 255)
@@ -24,3 +25,75 @@ object BookTable : IntIdTable(name = "book") {
         length = 25
     )
 }
+object BookChapterTable : IntIdTable(name = "book_chapter") {
+    val bookId = integer("bookId").references(BookTable.id)
+    val title = varchar("title", 255)
+    val wordCount = integer("wordCount")
+    val createdAt = datetime("createdAt")
+    val updatedAt = datetime("updatedAt")
+    val status = enumerationByName<BookStatus>("status", 25)
+    val isActive = bool("isActive")
+    val order = float("order")
+}
+
+
+@Serializable
+data class Book(
+    val id: Int,
+    val name: String = "",
+    val author: String = "",
+    val cover: String = "",
+    val description: String = "",
+    val category: String = "",
+    val tags: String = "",
+    val totalChapter: Int = 0,
+    val wordsCount: Int = 0,
+    val isActive: Boolean = true,
+    val isEnded: Boolean = false,
+    val status: BookStatus,
+    val createdAt: String = "",
+    val updatedAt: String = ""
+)
+
+
+@Serializable
+data class BookCatalogItem(
+    val id: Int,
+    val bookId: Int,
+    val title: String,
+    val wordsCount: Int,
+    val status: BookStatus,
+    val order: Float,
+    val isActive: Boolean,
+    val createdAt: String,
+    val updatedAt: String
+)
+
+fun ResultRow.toBook(serverUrl: String) = Book(
+    id = this[BookTable.id].value,
+    name = this[BookTable.name],
+    author = this[BookTable.author],
+    cover = "${serverUrl}/static/book/${this[BookTable.id].value}/cover.webp",
+    description = this[BookTable.description],
+    category = this[BookTable.category],
+    tags = this[BookTable.tags],
+    totalChapter = this[BookTable.totalChapter],
+    wordsCount = this[BookTable.wordsCount],
+    isActive = this[BookTable.isActive],
+    isEnded = this[BookTable.isEnded],
+    status = this[BookTable.status],
+    createdAt = this[BookTable.createdAt].toString(),
+    updatedAt = this[BookTable.updatedAt].toString()
+)
+
+fun ResultRow.toBookCatalogItem() = BookCatalogItem(
+    id = this[BookChapterTable.id].value,
+    bookId = this[BookChapterTable.bookId],
+    title = this[BookChapterTable.title],
+    wordsCount = this[BookChapterTable.wordCount],
+    status = this[BookChapterTable.status],
+    order = this[BookChapterTable.order].toFloat(),
+    isActive = this[BookChapterTable.isActive],
+    createdAt = this[BookChapterTable.createdAt].toString(),
+    updatedAt = this[BookChapterTable.updatedAt].toString()
+)

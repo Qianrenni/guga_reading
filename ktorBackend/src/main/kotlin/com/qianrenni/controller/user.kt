@@ -3,7 +3,7 @@ package com.qianrenni.controller
 import com.qianrenni.enums.ActionEnum
 import com.qianrenni.enums.ResourceTypeEnum
 import com.qianrenni.enums.ScopeEnum
-import com.qianrenni.models.domain.FullUser
+import com.qianrenni.models.tables.FullUser
 import com.qianrenni.plugins.requirePermission
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.*
@@ -16,8 +16,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RegisterUser(
-     val user: FullUser,
-     val captcha: String
+    val user: FullUser,
+    val captcha: String
 )
 
 @Serializable

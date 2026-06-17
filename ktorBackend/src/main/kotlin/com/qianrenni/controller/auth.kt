@@ -3,7 +3,7 @@ package com.qianrenni.controller
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.qianrenni.config.appConfig
-import com.qianrenni.models.domain.FullUser
+import com.qianrenni.models.tables.FullUser
 import com.qianrenni.schemas.ResponseModel
 import com.qianrenni.services.cacheService
 import com.qianrenni.services.emailService
@@ -17,7 +17,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.util.*
 
 @Serializable
@@ -29,10 +28,10 @@ data class RequestTokenGet(
 
 @Serializable
 data class ResponseTokenData(
-     val accessToken: String,
-     val refreshToken: String,
-     val tokenType: String = "Bearer",
-     val user: FullUser,
+    val accessToken: String,
+    val refreshToken: String,
+    val tokenType: String = "Bearer",
+    val user: FullUser,
 )
 
 @Serializable
@@ -56,7 +55,7 @@ fun Routing.auth() {
             val accessToken = JWT.create()
                 .withAudience(application.appConfig.audience)
                 .withIssuer(application.appConfig.issuer)
-                .withSubject(Json.encodeToString(FullUser.serializer(), user))
+                .withSubject(user.id.toString())
                 .withExpiresAt(Date(System.currentTimeMillis() + application.appConfig.accessTokenExpire * 1000))
                 .sign(Algorithm.HMAC256(application.appConfig.secretKey))
 
@@ -100,7 +99,7 @@ fun Routing.auth() {
             val newAccessToken = JWT.create()
                 .withAudience(application.appConfig.audience)
                 .withIssuer(application.appConfig.issuer)
-                .withSubject(Json.encodeToString(FullUser.serializer(), user))
+                .withSubject(user.id.toString())
                 .withExpiresAt(Date(System.currentTimeMillis() + application.appConfig.accessTokenExpire * 1000))
                 .sign(Algorithm.HMAC256(application.appConfig.secretKey))
 
@@ -196,7 +195,7 @@ fun Routing.auth() {
             get("/auth/me") {
                 val principal = call.principal<JWTPrincipal>()!!
                 val userJson = principal.payload.subject
-                val user = Json.decodeFromString(FullUser.serializer(), userJson)
+                val user = application.userService.getUserById(userJson.toInt())
 
                 call.respond(
                     ResponseModel.Success(data = user)

@@ -6,8 +6,10 @@ import com.qianrenni.enums.ScopeEnum
 import com.qianrenni.plugins.PermissionCheck
 import com.qianrenni.plugins.getCurrentUser
 import com.qianrenni.schemas.ResponseModel
+import com.qianrenni.services.authorApplicationService
 import com.qianrenni.services.authorBookService
 import com.qianrenni.services.generatePermissionCode
+import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
@@ -26,6 +28,18 @@ data class RequestUpdateBookChapter(
     val order: Float,
     val content: String
 )
+
+@Serializable
+data class ApplyAuthorRequest(val reason: String) {
+    init {
+        require(reason.isNotBlank(), { "申请理由不能为空" })
+        require(reason.length <= 500, { "申请理由不能超过500个字符" })
+    }
+}
+
+@Serializable
+data class RejectAuthorRequest(val rejectReason: String? = null)
+
 fun Routing.author() {
     route("/author") {
         authenticate("auth-jwt") {
@@ -297,6 +311,70 @@ fun Routing.author() {
                 }
             }
 
+        }
+    }
+    route("/author-application") {
+        authenticate("auth-jwt") {
+            // 用户提交申请
+            post {
+                val user = call.getCurrentUser()
+                val request = call.receive<ApplyAuthorRequest>()
+                val result = application.authorApplicationService.apply(
+                    userId = user.id,
+                    reason = request.reason
+                )
+                call.respond(
+                    HttpStatusCode.Created,
+                    ResponseModel.Success(data = result, message = "申请已提交，请等待审核")
+                )
+            }
+
+            // 用户查看自己的申请状态
+            get {
+                val user = call.getCurrentUser()
+                val result = application.authorApplicationService.getUserApplication(user.id)
+                call.respond(ResponseModel.Success(data = result))
+            }
+
+            route("/admin") {
+                install(PermissionCheck) {
+                    requiredPermissions = listOf(
+                        generatePermissionCode(
+                            resource = ResourceTypeEnum.USER,
+                            action = ActionEnum.MANAGE,
+                            scope = ScopeEnum.ALL
+                        )
+                    )
+                }
+
+                // 获取所有申请（可按状态筛选）
+                get {
+                    val status = call.queryParameters["status"]
+                    val result = application.authorApplicationService.getApplications(status)
+                    call.respond(ResponseModel.Success(data = result))
+                }
+
+                // 审核通过
+                patch("/{id}/approve") {
+                    val admin = call.getCurrentUser()
+                    val id = call.requirePathParameter("id").toInt()
+                    application.authorApplicationService.approve(adminId = admin.id, applicationId = id)
+                    call.respond(ResponseModel.Empty(message = "已通过作者申请"))
+                }
+
+                // 驳回申请
+                patch("/{id}/reject") {
+                    val admin = call.getCurrentUser()
+                    val id = call.requirePathParameter("id").toInt()
+                    val request = call.receive<RejectAuthorRequest>()
+                    application.authorApplicationService.reject(
+                        adminId = admin.id,
+                        applicationId = id,
+                        rejectReason = request.rejectReason
+                    )
+                    call.respond(ResponseModel.Empty(message = "已驳回作者申请"))
+                }
+            }
         }
     }
 }

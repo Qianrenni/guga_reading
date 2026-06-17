@@ -8,9 +8,9 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class DiskStatus(
-    val mountpoint: String,
+    val mountPoint: String,
     val device: String,
-    val fstype: String,
+    val fStype: String,
     val total: Long,
     val used: Long,
     val free: Long,

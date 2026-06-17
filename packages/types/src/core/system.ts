@@ -9,9 +9,9 @@
  * @param percent  number  使用百分比
  */
 export interface DiskStatus {
-  mountpoint: string;
+  mountPoint: string;
   device: string;
-  fstype: string;
+  fStype: string;
   total: number;
   used: number;
   free: number;

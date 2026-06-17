@@ -1,13 +1,13 @@
 package com.qianrenni.plugins
 
 import com.qianrenni.excptions.PermissionDeniedException
-import com.qianrenni.models.domain.FullUser
+import com.qianrenni.models.tables.FullUser
 import com.qianrenni.services.rightService
+import com.qianrenni.services.userService
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.util.*
-import kotlinx.serialization.json.Json
 
 private val UserAttributeKey = AttributeKey<FullUser>("UserAttributeKey")
 
@@ -34,14 +34,15 @@ private val UserAttributeKey = AttributeKey<FullUser>("UserAttributeKey")
  * }
  * ```
  */
-fun ApplicationCall.getCurrentUser(): FullUser {
+suspend fun ApplicationCall.getCurrentUser(): FullUser {
 
     attributes.getOrNull(UserAttributeKey)?.let { return it }
     val principal = this.principal<JWTPrincipal>() ?: throw PermissionDeniedException("未认证用户")
 
     val subject = principal.payload.subject ?: throw PermissionDeniedException("无效的用户信息")
     return try {
-        val user = Json.decodeFromString<FullUser>(subject)
+        val userId = subject.toInt()
+        val user = application.userService.getUserById(userId)
         attributes.put(UserAttributeKey, user)
         user
     } catch (e: Exception) {
@@ -57,7 +58,7 @@ fun ApplicationCall.getCurrentUser(): FullUser {
  * @throws PermissionDeniedException 如果用户权限不足
  * @return 当前用户对象
  */
-fun ApplicationCall.requirePermission(
+suspend fun ApplicationCall.requirePermission(
     permissions: List<String>
 ): FullUser {
     val user = this.getCurrentUser()

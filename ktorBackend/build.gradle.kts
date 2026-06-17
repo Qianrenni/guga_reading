@@ -48,7 +48,6 @@ dependencies {
     implementation(ktorLibs.server.resources)
     implementation(ktorLibs.server.routingOpenapi)
     implementation(ktorLibs.server.statusPages)
-    implementation(ktorLibs.server.swagger)
     implementation(libs.flaxoos.ktor.server.rateLimiting)
     implementation(libs.logback.classic)
     implementation(ktorLibs.serialization.kotlinx.json)

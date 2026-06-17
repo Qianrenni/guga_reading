@@ -82,11 +82,11 @@
           :class="{ 'padding-vetical': index > 0 }"
         >
           <div class="inner-container gap-half text-085rem">
-            <span class="disk-label">{{ disk.mountpoint }}</span>
+            <span class="disk-label">{{ disk.mountPoint }}</span>
             <span class="text-muted">|</span>
             <span class="text-description">{{ disk.device }}</span>
             <span class="text-muted">|</span>
-            <span class="text-description">{{ disk.fstype }}</span>
+            <span class="text-description">{{ disk.fStype }}</span>
           </div>
           <span class="text-085rem text-description">
             <strong>{{ formatBytes(disk.used) }}</strong> /
