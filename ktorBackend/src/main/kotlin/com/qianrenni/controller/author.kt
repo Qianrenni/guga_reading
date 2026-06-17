@@ -43,6 +43,20 @@ data class RejectAuthorRequest(val rejectReason: String? = null)
 fun Routing.author() {
     route("/author") {
         authenticate("auth-jwt") {
+            route("/count") {
+                install(PermissionCheck) {
+                    requiredPermissions = listOf(
+                        generatePermissionCode(
+                            resource = ResourceTypeEnum.USER, action = ActionEnum.READ, scope = ScopeEnum.ALL
+                        )
+                    )
+                }
+                get {
+
+                    val result = application.authorService.getAuthorCount()
+                    call.respond(ResponseModel.Success(result))
+                }
+            }
             // GET /author/count - 获取作者数量
             install(PermissionCheck) {
                 requiredPermissions = listOf(
@@ -51,11 +65,6 @@ fun Routing.author() {
                     )
                 )
             }
-            get("/count") {
-                val result = application.authorService.getAuthorCount()
-                call.respond(ResponseModel.Success(result))
-            }
-
             // GET /author/book - 获取作者图书列表
             get("/book") {
                 val user = call.getCurrentUser()

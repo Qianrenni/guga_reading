@@ -29,7 +29,6 @@ class RightService(private val application: Application) {
     companion object {
         val attributeKey = AttributeKey<RightService>("RightService")
     }
-
     // 权限 ID 到 PermissionDao 对象的映射
     var permissionDict: Map<Int, Permission> = emptyMap()
         private set
