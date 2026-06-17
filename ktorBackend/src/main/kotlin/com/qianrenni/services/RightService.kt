@@ -31,20 +31,23 @@ class RightService(private val application: Application) {
     }
 
     // 权限 ID 到 PermissionDao 对象的映射
-    private var permissionDict: Map<Int, Permission> = emptyMap()
+    var permissionDict: Map<Int, Permission> = emptyMap()
+        private set
 
     // 权限编码(如 "admin:user:read:all")到 bitPosition 的映射,用于快速查找
-    private var permissionCodeMap: Map<String, Int> = emptyMap()
+    var permissionCodeDict: Map<String, Int> = emptyMap()
+        private set
 
     // 角色 ID 到 RoleDao 对象的映射
-    private var roleDict: Map<Int, Role> = emptyMap()
-
+    var roleDict: Map<Int, Role> = emptyMap()
+        private set
     // 角色继承关系:role_id -> 父角色 ID 列表
-    private var roleInheritanceDict: Map<Int, List<Int>> = emptyMap()
-
+    var roleInheritanceDict: Map<Int, List<Int>> = emptyMap()
+        private set
     // 角色权限位图:role_id -> [segment0, segment1, ...]
     // 每个 segment 是一个整数,每一位代表一个权限(1 表示拥有,0 表示无)
-    private var rolePermissionDict: Map<Int, List<Int>> = emptyMap()
+    var roleSegmentDict: Map<Int, List<Int>> = emptyMap()
+        private set
 
     /**
      * 将一组 bitPosition 设置到位图段列表中。
@@ -57,65 +60,60 @@ class RightService(private val application: Application) {
      * - 例如:bitPosition=70 → segmentIndex=2, offset=6 → segment[2] |= (1 shl 6)
      *
      * @param bitPositions 要设置的权限位位置列表(如 [7, 70])
-     * @param bitmapSegments 当前位图段列表(如 [0b101, 0b000]),函数会返回新的列表
-     * @return 修改后的 bitmapSegments
+     * @return 修改后的 segments
      */
-    private fun setBitsInBitmap(
-        bitPositions: List<Int>,
-        bitmapSegments: MutableList<Int>
+    private fun positionToSegment(
+        bitPositions: List<Int>
     ): List<Int> {
+        val result = mutableListOf<Int>()
         for (bitPos in bitPositions) {
             val segmentIndex = bitPos / appConfig.permissionBitLength
             val offset = bitPos % appConfig.permissionBitLength
             val neededSegments = segmentIndex + 1
 
             // 如果当前段数不足,扩展至 neededSegments
-            repeat(neededSegments - bitmapSegments.size) {
-                bitmapSegments.add(0)
+            repeat(neededSegments - result.size) {
+                result.add(0)
             }
 
             // 在对应段中设置该位
-            bitmapSegments[segmentIndex] = bitmapSegments[segmentIndex] or (1 shl offset)
+            result[segmentIndex] = result[segmentIndex] or (1 shl offset)
         }
-
-        return bitmapSegments
+        return result.toList()
     }
 
     /**
      * 合并多个父角色的权限位图和子角色的权限位图。
      *
-     * @param parentsSegments 父角色的权限位图列表
-     * @param childSegments 子角色的权限位图列表
+     * @param parentsSegment 父角色的权限位图列表
+     * @param childSegment 子角色的权限位图列表
      * @return 合并后的权限位图列表
      */
-    private fun mergeRolePermission(
-        parentsSegments: List<List<Int>>,
-        childSegments: MutableList<Int>
+    private fun mergeSegment(
+        parentsSegment: List<Int>,
+        childSegment: List<Int>
     ): List<Int> {
-        for (parentSegment in parentsSegments) {
-            if (parentSegment.size > childSegments.size) {
-                repeat(parentSegment.size - childSegments.size) {
-                    childSegments.add(0)
-                }
-            }
-            for (index in parentSegment.indices) {
-                childSegments[index] = childSegments[index] or parentSegment[index]
+        val result = childSegment.toMutableList()
+        if (parentsSegment.size > result.size) {
+            repeat(parentsSegment.size - result.size) {
+                result.add(0)
             }
         }
-        return childSegments.toList()
+        for (index in parentsSegment.indices) {
+            result[index] = result[index] or parentsSegment[index]
+        }
+        return result.toList()
     }
 
     /**
      * 递归展开角色继承关系,构建角色权限位图。
      *
      * @param roleInheritanceList 角色继承关系列表
-     * @param rolePermDict 角色权限位图字典
      * @return 当前 role_id 继承了哪些角色
      */
     private fun flattenInheritRole(
-        roleInheritanceList: List<RoleInheritance>,
-        rolePermDict: MutableMap<Int, List<Int>>
-    ): Pair<Map<Int, List<Int>>, Map<Int, List<Int>>> {
+        roleInheritanceList: List<RoleInheritance>
+    ): Map<Int, List<Int>> {
         // child -> parents
         val childToParents = mutableMapOf<Int, MutableList<Int>>()
         // parent -> children
@@ -137,7 +135,7 @@ class RightService(private val application: Application) {
         }
 
         // 初始化结果
-        val result = mutableMapOf<Int, MutableList<Int>>()
+        val result = mutableMapOf<Int, List<Int>>()
         val queue = ArrayDeque<Int>()
 
         // 入度为 0 的角色(根)
@@ -151,33 +149,28 @@ class RightService(private val application: Application) {
         // 拓扑排序 + 合并权限
         while (queue.isNotEmpty()) {
             val role = queue.removeFirst()
-            val ancestors = result[role]!!
+            var ancestors = result[role]!!
 
             // 聚合所有父角色的祖先
             for (parent in childToParents.getOrDefault(role, emptyList())) {
                 val parentAncestors = result[parent]!!
-                ancestors.addAll(parentAncestors)
+                ancestors = ancestors + parentAncestors
             }
 
             // 去重(保留顺序)
-            result[role] = ancestors.distinct().toMutableList()
-
-            val parentSegments = rolePermDict[role] ?: emptyList()
+            result[role] = ancestors.distinct()
 
             // 推进子节点
             for (child in parentToChildren.getOrDefault(role, emptyList())) {
                 inDegree[child] = inDegree.getOrDefault(child, 1) - 1
                 if (inDegree[child] == 0) {
                     queue.add(child)
-                    result[child] = mutableListOf(child)
+                    result[child] = listOf(child)
                 }
-                var childSegments = rolePermDict[child] ?: mutableListOf()
-                childSegments = mergeRolePermission(listOf(parentSegments), childSegments.toMutableList())
-                rolePermDict[child] = childSegments
             }
         }
 
-        return Pair(result.mapValues { it.value.toList() }, rolePermDict.mapValues { it.value.toList() })
+        return result.toMap()
     }
 
     /**
@@ -188,47 +181,53 @@ class RightService(private val application: Application) {
      * 2. 构建 permissionDict 和 permissionCodeMap。
      * 3. 为每个角色构建分段权限位图(rolePermissionDict)。
      */
-    suspend fun prepareInfo() {
+    suspend fun start() {
         logger.info("正在预加载权限、角色及角色-权限关联数据...")
 
         application.databaseManager.suspendedTransaction(readOnly = true) {
             // 查询所有权限
             val permissions = PermissionTable.selectAll().map { it.toPermission() }
-
-            // 构建权限字典
-            permissionDict = permissions.associateBy { it.id }
-            permissionCodeMap = permissions.associate {
-                "${it.resourceType}:${it.action}:${it.scope}" to it.bitPosition
-            }
-
-            logger.info("权限字典: {}", permissionCodeMap)
-
+            // 构建角色继承关系
+            val roleInheritanceList = RoleInheritanceTable.selectAll().map { it.toRoleInheritance() }
+            val rolePermissions = RolePermissionTable.selectAll().map { it.toRolePermission() }
             // 构建角色字典
             val roles = RoleTable.selectAll().map { it.toRole() }
+            // 构建权限字典
+            permissionDict = permissions.associateBy { it.id }
+            permissionCodeDict = permissions.associate {
+                "${it.resourceType}:${it.action}:${it.scope}" to it.bitPosition
+            }
             roleDict = roles.associateBy { it.id }
-
             // 构建角色权限位图
-            val rolePermMap = mutableMapOf<Int, MutableList<Int>>()
-            val rolePermissions = RolePermissionTable.selectAll().map { it.toRolePermission() }
+            val roleSegmentMap = mutableMapOf<Int, List<Int>>()
 
             for (rp in rolePermissions) {
                 val roleId = rp.roleId
                 val permissionId = rp.permissionId
                 val perm = permissionDict[permissionId]
                 val bitPos = perm!!.bitPosition
-                val segments = rolePermMap.getOrPut(roleId) { mutableListOf() }
-                setBitsInBitmap(listOf(bitPos), segments)
+                val segments = roleSegmentMap.getOrPut(roleId) { emptyList() }
+                roleSegmentMap[roleId] = mergeSegment(
+                    positionToSegment(listOf(bitPos)),
+                    segments
+                )
+
             }
 
-            rolePermissionDict = rolePermMap.mapValues { it.value.toList() }
-
-            // 构建角色继承关系
-            val roleInheritanceList = RoleInheritanceTable.selectAll().map { it.toRoleInheritance() }
-            val result = flattenInheritRole(roleInheritanceList, rolePermMap.toMutableMap())
-            roleInheritanceDict = result.first
-            rolePermissionDict = result.second
+            roleInheritanceDict = flattenInheritRole(roleInheritanceList)
+            for ((roleId, ancestors) in roleInheritanceDict) {
+                for (ancestor in ancestors) {
+                    roleSegmentMap[roleId] = mergeSegment(
+                        roleSegmentMap[ancestor]!!,
+                        roleSegmentMap[roleId]!!
+                    )
+                }
+            }
+            roleSegmentDict = roleSegmentMap.toMap()
             logger.info("权限信息加载完成")
-            logger.info("角色权限位图: {}", rolePermissionDict)
+            logger.info("权限字典: {}", permissionCodeDict)
+            logger.info("权限集成关系: {}", roleInheritanceDict)
+            logger.info("角色权限位图: {}", roleSegmentDict)
         }
     }
 
@@ -240,17 +239,16 @@ class RightService(private val application: Application) {
      * @param roleIds 用户拥有的角色 ID 列表
      * @return 合并后的权限位图,格式为 [segment0, segment1, ...]
      */
-    fun getMergedPermissionBitmap(roleIds: List<Int>): List<Int> {
+    fun getRolesSegments(roleIds: List<Int>): List<Int> {
         if (roleIds.isEmpty()) {
             return emptyList()
         }
-
-        val mergedBitmap = mutableListOf<Int>()
-        val parentSegments = roleIds.mapNotNull { rolePermissionDict[it] }
-
-        mergeRolePermission(parentSegments, mergedBitmap)
-
-        return mergedBitmap
+        var result = emptyList<Int>()
+        val parentSegments = roleIds.mapNotNull { roleSegmentDict[it] }
+        for (parentSegment in parentSegments) {
+            result = mergeSegment(parentSegment, result)
+        }
+        return result
     }
 
     /**
@@ -279,7 +277,7 @@ class RightService(private val application: Application) {
         logger.debug("requiredPermissionCodes: {}", requiredPermissionCodes)
 
         for (code in requiredPermissionCodes) {
-            val bitPos = permissionCodeMap[code]
+            val bitPos = permissionCodeDict[code]
             if (bitPos == null) {
                 logger.warn("Unknown permission code: $code")
                 return false // 未知权限,拒绝访问
@@ -288,17 +286,16 @@ class RightService(private val application: Application) {
         }
 
         // 2. 构建所需的权限位图
-        val requireBitmap = setBitsInBitmap(requiredBits, mutableListOf())
-
+        val requireSegment = positionToSegment(requiredBits)
         // 3. 对齐长度:若 userBitmap 段数不足,视为高位为 0
         val userBitmapPadded = userPermissionBitmap.toMutableList()
-        while (userBitmapPadded.size < requireBitmap.size) {
+        while (userBitmapPadded.size < requireSegment.size) {
             userBitmapPadded.add(0)
         }
 
         // 4. 逐段检查是否满足所有权限
-        for (index in requireBitmap.indices) {
-            val reqSeg = requireBitmap[index]
+        for (index in requireSegment.indices) {
+            val reqSeg = requireSegment[index]
             val userSeg = userBitmapPadded[index]
             if ((userSeg and reqSeg) != reqSeg) {
                 return false
@@ -345,27 +342,6 @@ class RightService(private val application: Application) {
                 .map { it[UserRoleTable.roleId] }
         }
     }
-
-    /**
-     * 获取权限列表
-     */
-    fun getPermissions(): List<Permission> {
-        return permissionDict.values.toList()
-    }
-
-    /**
-     * 获取角色列表
-     */
-    fun getRoles(): List<Role> {
-        return roleDict.values.toList()
-    }
-
-    /**
-     * 获取角色权限映射
-     */
-    fun getRolePermission(): Map<Int, List<Int>> {
-        return rolePermissionDict
-    }
 }
 
 /**
@@ -392,7 +368,7 @@ fun Application.registerRightService() {
     attributes.put(RightService.attributeKey, rightService)
     monitor.subscribe(ApplicationStarted) {
         runBlocking(Dispatchers.Default) {
-            rightService.prepareInfo()
+            rightService.start()
         }
     }
 }

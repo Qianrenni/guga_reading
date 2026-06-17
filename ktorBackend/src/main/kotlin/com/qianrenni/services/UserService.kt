@@ -35,7 +35,7 @@ class UserService(private val application: Application) {
         val fullUser = user?.toFullUser()
             ?: throw IllegalArgumentException("用户不存在")
         val rolIds = application.rightService.getUserRoles(fullUser.id)
-        return fullUser.copy(right = application.rightService.getMergedPermissionBitmap((rolIds)))
+        return fullUser.copy(right = application.rightService.getRolesSegments((rolIds)))
     }
 
     /**
@@ -67,7 +67,7 @@ class UserService(private val application: Application) {
                     else -> {
                         val res = user.toFullUser()
                         val roleIds = application.rightService.getUserRoles(res.id)
-                        res.copy(right = application.rightService.getMergedPermissionBitmap(roleIds))
+                        res.copy(right = application.rightService.getRolesSegments(roleIds))
                     }
                 }
             }
