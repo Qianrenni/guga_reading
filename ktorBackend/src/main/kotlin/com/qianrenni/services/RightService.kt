@@ -374,7 +374,7 @@ class RightService(private val application: Application) {
     /**
      * 创建角色
      */
-    suspend fun createRole(name: String, code: String, description: String? = null): Role {
+    fun createRole(name: String, code: String, description: String? = null): Role {
         // 检查编码是否已存在
         require(roleDict.filter { it.value.code.code == code }.isEmpty())
         //TODO()

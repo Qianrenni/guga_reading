@@ -11,82 +11,52 @@
       />
       <QFormButton class="button-primary" @click="search">搜索</QFormButton>
     </div>
-
-    <!-- 用户列表 -->
-    <div class="bg-card radius-half-rem">
-      <table class="user-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>用户名</th>
-            <th>邮箱</th>
-            <th>角色</th>
-            <th>状态</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in users" :key="user.user.id">
-            <td>{{ user.user.id }}</td>
-            <td>
-              <div class="inner-container container-align-center gap-half">
-                <img
-                  v-if="user.user.avatar"
-                  :src="user.user.avatar"
-                  class="user-avatar"
-                />
-                <span>{{ user.user.userName }}</span>
-              </div>
-            </td>
-            <td class="text-description">{{ user.user.email }}</td>
-            <td>
-              <span
-                v-for="role in user.roles"
-                :key="role.roleId"
-                class="role-badge"
-                >{{ getRoleName(role.roleId) }}</span
-              >
-              <span
-                v-if="user.roles.length === 0"
-                class="text-muted text-085rem"
-                >无角色</span
-              >
-            </td>
-            <td>
-              <span
-                :class="
-                  user.user.isActive ? 'status-active' : 'status-inactive'
-                "
-              >
-                {{ user.user.isActive ? '已激活' : '已禁用' }}
-              </span>
-            </td>
-            <td>
-              <div class="inner-container gap-half">
-                <QFormButton class="button-small" @click="openRoleDialog(user)"
-                  >编辑角色</QFormButton
-                >
-                <QFormButton
-                  class="button-small"
-                  :class="
-                    user.user.isActive ? 'button-warning' : 'button-primary'
-                  "
-                  @click="toggleUserStatus(user)"
-                >
-                  {{ user.user.isActive ? '禁用' : '激活' }}
-                </QFormButton>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="users.length === 0">
-            <td colspan="6" class="text-center text-muted padding-rem">
-              暂无用户数据
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
+    <QFormTable
+      size="small"
+      :pagination="false"
+      :columns="tableColumns"
+      :data="users"
+    >
+      <template #id="{ row }">
+        <span>{{ row.user.id }}</span>
+      </template>
+      <template #userName="{ row }">
+        <span>{{ row.user.userName }}</span>
+      </template>
+      <template #email="{ row }">
+        <span>{{ row.user.email }}</span>
+      </template>
+      <template #roles="{ row }">
+        <span
+          v-for="role in row.roles"
+          :key="role.roleId"
+          class="tag margin-fourth-horizontal"
+          >{{ getRoleName(role.roleId) }}</span
+        >
+        <span v-if="row.roles.length === 0" class="text-muted text-085rem"
+          >无角色</span
+        >
+      </template>
+      <template #status="{ row }">
+        <span :class="row.user.isActive ? 'text-success' : 'text-danger'">
+          {{ row.user.isActive ? '已激活' : '已禁用' }}
+        </span>
+      </template>
+      <template #actions="{ row }">
+        <div class="inner-container gap-half">
+          <QFormButton
+            @click="openRoleDialog(row as unknown as AdminUserResponse)"
+            >编辑角色
+          </QFormButton>
+          <QFormButton
+            :class="row.user.isActive ? 'button-warning' : 'button-primary'"
+            @click="toggleUserStatus(row as unknown as AdminUserResponse)"
+          >
+            {{ row.user.isActive ? '禁用' : '激活' }}
+          </QFormButton>
+        </div>
+      </template>
+    </QFormTable>
     <!-- 分页 -->
     <div class="inner-container container-align-center container-space-between">
       <span class="text-description text-085rem">共 {{ total }} 条</span>
@@ -108,68 +78,87 @@
     </div>
 
     <!-- 编辑角色对话框 -->
-    <div
-      v-if="showRoleDialog && editingUser"
-      class="dialog-overlay"
-      @click.self="closeRoleDialog"
+    <QDialog
+      :title="`编辑用户角色 - ${editingUser?.user?.userName}`"
+      @close="closeRoleDialog"
+      v-model:visible="showRoleDialog"
     >
-      <div class="dialog-content bg-card radius-half-rem">
-        <h4>编辑用户角色 - {{ editingUser?.user?.userName }}</h4>
-        <div class="container-column gap">
-          <div>
-            <label>当前角色</label>
-            <div class="inner-container container-wrap gap-half">
-              <span
-                v-for="ur in editingUserRoles"
-                :key="ur.roleId"
-                class="role-tag"
-              >
-                {{ getRoleName(ur.roleId) }}
-                <span
-                  class="role-tag-remove"
-                  @click="handleRemoveUserRole(ur.roleId)"
-                  >&times;</span
-                >
-              </span>
-              <span v-if="editingUserRoles.length === 0" class="text-muted"
-                >无角色</span
-              >
-            </div>
-          </div>
-          <div>
-            <label>添加角色</label>
-            <div class="inner-container gap-half">
-              <select v-model="addRoleId" class="input-select">
-                <option :value="0" disabled>选择角色...</option>
-                <option
-                  v-for="r in availableUserRoles"
-                  :key="r.id"
-                  :value="r.id"
-                >
-                  {{ r.name }} ({{ r.code }})
-                </option>
-              </select>
-              <QFormButton class="button-small" @click="handleAddUserRole"
-                >添加</QFormButton
-              >
-            </div>
-          </div>
-          <div style="text-align: right">
-            <QFormButton @click="closeRoleDialog">关闭</QFormButton>
-          </div>
+      <div class="margin-vetical">
+        <label class="text-label">当前角色</label>
+        <div class="inner-container container-wrap">
+          <span
+            v-for="ur in editingUserRoles"
+            :key="ur.roleId"
+            class="tag opacity-6-hover mouse-cursor"
+            @click="handleRemoveUserRole(ur.roleId)"
+          >
+            {{ getRoleName(ur.roleId) }}
+            <span>&times;</span>
+          </span>
+          <span v-if="editingUserRoles.length === 0" class="text-muted"
+            >无角色</span
+          >
         </div>
       </div>
-    </div>
+      <div class="margin-vetical">
+        <label class="text-label">添加角色</label>
+        <div class="inner-container">
+          <select v-model="addRoleId" class="text-input">
+            <option :value="0" disabled>选择角色...</option>
+            <option v-for="r in availableUserRoles" :key="r.id" :value="r.id">
+              {{ r.name }} ({{ r.code }})
+            </option>
+          </select>
+          <QFormButton class="button-small" @click="handleAddUserRole"
+            >添加</QFormButton
+          >
+        </div>
+      </div>
+    </QDialog>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue';
-import { useMessage, QFormButton, QSearch } from 'qyani-components';
+import {
+  useMessage,
+  QFormButton,
+  QSearch,
+  type TableColumn,
+  QFormTable,
+  QDialog,
+} from 'qyani-components';
 import { useApiRight } from '@guga-reading/shares';
 import type { AdminUserResponse, Role, UserRole } from '@guga-reading/types';
 
 defineOptions({ name: 'UserManage' });
+
+const tableColumns = [
+  {
+    label: 'ID',
+    value: 'id',
+  },
+  {
+    label: '用户名',
+    value: 'userName',
+  },
+  {
+    label: '邮箱',
+    value: 'email',
+  },
+  {
+    label: '角色',
+    value: 'roles',
+  },
+  {
+    label: '状态',
+    value: 'status',
+  },
+  {
+    label: '操作',
+    value: 'actions',
+  },
+] satisfies TableColumn[];
 
 const users = ref<AdminUserResponse[]>([]);
 const total = ref(0);
@@ -289,109 +278,3 @@ onBeforeMount(() => {
   loadRoles();
 });
 </script>
-
-<style scoped>
-.user-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.user-table th,
-.user-table td {
-  padding: 10px 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color, #eee);
-  font-size: 0.9rem;
-}
-.user-table th {
-  font-weight: 600;
-  color: var(--text-muted, #888);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-}
-.user-table tbody tr:hover {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.02));
-}
-
-.user-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.role-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  margin: 2px 4px 2px 0;
-  background: var(--bg-tag, #e8f0fe);
-  border-radius: 10px;
-  font-size: 0.8rem;
-}
-
-.role-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  background: var(--bg-tag, #e8f0fe);
-  border-radius: 12px;
-  font-size: 0.85rem;
-}
-.role-tag-remove {
-  cursor: pointer;
-  font-weight: bold;
-  color: #999;
-  margin-left: 2px;
-}
-.role-tag-remove:hover {
-  color: #e33;
-}
-
-.status-active {
-  color: #389e0d;
-  font-size: 0.85rem;
-}
-.status-inactive {
-  color: #cf1322;
-  font-size: 0.85rem;
-}
-
-.input-field,
-.input-select {
-  padding: 8px 10px;
-  border: 1px solid var(--border-color, #ddd);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  background: var(--bg-input, #fff);
-  color: var(--text-color, #333);
-}
-.input-select {
-  cursor: pointer;
-  min-width: 160px;
-}
-label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-/* Dialog */
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.dialog-content {
-  width: 480px;
-  max-width: 90%;
-  padding: 20px;
-}
-</style>

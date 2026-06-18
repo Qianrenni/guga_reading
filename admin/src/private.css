@@ -19,7 +19,7 @@ body {
   --content-editor-background-color: #f8f3e9;
   --content-editor-color: #2c1810;
   --content-editor-pointer-color: #5a3e2b;
-  --tag-primary-color: #ed8a60;
+  --tag-primary-color: #1d4ed8;
 }
 
 body.dark-mode {
