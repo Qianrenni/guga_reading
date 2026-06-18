@@ -1,16 +1,14 @@
 package com.qianrenni.services
 
 import com.qianrenni.database.databaseManager
+import com.qianrenni.models.tables.BookTable
 import com.qianrenni.models.tables.Shelf
 import com.qianrenni.models.tables.ShelfTable
 import com.qianrenni.models.tables.toShelf
 import io.ktor.server.application.*
 import io.ktor.util.*
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
 
 
 class ShelfService(private val application: Application) {
@@ -19,7 +17,11 @@ class ShelfService(private val application: Application) {
     }
     suspend fun get(userId: Int): List<Shelf> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
-            ShelfTable.selectAll().where { ShelfTable.userId eq userId }.map { it.toShelf() }
+            ShelfTable
+                .innerJoin(BookTable, { ShelfTable.bookId }, { BookTable.id })
+                .selectAll()
+                .where { (ShelfTable.userId eq userId) and (BookTable.isActive eq true) }
+                .map { it.toShelf() }
         }
     }
 

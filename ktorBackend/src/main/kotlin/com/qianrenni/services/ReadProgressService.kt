@@ -1,6 +1,7 @@
 package com.qianrenni.services
 
 import com.qianrenni.database.databaseManager
+import com.qianrenni.models.tables.BookTable
 import com.qianrenni.models.tables.UserReadingProgress
 import com.qianrenni.models.tables.UserReadingProgressTable
 import com.qianrenni.models.tables.toUserReadingProgress
@@ -15,7 +16,10 @@ class ReadProgressService(private val application: Application) {
     }
     suspend fun get(userId: Int): List<UserReadingProgress> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
-            UserReadingProgressTable.selectAll().where { UserReadingProgressTable.userId eq userId }
+            UserReadingProgressTable
+                .innerJoin(BookTable, { UserReadingProgressTable.bookId }, { BookTable.id })
+                .selectAll()
+                .where { (UserReadingProgressTable.userId eq userId) and (BookTable.isActive eq true) }
                 .map { it.toUserReadingProgress() }
         }
     }
