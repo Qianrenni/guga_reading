@@ -1,21 +1,24 @@
 <template>
-  <div class="container-column gap">
+  <div class="container-column">
     <!-- 工具条 -->
     <div class="inner-container container-space-between container-align-center">
       <h4>角色管理</h4>
       <QFormButton class="button-primary" @click="openCreateRoleDialog"
-        >新增角色</QFormButton
-      >
+        >新增角色
+      </QFormButton>
     </div>
 
     <!-- 角色列表 + 详情面板 -->
-    <div class="inner-container gap" style="align-items: flex-start">
+    <div
+      class="inner-container container-row-768-column"
+      style="align-items: flex-start"
+    >
       <!-- 角色列表 -->
-      <div class="bg-card radius-half-rem" style="flex: 0 0 360px">
+      <div class="bg-card">
         <div
           v-for="role in roles"
           :key="role.id"
-          class="role-item"
+          class="role-item bg-hover-secondary"
           :class="{ 'role-item-active': selectedRole?.id === role.id }"
           @click="selectRole(role)"
         >
@@ -28,66 +31,40 @@
               {{ role.description }}
             </div>
           </div>
-          <QFormButton class="button-small" @click.stop="handleEditRole(role)"
-            >编辑</QFormButton
-          >
-          <QFormButton
-            v-if="role.code !== 'super_admin'"
-            class="button-small button-danger"
-            @click.stop="handleDeleteRole(role)"
-            >删除</QFormButton
-          >
-        </div>
-        <div
-          v-if="roles.length === 0"
-          class="text-center text-muted padding-rem"
-        >
-          暂无角色数据
+          <QFormButton @click.stop="handleEditRole(role)">编辑</QFormButton>
+          <QFormButton @click.stop="handleDeleteRole(role)">删除</QFormButton>
         </div>
       </div>
 
       <!-- 详情面板 -->
       <div
         v-if="selectedRole"
-        class="bg-card radius-half-rem container-flex-1"
-        style="min-height: 400px"
+        class="bg-card container-column container-flex-1"
       >
-        <div class="padding-rem">
+        <div>
           <h4>
             {{ selectedRole.name }}
             <span class="text-muted text-085rem"
               >({{ selectedRole.code }})</span
             >
           </h4>
-          <p v-if="selectedRole.description" class="text-description">
+          <p class="text-description">
             {{ selectedRole.description }}
           </p>
         </div>
-
+        <QDivider />
         <!-- 权限分配 -->
-        <div
-          class="padding-rem"
-          style="border-top: 1px solid var(--border-color, #eee)"
-        >
+        <div>
           <div
             class="inner-container container-space-between container-align-center"
           >
-            <h5>权限分配</h5>
-            <QFormButton
-              class="button-primary button-small"
-              @click="savePermissions"
+            <h4>权限分配</h4>
+            <QFormButton class="button-primary" @click="savePermissions"
               >保存权限</QFormButton
             >
           </div>
-          <div
-            v-for="(perms, resource) in groupedPermissions"
-            :key="resource"
-            class="permission-group"
-          >
-            <div
-              class="text-085rem text-muted"
-              style="font-weight: 600; margin-bottom: 4px"
-            >
+          <div v-for="(perms, resource) in groupedPermissions" :key="resource">
+            <div class="text-085rem text-muted">
               {{ resourceLabels[resource] || resource }}
             </div>
             <div class="inner-container container-wrap gap-half">
@@ -111,26 +88,14 @@
             </div>
           </div>
         </div>
-
+        <QDivider />
         <!-- 角色继承 -->
-        <div
-          class="padding-rem"
-          style="border-top: 1px solid var(--border-color, #eee)"
-        >
-          <h5>角色继承</h5>
-          <div
-            class="inner-container container-wrap gap-half"
-            style="margin-bottom: 8px"
-          >
-            <span
-              v-for="parent in roleParents"
-              :key="parent.id"
-              class="role-tag"
-            >
+        <div>
+          <h4 class="margin-half-vetical">角色继承</h4>
+          <div class="inner-container container-wrap">
+            <span v-for="parent in roleParents" :key="parent.id" class="tag">
               {{ parent.name }}
-              <span
-                class="role-tag-remove"
-                @click="handleRemoveParent(parent.id)"
+              <span class="mouse-cursor" @click="handleRemoveParent(parent.id)"
                 >&times;</span
               >
             </span>
@@ -140,16 +105,14 @@
               >无继承</span
             >
           </div>
-          <div class="inner-container gap-half">
-            <select v-model="newParentId" class="input-select">
+          <div class="inner-container margin-vetical">
+            <select v-model="newParentId" class="text-input">
               <option :value="0" disabled>选择父角色...</option>
               <option v-for="r in availableParents" :key="r.id" :value="r.id">
                 {{ r.name }} ({{ r.code }})
               </option>
             </select>
-            <QFormButton class="button-small" @click="handleAddParent"
-              >添加</QFormButton
-            >
+            <QFormButton @click="handleAddParent">添加</QFormButton>
           </div>
         </div>
       </div>
@@ -162,61 +125,51 @@
     </div>
 
     <!-- 创建/编辑角色对话框 -->
-    <div
-      v-if="showRoleDialog"
-      class="dialog-overlay"
-      @click.self="closeRoleDialog"
+    <QDialog
+      v-model:visible="showRoleDialog"
+      @close="closeRoleDialog"
+      @confirm="saveRole"
     >
       <div class="dialog-content bg-card radius-half-rem">
         <h4>{{ isEditing ? '编辑角色' : '新增角色' }}</h4>
         <div class="container-column gap">
-          <div>
-            <label>角色名称</label>
-            <input
-              v-model="roleForm.name"
-              class="input-field"
-              placeholder="输入角色名称"
-            />
-          </div>
-          <div>
-            <label>角色编码</label>
-            <select
-              v-model="roleForm.code"
-              class="input-select"
-              :disabled="isEditing"
-            >
-              <option value="" disabled>选择角色编码...</option>
-              <option value="user">USER - 普通用户</option>
-              <option value="reviewer">REVIEWER - 审核员</option>
-              <option value="author">AUTHOR - 作者</option>
-              <option value="admin">ADMIN - 管理员</option>
-              <option value="super_admin">SUPER_ADMIN - 超级管理员</option>
-            </select>
-          </div>
-          <div>
-            <label>描述</label>
-            <textarea
-              v-model="roleForm.description"
-              class="input-field"
-              placeholder="角色描述（可选）"
-              rows="2"
-            ></textarea>
-          </div>
-          <div class="inner-container gap" style="justify-content: flex-end">
-            <QFormButton @click="closeRoleDialog">取消</QFormButton>
-            <QFormButton class="button-primary" @click="saveRole">{{
-              isEditing ? '保存' : '创建'
-            }}</QFormButton>
-          </div>
+          <QFormText
+            v-model="roleForm.name"
+            label="角色名称"
+            direction="vertical"
+            placeholder="输入角色名称"
+          />
+          <QFormText
+            v-model="roleForm.code"
+            label="角色编码"
+            direction="vertical"
+            placeholder="输入角色编码"
+          />
+          <QFormTextarea
+            label="角色描述（可选）"
+            direction="vertical"
+            :required="false"
+            v-model="roleForm.description"
+            placeholder="角色描述"
+            rows="2"
+          />
         </div>
       </div>
-    </div>
+    </QDialog>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue';
-import { useMessage, QFormButton } from 'qyani-components';
+import {
+  useMessage,
+  QFormButton,
+  QDialog,
+  QFormText,
+  QFormTextarea,
+  QDivider,
+  useShowLoading,
+} from 'qyani-components';
 import { useApiRight } from '@guga-reading/shares';
 import type { Permission, Role } from '@guga-reading/types';
 
@@ -255,7 +208,7 @@ const scopeLabels: Record<string, string> = {
 };
 
 const groupedPermissions = computed(() => {
-  const groups: Record<Permission['resourceType'], Permission[]> = {} as Record<
+  const groups: Record<string, Permission[]> = {} as Record<
     Permission['resourceType'],
     Permission[]
   >;
@@ -263,7 +216,7 @@ const groupedPermissions = computed(() => {
     if (!groups[perm.resourceType]) {
       groups[perm.resourceType] = [];
     }
-    groups[perm.resourceType].push(perm);
+    groups[perm.resourceType]?.push(perm);
   }
   return groups;
 });
@@ -440,8 +393,10 @@ function handleRemoveParent(parentId: number) {
 }
 
 onBeforeMount(() => {
-  loadRoles();
-  loadPermissions();
+  useShowLoading.show();
+  Promise.all([loadRoles(), loadPermissions()]).finally(() => {
+    useShowLoading.hide();
+  });
 });
 </script>
 
@@ -455,17 +410,6 @@ onBeforeMount(() => {
   border-bottom: 1px solid var(--border-color, #eee);
   transition: background 0.15s;
 }
-.role-item:hover {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
-}
-.role-item-active {
-  background: var(--bg-active, rgba(64, 128, 255, 0.08));
-  border-left: 3px solid var(--primary, #4090ff);
-}
-
-.permission-group {
-  margin: 10px 0;
-}
 .permission-checkbox {
   display: inline-flex;
   align-items: center;
@@ -478,72 +422,10 @@ onBeforeMount(() => {
   user-select: none;
 }
 .permission-checkbox.active {
-  border-color: var(--primary, #4090ff);
+  border-color: var(--primary-color, #4090ff);
   background: rgba(64, 128, 255, 0.08);
 }
 .permission-checkbox input {
   display: none;
-}
-
-.role-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  background: var(--bg-tag, #e8f0fe);
-  border-radius: 12px;
-  font-size: 0.85rem;
-}
-.role-tag-remove {
-  cursor: pointer;
-  font-weight: bold;
-  color: #999;
-  margin-left: 2px;
-}
-.role-tag-remove:hover {
-  color: #e33;
-}
-
-/* Dialog */
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.dialog-content {
-  width: 420px;
-  max-width: 90%;
-  padding: 20px;
-}
-
-.input-field,
-.input-select {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--border-color, #ddd);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  background: var(--bg-input, #fff);
-  color: var(--text-color, #333);
-  box-sizing: border-box;
-}
-.input-select {
-  cursor: pointer;
-}
-textarea.input-field {
-  resize: vertical;
-}
-label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 0.85rem;
-  font-weight: 500;
 }
 </style>

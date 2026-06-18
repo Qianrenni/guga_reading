@@ -37,9 +37,10 @@ data class UpdateUserStatusBody(val isActive: Boolean)
 
 fun Routing.admin() {
     // ==================== 原有审核路由（保持不变） ====================
+    authenticate("auth-jwt") {
     route("/audit") {
 
-        authenticate("auth-jwt") {
+
             // GET /audit/book - 获取审核中的书
             install(PermissionCheck) {
                 requiredPermissions = listOf(
@@ -134,14 +135,10 @@ fun Routing.admin() {
                     )
                 )
             }
-
-        }
     }
 
-    // ==================== 新增权限管理路由 ====================
     route("/admin") {
-        authenticate("auth-jwt") {
-            get("/pemissions") {
+            get("/permissions") {
                 call.requirePermission(
                     listOf(generatePermissionCode(ResourceTypeEnum.PERMISSION, ActionEnum.READ, ScopeEnum.ALL))
                 )
@@ -330,6 +327,6 @@ fun Routing.admin() {
                 )
                 call.respond(ResponseModel.Empty(message = "用户角色移除成功"))
             }
-        }
+    }
     }
 }
