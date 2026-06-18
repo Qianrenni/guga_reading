@@ -24,7 +24,7 @@ class BookService(private val application: Application) {
             serializer = Long.serializer()
         ) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookTable.selectAll().where { BookTable.status eq BookStatus.PUBLISHED }.count()
+                BookTable.selectAll().count()
             }
         }
     }
@@ -48,7 +48,9 @@ class BookService(private val application: Application) {
             serializer = ListSerializer(Book.serializer())
         ) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookTable.selectAll().where { BookTable.status eq BookStatus.PUBLISHED }.orderBy(Random()).limit(5)
+                BookTable.selectAll()
+                    .where { (BookTable.status eq BookStatus.PUBLISHED) and (BookTable.isActive eq true) }
+                    .orderBy(Random()).limit(5)
                     .map { it.toBook(application.appConfig.serverUrl) }
             }
         }
@@ -62,7 +64,7 @@ class BookService(private val application: Application) {
         ) {
             application.databaseManager.suspendedTransaction(readOnly = true) {
                 BookTable.selectAll()
-                    .where { (BookTable.status eq BookStatus.PUBLISHED) and ((BookTable.name like "%$query%") or (BookTable.author like "%$query%")) }
+                    .where { (BookTable.status eq BookStatus.PUBLISHED) and (BookTable.isActive eq true) and ((BookTable.name like "%$query%") or (BookTable.author like "%$query%")) }
                     .map { it.toBook(application.appConfig.serverUrl) }
             }
         }
@@ -70,7 +72,8 @@ class BookService(private val application: Application) {
 
     suspend fun getBookList(bookIds: List<Int>): List<Book> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
-            BookTable.selectAll().where { (BookTable.status eq BookStatus.PUBLISHED) and (BookTable.id inList bookIds) }
+            BookTable.selectAll()
+                .where { (BookTable.status eq BookStatus.PUBLISHED) and (BookTable.isActive eq true) and (BookTable.id inList bookIds) }
                 .map { it.toBook(application.appConfig.serverUrl) }
         }
     }
@@ -80,7 +83,7 @@ class BookService(private val application: Application) {
             BookChapterTable
                 .selectAll()
                 .where {
-                    (BookChapterTable.status eq BookStatus.PUBLISHED) and (BookChapterTable.bookId eq bookId)
+                    (BookChapterTable.status eq BookStatus.PUBLISHED) and (BookChapterTable.bookId eq bookId) and (BookChapterTable.isActive eq true)
                 }
                 .orderBy(BookChapterTable.order)
                 .map { it.toBookCatalogItem() }
@@ -97,7 +100,7 @@ class BookService(private val application: Application) {
                 BookChapterTable
                     .selectAll()
                     .where {
-                        (BookChapterTable.id eq chapterId) and (BookChapterTable.bookId eq bookId) and (BookChapterTable.status eq BookStatus.PUBLISHED)
+                        (BookChapterTable.id eq chapterId) and (BookChapterTable.bookId eq bookId) and (BookChapterTable.status eq BookStatus.PUBLISHED) and (BookChapterTable.isActive eq true)
                     }.firstOrNull()
             }
             if (result == null) {
@@ -115,7 +118,7 @@ class BookService(private val application: Application) {
     suspend fun getBookSelect(category: String, offSet: Int, limit: Int): List<Book> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
             BookTable.selectAll()
-                .where { (BookTable.category eq category) and (BookTable.status eq BookStatus.PUBLISHED) }
+                .where { (BookTable.category eq category) and (BookTable.status eq BookStatus.PUBLISHED) and (BookTable.isActive eq true) }
                 .offset(start = offSet.toLong())
                 .limit(count = limit).map { it.toBook(application.appConfig.serverUrl) }
         }

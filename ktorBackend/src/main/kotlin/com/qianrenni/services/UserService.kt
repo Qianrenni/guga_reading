@@ -64,6 +64,9 @@ class UserService(private val application: Application) {
         return when(user){
             null->throw IllegalArgumentException("账号不存在")
             else -> {
+                if (!user[UserTable.isActive]) {
+                    throw IllegalArgumentException("账号已禁用")
+                }
                 when (PasswordUtils.verify(requestTokenGet.password, user[UserTable.password])) {
                     false->throw IllegalArgumentException("密码错误")
                     else -> {
