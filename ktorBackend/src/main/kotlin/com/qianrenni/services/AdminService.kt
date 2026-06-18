@@ -246,7 +246,10 @@ class AdminService(private val application: Application) {
                 it[BookTable.isEnded] = false
             }.value
         }
-
+        val chapterStoreService = ChapterStoreService(
+            bookId = bookId,
+            baseDir = application.appConfig.contentDir + "/book"
+        )
         // 5. 创建章节记录并存储内容
         parseResult.chapters.forEachIndexed { index, chapter ->
             val order = (index + 1).toFloat()
@@ -262,10 +265,7 @@ class AdminService(private val application: Application) {
             }
 
             // 存储章节内容到文件存储
-            ChapterStoreService(
-                bookId = bookId,
-                baseDir = application.appConfig.contentDir + "/book"
-            ).use { store ->
+            chapterStoreService.use { store ->
                 store.update(chapterId, chapter.content)
             }
         }

@@ -92,19 +92,21 @@
     <div class="inner-container container-align-center container-space-between">
       <span class="text-description text-085rem">共 {{ total }} 条</span>
       <div class="inner-container gap-half container-align-center">
-        <Button
+        <button
           :disabled="page <= 1"
           @click="changePage(page - 1)"
           class="button"
-          >上一页</Button
         >
+          上一页
+        </button>
         <span class="text-085rem">{{ page }} / {{ totalPages }}</span>
-        <Button
+        <button
           :disabled="page >= totalPages"
           @click="changePage(page + 1)"
           class="button"
-          >下一页</Button
         >
+          下一页
+        </button>
       </div>
     </div>
 
@@ -181,8 +183,8 @@
     </QDialog>
 
     <!-- 上传书籍对话框 -->
-    <QDialog title="上传书籍（TXT）" v-model:visible="showUploadDialog">
-      <div class="container-column gap">
+    <QDialog title="上传书籍" v-model:visible="showUploadDialog">
+      <div class="container-column gap container-w100">
         <div class="inner-container gap">
           <label class="text-label">书名</label>
           <input
@@ -219,15 +221,12 @@
             placeholder="标签，用逗号分隔"
           />
         </div>
-        <div class="inner-container gap" style="align-items: flex-start">
-          <label class="text-label">描述</label>
-          <textarea
-            v-model="uploadForm.description"
-            class="text-input container-flex-1"
-            rows="10"
-            placeholder="书籍描述"
-          ></textarea>
-        </div>
+        <QFormTextarea
+          v-model="uploadForm.description"
+          class="container-flex-1"
+          :rows="6"
+          placeholder="书籍描述"
+        ></QFormTextarea>
         <QFormFileUpload
           v-model="uploadForm.coverFile"
           class="container-flex-1"
@@ -244,6 +243,44 @@
           :required="false"
           direction="horizontal"
         />
+        <!-- TXT 解析结果预览 -->
+        <div v-if="parsingTxt" class="inner-container container-center">
+          <span class="text-description">正在解析 TXT 文件...</span>
+        </div>
+        <div v-if="parseError" class="inner-container container-center">
+          <span class="text-danger">解析失败：{{ parseError }}</span>
+        </div>
+        <div v-if="parseResult && !parsingTxt" class="inner-container-column">
+          <div class="inner-container gap container-space-between">
+            <span class="text-label" style="font-weight: 600">解析结果</span>
+            <span class="text-description text-085rem">
+              共 {{ totalChapters }} 章，{{ totalWords }} 字
+            </span>
+          </div>
+          <QFormTable
+            size="small"
+            style="max-height: 200px"
+            :maxVisiblePages="3"
+            :data="parseResult?.chapters"
+            :columns="[
+              {
+                label: '章节名称',
+                value: 'title',
+              },
+              {
+                label: '字数',
+                value: 'wordCount',
+              },
+            ]"
+          >
+            <template #title="{ row }">
+              <span class="text-one-line">{{ row.title }}</span>
+            </template>
+            <template #wordCount="{ row }">
+              <span class="text-one-line">{{ row.wordCount }}</span>
+            </template>
+          </QFormTable>
+        </div>
         <div v-if="uploadForm.coverFile != null">
           <QLazyImage
             :src="uploadFormCoverPreview"
@@ -267,7 +304,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue';
+import { ref, computed, watch, onBeforeMount } from 'vue';
 import {
   useMessage,
   QFormButton,
@@ -277,11 +314,14 @@ import {
   QDialog,
   QLazyImage,
   QFormFileUpload,
+  QFormTextarea,
 } from 'qyani-components';
 import {
   transformImage,
   useApiAdminBooks,
   useApiBooks,
+  parseTxtFile,
+  type TxtParseResult,
 } from '@guga-reading/shares';
 import type { AdminBook } from '@guga-reading/types';
 import { TranslationStatus, type StatusEnum } from '@guga-reading/types';
@@ -465,6 +505,43 @@ const uploadForm = ref<{
   txtFile: null,
   txtFileName: '',
 });
+
+// ========== TXT 文件解析预览 ==========
+const parseResult = ref<TxtParseResult | null>(null);
+const parsingTxt = ref(false);
+const parseError = ref('');
+
+watch(
+  () => uploadForm.value.txtFile,
+  async (file) => {
+    if (file) {
+      parsingTxt.value = true;
+      parseError.value = '';
+      parseResult.value = null;
+      try {
+        const result = await parseTxtFile(file);
+        parseResult.value = result;
+        if (result.description && !uploadForm.value.description) {
+          uploadForm.value.description = result.description;
+        }
+      } catch (e: unknown) {
+        parseError.value = e instanceof Error ? e.message : '解析 TXT 文件失败';
+      } finally {
+        parsingTxt.value = false;
+      }
+    } else {
+      parseResult.value = null;
+      parseError.value = '';
+    }
+  },
+);
+
+const totalChapters = computed(() => parseResult.value?.chapters.length ?? 0);
+const totalWords = computed(
+  () =>
+    parseResult.value?.chapters.reduce((sum, ch) => sum + ch.wordCount, 0) ?? 0,
+);
+
 const uploadFormCoverPreview = computed(() => {
   return uploadForm.value.coverFile
     ? URL.createObjectURL(uploadForm.value.coverFile)
