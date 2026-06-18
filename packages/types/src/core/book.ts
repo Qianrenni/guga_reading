@@ -87,6 +87,13 @@ export interface BookReadingProgress {
 
 export type ShelfItem = Book & Partial<BookReadingProgress>;
 
+/**
+ * 管理后台书籍信息（含 authorCount 字段）
+ */
+export interface AdminBook extends Book {
+  authorCount: number;
+}
+
 export interface ChapterReadStatistic {
   id: number;
   bookId: number;

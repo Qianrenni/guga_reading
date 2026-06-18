@@ -11,52 +11,54 @@
       />
       <QFormButton class="button-primary" @click="search">搜索</QFormButton>
     </div>
-    <QFormTable
-      size="small"
-      :pagination="false"
-      :columns="tableColumns"
-      :data="users"
-    >
-      <template #id="{ row }">
-        <span>{{ row.user.id }}</span>
-      </template>
-      <template #userName="{ row }">
-        <span>{{ row.user.userName }}</span>
-      </template>
-      <template #email="{ row }">
-        <span>{{ row.user.email }}</span>
-      </template>
-      <template #roles="{ row }">
-        <span
-          v-for="role in row.roles"
-          :key="role.roleId"
-          class="tag margin-fourth-horizontal"
-          >{{ getRoleName(role.roleId) }}</span
-        >
-        <span v-if="row.roles.length === 0" class="text-muted text-085rem"
-          >无角色</span
-        >
-      </template>
-      <template #status="{ row }">
-        <span :class="row.user.isActive ? 'text-success' : 'text-danger'">
-          {{ row.user.isActive ? '已激活' : '已禁用' }}
-        </span>
-      </template>
-      <template #actions="{ row }">
-        <div class="inner-container gap-half">
-          <QFormButton
-            @click="openRoleDialog(row as unknown as AdminUserResponse)"
-            >编辑角色
-          </QFormButton>
-          <QFormButton
-            :class="row.user.isActive ? 'button-warning' : 'button-primary'"
-            @click="toggleUserStatus(row as unknown as AdminUserResponse)"
+    <div class="inner-container container-flex-1">
+      <QFormTable
+        size="small"
+        :pagination="false"
+        :columns="tableColumns"
+        :data="users"
+      >
+        <template #id="{ row }">
+          <span>{{ row.user.id }}</span>
+        </template>
+        <template #userName="{ row }">
+          <span>{{ row.user.userName }}</span>
+        </template>
+        <template #email="{ row }">
+          <span>{{ row.user.email }}</span>
+        </template>
+        <template #roles="{ row }">
+          <span
+            v-for="role in row.roles"
+            :key="role.roleId"
+            class="tag margin-fourth-horizontal"
+            >{{ getRoleName(role.roleId) }}</span
           >
-            {{ row.user.isActive ? '禁用' : '激活' }}
-          </QFormButton>
-        </div>
-      </template>
-    </QFormTable>
+          <span v-if="row.roles.length === 0" class="text-muted text-085rem"
+            >无角色</span
+          >
+        </template>
+        <template #status="{ row }">
+          <span :class="row.user.isActive ? 'text-success' : 'text-danger'">
+            {{ row.user.isActive ? '已激活' : '已禁用' }}
+          </span>
+        </template>
+        <template #actions="{ row }">
+          <div class="inner-container gap-half">
+            <QFormButton
+              @click="openRoleDialog(row as unknown as AdminUserResponse)"
+              >编辑角色
+            </QFormButton>
+            <QFormButton
+              :class="row.user.isActive ? 'button-warning' : 'button-primary'"
+              @click="toggleUserStatus(row as unknown as AdminUserResponse)"
+            >
+              {{ row.user.isActive ? '禁用' : '激活' }}
+            </QFormButton>
+          </div>
+        </template>
+      </QFormTable>
+    </div>
     <!-- 分页 -->
     <div class="inner-container container-align-center container-space-between">
       <span class="text-description text-085rem">共 {{ total }} 条</span>

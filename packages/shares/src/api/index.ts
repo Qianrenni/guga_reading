@@ -11,3 +11,4 @@ export * from './audit';
 export * from './system';
 export * from './authorApplication';
 export * from './right';
+export * from './adminBooks';
