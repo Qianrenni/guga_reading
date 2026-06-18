@@ -115,7 +115,7 @@ class UserService(private val application: Application) {
                 it[isActive] = true
             } get UserTable.id
             // 添加用户角色
-            application.rightService.addUserRole(updateUserId = userId.value, roleCode = RoleEnum.USER)
+            application.rightService.addUserRole(updateUserId = userId.value, roleCode = RoleEnum.USER.name)
         }
 
     }

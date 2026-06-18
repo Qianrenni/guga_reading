@@ -2,7 +2,6 @@ package com.qianrenni.models.tables
 
 import com.qianrenni.enums.ActionEnum
 import com.qianrenni.enums.ResourceTypeEnum
-import com.qianrenni.enums.RoleEnum
 import com.qianrenni.enums.ScopeEnum
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.dao.id.IntIdTable
@@ -23,7 +22,7 @@ object PermissionTable : IntIdTable(name = "permission") {
 
 object RoleTable : IntIdTable(name = "role") {
     val name = varchar("name", 50)
-    val code = enumerationByName<RoleEnum>("code", 25)
+    val code = varchar("code", 25)
     val description = varchar("description", 255).nullable()
     val createdAt = datetime(name = "createdAt").clientDefault { LocalDateTime.now() }
     val updatedAt = datetime(name = "updatedAt").clientDefault { LocalDateTime.now() }
@@ -64,7 +63,7 @@ data class Permission(
 data class Role(
     val id: Int,
     val name: String,
-    val code: RoleEnum,
+    val code: String,
     val description: String?,
     val createdAt: String,
     val updatedAt: String

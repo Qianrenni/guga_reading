@@ -29,7 +29,7 @@ class AuditService(private val application: Application) {
             UserRoleTable
                 .innerJoin(RoleTable, { UserRoleTable.roleId }, { RoleTable.id })
                 .selectAll()
-                .where { RoleTable.code eq RoleEnum.REVIEWER }
+                .where { RoleTable.code eq RoleEnum.REVIEWER.name }
                 .count()
                 .toInt()
         }
@@ -63,7 +63,7 @@ class AuditService(private val application: Application) {
             UserRoleTable
                 .innerJoin(RoleTable, { UserRoleTable.roleId }, { RoleTable.id })
                 .selectAll()
-                .where { RoleTable.code eq RoleEnum.REVIEWER }
+                .where { RoleTable.code eq RoleEnum.REVIEWER.name }
                 .orderBy(Random())
                 .limit(1)
                 .firstOrNull()

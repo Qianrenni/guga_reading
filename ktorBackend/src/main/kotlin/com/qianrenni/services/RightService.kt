@@ -11,6 +11,8 @@ import io.ktor.server.application.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
@@ -21,36 +23,55 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
  * 设计说明:
  * - 权限以位图形式存储(分段 List<Int>),每段长度由 permissionBitLength 控制(通常为 32 或 64)。
  * - 用户权限位图会序列化到 JWT 中,服务端通过位运算高效校验,无需每次查数据库。
- * - 所有数据在应用启动时通过 prepareInfo() 预加载到内存,后续操作均为 O(1) 或 O(n)(n 为权限段数)。
+ * - 所有数据在应用启动时通过 start() 预加载到内存,后续操作均为 O(1) 或 O(n)(n 为权限段数)。
+ *
+ * 线程安全说明:
+ * - 所有 dict 字段使用 @Volatile 修饰,引用不可变的 Map 对象。
+ * - 写操作(增删改)统一在 lock.withLock {} 内完成:校验 → DB写入 → doStart() 重新加载。
+ * - 读操作(checkPermission / getRolesSegments)通过捕获 volatile 引用局部变量实现无锁读取。
+ * - doStart() 为不加锁的内部方法,由已持有锁的调用方直接调用,避免递归死锁。
  */
 class RightService(private val application: Application) {
     private val logger = application.environment.log
     private val appConfig = application.appConfig
+    private val lock = Mutex()
 
     companion object {
         val attributeKey = AttributeKey<RightService>("RightService")
     }
-    // 权限 ID 到 PermissionDao 对象的映射
+
+    // 权限 ID 到 Permission 对象的映射
+    @Volatile
     var permissionDict: Map<Int, Permission> = emptyMap()
         private set
 
     // 权限编码(如 "admin:user:read:all")到 bitPosition 的映射,用于快速查找
+    @Volatile
     var permissionCodeDict: Map<String, Int> = emptyMap()
         private set
 
-    // 角色 ID 到 RoleDao 对象的映射
+    // 角色 ID 到 Role 对象的映射
+    @Volatile
     var roleDict: Map<Int, Role> = emptyMap()
         private set
-    // 角色继承关系:role_id -> 父角色 ID 列表
+
+    // 角色继承关系:role_id -> 祖先角色 ID 列表(包含自身)
+    @Volatile
     var roleInheritanceDict: Map<Int, List<Int>> = emptyMap()
         private set
+
     // 角色权限位图:role_id -> [segment0, segment1, ...]
     // 每个 segment 是一个整数,每一位代表一个权限(1 表示拥有,0 表示无)
+    @Volatile
     var roleSegmentDict: Map<Int, List<Int>> = emptyMap()
         private set
 
+    @Volatile
     var roleLevels: Map<Int, Int> = emptyMap()
         private set
+
+    // ==================== 位图工具方法 ====================
+
     /**
      * 将一组 bitPosition 设置到位图段列表中。
      *
@@ -64,9 +85,7 @@ class RightService(private val application: Application) {
      * @param bitPositions 要设置的权限位位置列表(如 [7, 70])
      * @return 修改后的 segments
      */
-    private fun positionToSegment(
-        bitPositions: List<Int>
-    ): List<Int> {
+    private fun positionToSegment(bitPositions: List<Int>): List<Int> {
         val result = mutableListOf<Int>()
         for (bitPos in bitPositions) {
             val segmentIndex = bitPos / appConfig.permissionBitLength
@@ -111,7 +130,7 @@ class RightService(private val application: Application) {
      * 递归展开角色继承关系,构建角色权限位图。
      *
      * @param roleInheritanceList 角色继承关系列表
-     * @return 当前 role_id 继承了哪些角色
+     * @return Pair(角色 -> 祖先列表, 角色 -> 层级)
      */
     private fun flattenInheritRole(
         roleInheritanceList: List<RoleInheritance>
@@ -176,71 +195,100 @@ class RightService(private val application: Application) {
         return Pair(result, levels)
     }
 
+    // ==================== 核心加载逻辑 ====================
+
     /**
-     * 应用启动时调用:预加载所有权限、角色及角色-权限关联数据到内存。
+     * 【内部方法】实际的权限数据加载逻辑,不加锁。
+     * 调用方必须已持有 lock,或在启动时(单线程)直接调用。
      *
      * 执行步骤:
      * 1. 加载所有 Permission、Role、RolePermission 表数据。
-     * 2. 构建 permissionDict 和 permissionCodeMap。
-     * 3. 为每个角色构建分段权限位图(rolePermissionDict)。
+     * 2. 构建 permissionDict 和 permissionCodeDict。
+     * 3. 为每个角色构建分段权限位图(roleSegmentDict)。
      */
-    suspend fun start() {
-        logger.info("正在预加载权限、角色及角色-权限关联数据...")
-
+    private suspend fun doStart() {
+        logger.debug("正在预加载权限、角色及角色-权限关联数据...")
         application.databaseManager.suspendedTransaction(readOnly = true) {
             // 查询所有权限
             val permissions = PermissionTable.selectAll().map { it.toPermission() }
             // 构建角色继承关系
-            val roleInheritanceList = RoleInheritanceTable.selectAll().map { it.toRoleInheritance() }
+            val roleInheritanceList =
+                RoleInheritanceTable.selectAll().map { it.toRoleInheritance() }
             val rolePermissions = RolePermissionTable.selectAll().map { it.toRolePermission() }
             // 构建角色字典
             val roles = RoleTable.selectAll().map { it.toRole() }
             // 构建权限字典
-            permissionDict = permissions.associateBy { it.id }
-            permissionCodeDict = permissions.associate {
+            val newPermissionDict = permissions.associateBy { it.id }
+            val newPermissionCodeDict = permissions.associate {
                 "${it.resourceType}:${it.action}:${it.scope}" to it.bitPosition
             }
-            roleDict = roles.associateBy { it.id }
+            val newRoleDict = roles.associateBy { it.id }
+
             // 构建角色权限位图
             val roleSegmentMap = mutableMapOf<Int, List<Int>>()
-
             for (rp in rolePermissions) {
                 val roleId = rp.roleId
                 val permissionId = rp.permissionId
-                val perm = permissionDict[permissionId]
+                val perm = newPermissionDict[permissionId]
                 val bitPos = perm!!.bitPosition
                 val segments = roleSegmentMap.getOrPut(roleId) { emptyList() }
                 roleSegmentMap[roleId] = mergeSegment(
                     positionToSegment(listOf(bitPos)),
                     segments
                 )
-
             }
 
-            val result = flattenInheritRole(roleInheritanceList)
-            roleInheritanceDict = result.first
-            roleLevels = result.second
-            for ((roleId, ancestors) in roleInheritanceDict) {
+            val flatResult = flattenInheritRole(roleInheritanceList)
+            val newRoleInheritanceDict = flatResult.first
+            val newRoleLevels = flatResult.second
+
+            for ((roleId, ancestors) in newRoleInheritanceDict) {
                 for (ancestor in ancestors) {
-                    roleSegmentMap[roleId] = mergeSegment(
-                        roleSegmentMap[ancestor]!!,
-                        roleSegmentMap[roleId]!!
-                    )
+                    val ancestorSegments = roleSegmentMap[ancestor] ?: emptyList()
+                    val currentSegments = roleSegmentMap[roleId] ?: emptyList()
+                    roleSegmentMap[roleId] = mergeSegment(ancestorSegments, currentSegments)
                 }
             }
+
+            // 一次性替换所有 volatile 引用,尽量保证读端看到一致的数据
+            permissionDict = newPermissionDict
+            permissionCodeDict = newPermissionCodeDict
+            roleDict = newRoleDict
+            roleInheritanceDict = newRoleInheritanceDict
+            roleLevels = newRoleLevels
             roleSegmentDict = roleSegmentMap.toMap()
-            logger.info("权限信息加载完成")
-            logger.info("权限字典: {}", permissionCodeDict)
-            logger.info("权限继承关系: {}", roleInheritanceDict)
-            logger.info("角色权限位图: {}", roleSegmentDict)
-            logger.info("角色级别: {}", roleLevels)
+
+            logger.debug("权限信息加载完成")
+            logger.debug("权限字典: {}", permissionCodeDict)
+            logger.debug("权限继承关系: {}", roleInheritanceDict)
+            logger.debug("角色权限位图: {}", roleSegmentDict)
+            logger.debug("角色级别: {}", roleLevels)
         }
     }
+
+    /**
+     * 应用启动时调用(或外部手动触发重新加载):预加载所有权限、角色及角色-权限关联数据到内存。
+     * 加锁调用 doStart()。
+     */
+    suspend fun start() {
+        lock.withLock { doStart() }
+    }
+
+    /**
+     * 重新加载权限缓存(公开方法)。
+     */
+    suspend fun restart() {
+        start()
+    }
+
+    // ==================== 无锁读取方法 ====================
 
     /**
      * 根据用户的角色 ID 列表,合并生成用户的完整权限位图。
      *
      * 合并规则:按位 OR(只要任一角色拥有该权限,用户就拥有)。
+     *
+     * 线程安全:捕获 @Volatile 引用到局部变量,保证单次调用内使用同一快照。
      *
      * @param roleIds 用户拥有的角色 ID 列表
      * @return 合并后的权限位图,格式为 [segment0, segment1, ...]
@@ -249,8 +297,10 @@ class RightService(private val application: Application) {
         if (roleIds.isEmpty()) {
             return emptyList()
         }
+        // 捕获 volatile 引用到局部变量,保证本次调用使用同一快照
+        val segments = roleSegmentDict
         var result = emptyList<Int>()
-        val parentSegments = roleIds.mapNotNull { roleSegmentDict[it] }
+        val parentSegments = roleIds.mapNotNull { segments[it] }
         for (parentSegment in parentSegments) {
             result = mergeSegment(parentSegment, result)
         }
@@ -270,6 +320,8 @@ class RightService(private val application: Application) {
      * - userPermissionBitmap 应来自可信 JWT payload(已签名,不可伪造)。
      * - 若 requiredPermissionCodes 中包含未知权限,直接返回 false。
      *
+     * 线程安全:捕获 @Volatile 引用到局部变量,保证单次调用内使用同一快照。
+     *
      * @param requiredPermissionCodes 所需权限编码列表,如 ["admin:user:read:all"]
      * @param userPermissionBitmap 用户权限位图(来自 JWT),如 [0b10101, 0b11101]
      * @return true 表示用户拥有全部所需权限,否则 false
@@ -278,12 +330,15 @@ class RightService(private val application: Application) {
         requiredPermissionCodes: List<String>,
         userPermissionBitmap: List<Int>
     ): Boolean {
+        // 捕获 volatile 引用到局部变量
+        val codeDict = permissionCodeDict
+
         // 1. 转换权限编码为 bitPosition
         val requiredBits = mutableListOf<Int>()
         logger.debug("requiredPermissionCodes: {}", requiredPermissionCodes)
 
         for (code in requiredPermissionCodes) {
-            val bitPos = permissionCodeDict[code]
+            val bitPos = codeDict[code]
             if (bitPos == null) {
                 logger.warn("Unknown permission code: $code")
                 return false // 未知权限,拒绝访问
@@ -311,235 +366,334 @@ class RightService(private val application: Application) {
         return true
     }
 
-    /**
-     * 为用户添加角色
-     *
-     * @param updateUserId 用户ID
-     * @param roleCode 角色编码
-     * @return 是否添加成功
-     */
-    suspend fun addUserRole(adminId: Int? = null, updateUserId: Int, roleCode: RoleEnum): Boolean {
-        adminId?.let {
-            val p = getUserRoles(listOf(it, updateUserId))
-            val adminLevel = p[adminId]?.maxOf { userRole -> roleLevels[userRole.roleId]!! }
-            val userLevel = p[updateUserId]?.maxOf { userRole -> roleLevels[userRole.roleId]!! }
-            require(adminLevel != null && userLevel != null) { "用户权限不足" }
-            require(adminLevel >= userLevel) { "权限不足" }
-        }
-        for (role in roleDict.values) {
-            logger.debug(
-                "add user role user:id:$updateUserId role:${role.code.name}:${role.code.code} need role:${roleCode.name}:${roleCode.code}"
-            )
-            if (role.code == roleCode) {
-                UserRoleTable.insert {
-                    it[UserRoleTable.userId] = updateUserId
-                    it[UserRoleTable.roleId] = role.id
-                    it[UserRoleTable.grantedBy] = adminId
-                }
-                return true
-            }
-        }
-        return false
-    }
+    // ==================== 用户角色查询 ====================
 
     /**
-     * 获取用户角色
+     * 获取用户角色(数据库查询,不涉及缓存,无需加锁)。
      *
-     * @param userId 用户ID
-     * @return 用户角色 ID 列表
+     * @param userIds 用户 ID 列表
+     * @return userId -> UserRole 列表
      */
-    suspend fun getUserRoles(userId: List<Int>): Map<Int, List<UserRole>> {
+    suspend fun getUserRoles(userIds: List<Int>): Map<Int, List<UserRole>> {
         return application.databaseManager.suspendedTransaction(readOnly = true) {
             UserRoleTable
                 .selectAll()
-                .where { UserRoleTable.userId inList userId }
+                .where { UserRoleTable.userId inList userIds }
                 .map { it.toUserRole() }
                 .groupBy { it.userId }
         }
     }
 
     /**
-     * 添加用户角色（按角色ID）
+     * 获取角色的权限列表。
+     *
+     * 线程安全:捕获 @Volatile permissionDict 引用到局部变量。
+     */
+    suspend fun getRolePermissions(roleId: Int): List<Permission> {
+        val permDict = permissionDict // 捕获 volatile 引用
+        return application.databaseManager.suspendedTransaction(readOnly = true) {
+            RolePermissionTable
+                .selectAll()
+                .where { RolePermissionTable.roleId eq roleId }
+                .map { permDict[it[RolePermissionTable.permissionId]]!! }
+        }
+    }
+
+    // ==================== 用户角色管理 ====================
+
+    /**
+     * 为用户添加角色。
+     *
+     * 锁策略:
+     * - DB 查询用户角色(慢操作)在锁外完成。
+     * - 权限级别校验 + DB 写入在锁内完成,保证校验与写入的原子性。
+     *
+     * @param adminId 操作者用户ID(为 null 时跳过权限校验)
+     * @param updateUserId 目标用户ID
+     * @param roleCode 角色编码
+     * @return 是否添加成功
+     */
+    suspend fun addUserRole(adminId: Int? = null, updateUserId: Int, roleCode: String): Boolean {
+        // 慢操作:在锁外查询用户角色
+        val userRolesMap = adminId?.let { getUserRoles(listOf(it, updateUserId)) }
+
+        return lock.withLock {
+            // 权限级别校验:使用局部快照保证一致性
+            val levels = roleLevels
+            adminId?.let {
+                val p = userRolesMap!!
+                val adminLevel = p[adminId]?.maxOf { ur -> levels[ur.roleId]!! }
+                val userLevel = p[updateUserId]?.maxOf { ur -> levels[ur.roleId]!! }
+                require(adminLevel != null && userLevel != null) { "用户权限不足" }
+                require(adminLevel >= userLevel) { "权限不足" }
+            }
+
+            // 查找角色并插入
+            val roles = roleDict
+            for (role in roles.values) {
+                logger.debug(
+                    "add user role user:id:$updateUserId role:${role.code} need role:$roleCode"
+                )
+                if (role.code == roleCode) {
+                    application.databaseManager.suspendedTransaction {
+                        UserRoleTable.insert {
+                            it[UserRoleTable.userId] = updateUserId
+                            it[UserRoleTable.roleId] = role.id
+                            it[UserRoleTable.grantedBy] = adminId
+                        }
+                    }
+                    return@withLock true
+                }
+            }
+            false
+        }
+    }
+
+    /**
+     * 添加用户角色(按角色ID)。
+     *
+     * 修复:移除了原来的外层 suspendedTransaction 包裹,避免嵌套事务。
+     * 直接委托给 addUserRole,由其内部自行管理事务。
      */
     suspend fun addUserRoleById(adminId: Int? = null, updateUserId: Int, roleId: Int) {
+        // 捕获 volatile 引用
         val role = roleDict[roleId]
-        require(role != null)
-        application.databaseManager.suspendedTransaction {
-            addUserRole(adminId, updateUserId, role.code)
+        require(role != null) { "角色不存在: $roleId" }
+        addUserRole(adminId, updateUserId, role.code)
+    }
+
+    /**
+     * 移除用户角色。
+     *
+     * 锁策略:
+     * - DB 查询用户角色(慢操作)在锁外完成。
+     * - 权限级别校验 + DB 删除在锁内完成,保证校验与删除的原子性。
+     */
+    suspend fun removeUserRole(adminId: Int? = null, userId: Int, roleId: Int) {
+        // 慢操作:在锁外查询用户角色
+        val userRolesMap = adminId?.let { getUserRoles(listOf(it, userId)) }
+
+        lock.withLock {
+            // 权限级别校验:使用局部快照保证一致性
+            val levels = roleLevels
+            adminId?.let {
+                val p = userRolesMap!!
+                val adminLevel = p[adminId]?.maxOf { ur -> levels[ur.roleId]!! }
+                val userLevel = p[userId]?.maxOf { ur -> levels[ur.roleId]!! }
+                require(adminLevel != null && userLevel != null) { "用户权限不足" }
+                require(adminLevel >= userLevel) { "权限不足" }
+            }
+
+            // 删除操作也在锁内,保证原子性
+            application.databaseManager.suspendedTransaction {
+                UserRoleTable.deleteWhere {
+                    (UserRoleTable.userId eq userId) and (UserRoleTable.roleId eq roleId)
+                }
+            }
         }
     }
 
-    // ==================== 角色CRUD ====================
+    // ==================== 角色 CRUD ====================
 
     /**
-     * 创建角色
+     * 创建角色。
+     *
+     * 锁策略:校验 + DB 写入 + 缓存刷新,全部在同一个锁内完成,防止 TOCTOU。
      */
-    fun createRole(name: String, code: String, description: String? = null): Role {
-        // 检查编码是否已存在
-        require(roleDict.filter { it.value.code.code == code }.isEmpty())
-        //TODO()
-        return roleDict.values.first { it.code.code == code }
+    suspend fun createRole(name: String, code: String, description: String? = null): Role {
+        return lock.withLock {
+            // 检查编码是否已存在(锁内,原子性)
+            require(roleDict.none { it.value.code.equals(code, ignoreCase = true) }) {
+                "角色编码已存在: $code"
+            }
+
+            // DB 写入
+            application.databaseManager.suspendedTransaction {
+                RoleTable.insert {
+                    it[RoleTable.name] = name
+                    it[RoleTable.code] = code.uppercase()
+                    description?.let { text -> it[RoleTable.description] = text }
+                }
+            }
+
+            // 重新加载缓存(直接调用 doStart,因为已持有锁)
+            doStart()
+
+            roleDict.values.firstOrNull { it.code.equals(code, ignoreCase = true) }
+                ?: throw Exception("角色创建后未找到: $code")
+        }
     }
 
     /**
-     * 更新角色
+     * 更新角色。
+     *
+     * 锁策略:校验 + DB 写入 + 缓存刷新,全部在同一个锁内完成。
      */
     suspend fun updateRole(roleId: Int, name: String? = null, description: String? = null): Role {
-        require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
-        application.databaseManager.suspendedTransaction {
-            RoleTable.update({ RoleTable.id eq roleId }) {
-                name?.let { newName -> it[RoleTable.name] = newName }
-                description?.let { newDesc -> it[RoleTable.description] = newDesc }
+        return lock.withLock {
+            require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
+
+            application.databaseManager.suspendedTransaction {
+                RoleTable.update({ RoleTable.id eq roleId }) {
+                    name?.let { newName -> it[RoleTable.name] = newName }
+                    description?.let { newDesc -> it[RoleTable.description] = newDesc }
+                }
             }
+
+            doStart()
+            roleDict[roleId]!!
         }
-        restart()
-        return roleDict[roleId]!!
     }
 
     /**
-     * 删除角色
+     * 删除角色。
+     *
+     * 锁策略:校验 + 引用检查 + DB 删除 + 缓存刷新,全部在同一个锁内完成。
      */
     suspend fun deleteRole(roleId: Int) {
-        require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
-        // 检查引用
-        application.databaseManager.suspendedTransaction(readOnly = true) {
-            val userCount = UserRoleTable.selectAll().where { UserRoleTable.roleId eq roleId }.count()
-            if (userCount > 0) {
-                throw IllegalArgumentException("该角色仍有 $userCount 个用户关联，请先解除用户角色绑定")
+        lock.withLock {
+            require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
+            require(RoleEnum.fromValue(roleDict[roleId]!!.code) == null) { "内置角色不能删除" }
+
+            // 检查引用(全部在锁内)
+            application.databaseManager.suspendedTransaction(readOnly = true) {
+                val userCount =
+                    UserRoleTable.selectAll().where { UserRoleTable.roleId eq roleId }.count()
+                if (userCount > 0) {
+                    throw IllegalArgumentException("该角色仍有 $userCount 个用户关联，请先解除用户角色绑定")
+                }
+                val inheritCount = RoleInheritanceTable.selectAll()
+                    .where {
+                        (RoleInheritanceTable.childId eq roleId) or (RoleInheritanceTable.parentId eq roleId)
+                    }
+                    .count()
+                if (inheritCount > 0) {
+                    throw IllegalArgumentException("该角色仍有 $inheritCount 个继承关系，请先解除角色继承")
+                }
             }
-            val inheritCount = RoleInheritanceTable.selectAll()
-                .where { (RoleInheritanceTable.childId eq roleId) or (RoleInheritanceTable.parentId eq roleId) }
-                .count()
-            if (inheritCount > 0) {
-                throw IllegalArgumentException("该角色仍有 $inheritCount 个继承关系，请先解除角色继承")
+
+            application.databaseManager.suspendedTransaction {
+                RolePermissionTable.deleteWhere { RolePermissionTable.roleId eq roleId }
+                RoleTable.deleteWhere { RoleTable.id eq roleId }
             }
+
+            doStart()
         }
-        application.databaseManager.suspendedTransaction {
-            RolePermissionTable.deleteWhere { RolePermissionTable.roleId eq roleId }
-            RoleTable.deleteWhere { RoleTable.id eq roleId }
-        }
-        restart()
     }
 
     // ==================== 角色继承管理 ====================
 
     /**
-     * 添加角色继承关系
+     * 添加角色继承关系。
+     *
+     * 锁策略:所有校验(角色存在性、重复性、循环检测) + DB 写入 + 缓存刷新,
+     * 全部在同一个锁内完成。
      */
     suspend fun addRoleInheritance(childId: Int, parentId: Int) {
         require(childId != parentId) { "子角色和父角色不能相同" }
-        require(roleDict.containsKey(childId)) { "子角色不存在: $childId" }
-        require(roleDict.containsKey(parentId)) { "父角色不存在: $parentId" }
-        // 检查是否已存在
-        application.databaseManager.suspendedTransaction(readOnly = true) {
-            val exists = RoleInheritanceTable.selectAll()
-                .where { (RoleInheritanceTable.childId eq childId) and (RoleInheritanceTable.parentId eq parentId) }
-                .count() > 0
-            if (exists) {
-                throw IllegalArgumentException("该继承关系已存在")
+
+        lock.withLock {
+            require(roleDict.containsKey(childId)) { "子角色不存在: $childId" }
+            require(roleDict.containsKey(parentId)) { "父角色不存在: $parentId" }
+
+            // 检查是否已存在(锁内)
+            application.databaseManager.suspendedTransaction(readOnly = true) {
+                val exists = RoleInheritanceTable.selectAll()
+                    .where {
+                        (RoleInheritanceTable.childId eq childId) and (RoleInheritanceTable.parentId eq parentId)
+                    }
+                    .count() > 0
+                if (exists) {
+                    throw IllegalArgumentException("该继承关系已存在")
+                }
             }
-        }
-        // 循环继承检测
-        val ancestors = roleInheritanceDict[parentId] ?: listOf(parentId)
-        if (childId in ancestors) {
-            throw IllegalArgumentException("循环继承检测失败：父角色已继承自该子角色")
-        }
-        application.databaseManager.suspendedTransaction {
-            RoleInheritanceTable.insert {
-                it[RoleInheritanceTable.childId] = childId
-                it[RoleInheritanceTable.parentId] = parentId
+
+            // 循环继承检测(锁内,使用最新的内存数据)
+            val ancestors = roleInheritanceDict[parentId] ?: listOf(parentId)
+            if (childId in ancestors) {
+                throw IllegalArgumentException("循环继承检测失败：父角色已继承自该子角色")
             }
+
+            application.databaseManager.suspendedTransaction {
+                RoleInheritanceTable.insert {
+                    it[RoleInheritanceTable.childId] = childId
+                    it[RoleInheritanceTable.parentId] = parentId
+                }
+            }
+
+            doStart()
         }
-        restart()
     }
 
     /**
-     * 移除角色继承关系
+     * 移除角色继承关系。
+     *
+     * 锁策略:DB 删除 + 缓存刷新在锁内完成。
      */
     suspend fun removeRoleInheritance(childId: Int, parentId: Int) {
-        application.databaseManager.suspendedTransaction {
-            RoleInheritanceTable.deleteWhere {
-                (RoleInheritanceTable.childId eq childId) and (RoleInheritanceTable.parentId eq parentId)
+        lock.withLock {
+            application.databaseManager.suspendedTransaction {
+                RoleInheritanceTable.deleteWhere {
+                    (RoleInheritanceTable.childId eq childId) and (RoleInheritanceTable.parentId eq parentId)
+                }
             }
+            doStart()
         }
-        restart()
     }
 
     // ==================== 权限分配/回收 ====================
 
     /**
-     * 为角色批量分配权限
+     * 为角色批量分配权限。
+     *
+     * 锁策略:所有校验 + DB 写入 + 缓存刷新在同一个锁内完成。
      */
     suspend fun assignPermissionsToRole(roleId: Int, permissionIds: List<Int>) {
-        require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
-        application.databaseManager.suspendedTransaction {
+        lock.withLock {
+            require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
+
+            val permDict = permissionDict
             for (permId in permissionIds) {
-                require(permissionDict.containsKey(permId)) { "权限不存在: $permId" }
-                val exists = RolePermissionTable.selectAll()
-                    .where { (RolePermissionTable.roleId eq roleId) and (RolePermissionTable.permissionId eq permId) }
-                    .count() > 0
-                if (!exists) {
-                    RolePermissionTable.insert {
-                        it[RolePermissionTable.roleId] = roleId
-                        it[RolePermissionTable.permissionId] = permId
+                require(permDict.containsKey(permId)) { "权限不存在: $permId" }
+            }
+
+            application.databaseManager.suspendedTransaction {
+                for (permId in permissionIds) {
+                    val exists = RolePermissionTable.selectAll()
+                        .where {
+                            (RolePermissionTable.roleId eq roleId) and (RolePermissionTable.permissionId eq permId)
+                        }
+                        .count() > 0
+                    if (!exists) {
+                        RolePermissionTable.insert {
+                            it[RolePermissionTable.roleId] = roleId
+                            it[RolePermissionTable.permissionId] = permId
+                        }
                     }
                 }
             }
+
+            doStart()
         }
-        restart()
     }
 
     /**
-     * 批量回收角色权限
+     * 批量回收角色权限。
+     *
+     * 锁策略:校验 + DB 删除 + 缓存刷新在同一个锁内完成。
      */
     suspend fun revokePermissionsFromRole(roleId: Int, permissionIds: List<Int>) {
-        require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
-        application.databaseManager.suspendedTransaction {
-            RolePermissionTable.deleteWhere {
-                (RolePermissionTable.roleId eq roleId) and (RolePermissionTable.permissionId inList permissionIds)
+        lock.withLock {
+            require(roleDict.containsKey(roleId)) { "角色不存在: $roleId" }
+
+            application.databaseManager.suspendedTransaction {
+                RolePermissionTable.deleteWhere {
+                    (RolePermissionTable.roleId eq roleId) and (RolePermissionTable.permissionId inList permissionIds)
+                }
             }
+
+            doStart()
         }
-        restart()
-    }
-
-    /**
-     * 获取角色的权限列表
-     */
-    suspend fun getRolePermissions(roleId: Int): List<Permission> {
-        return application.databaseManager.suspendedTransaction(readOnly = true) {
-            RolePermissionTable
-                .selectAll()
-                .where { RolePermissionTable.roleId eq roleId }
-                .map { permissionDict[it[RolePermissionTable.permissionId]]!! }
-        }
-    }
-
-    // ==================== 用户角色管理增强 ====================
-
-    /**
-     * 移除用户角色
-     */
-    suspend fun removeUserRole(adminId: Int? = null, userId: Int, roleId: Int) {
-        adminId?.let {
-            val p = getUserRoles(listOf(it, userId))
-            val adminLevel = p[adminId]?.maxOf { userRole -> roleLevels[userRole.roleId]!! }
-            val userLevel = p[userId]?.maxOf { userRole -> roleLevels[userRole.roleId]!! }
-            require(adminLevel != null && userLevel != null) { "用户权限不足" }
-            require(adminLevel >= userLevel) { "权限不足" }
-        }
-        application.databaseManager.suspendedTransaction {
-            UserRoleTable.deleteWhere {
-                (UserRoleTable.userId eq userId) and (UserRoleTable.roleId eq roleId)
-            }
-        }
-    }
-
-
-    /**
-     * 重新加载权限缓存
-     */
-    suspend fun restart() {
-        start()
     }
 }
 

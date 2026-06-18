@@ -109,7 +109,7 @@ class AuthorApplicationService(private val application: Application) {
                 application.rightService.addUserRole(
                     adminId = adminId,
                     updateUserId = userId,
-                    roleCode = RoleEnum.AUTHOR
+                    roleCode = RoleEnum.AUTHOR.name
                 )
             }
         }

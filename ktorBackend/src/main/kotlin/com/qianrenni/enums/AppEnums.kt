@@ -86,9 +86,8 @@ enum class RoleEnum(val code: String) {
     SUPER_ADMIN("super_admin"); // 超级管理员
 
     companion object {
-        fun fromValue(value: String): RoleEnum {
-            return entries.find { it.code == value }
-                ?: throw IllegalArgumentException("Unknown role: $value")
+        fun fromValue(value: String): RoleEnum? {
+            return entries.find { it.code.equals(value, ignoreCase = true) }
         }
     }
 }
