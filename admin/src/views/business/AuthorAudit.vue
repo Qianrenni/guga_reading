@@ -2,7 +2,7 @@
   <div class="container-column">
     <div class="inner-container container-space-between container-align-center">
       <h3>作者申请审核</h3>
-      <div class="inner-container gap-half">
+      <div class="inner-container">
         <QFormButton
           :class="{ 'button-primary': filterStatus === null }"
           @click="
@@ -38,8 +38,8 @@
       </div>
     </div>
 
-    <div v-if="loading" class="container-center padding-rem">
-      <QLoading type="breathing" />
+    <div v-if="loading" class="container-center padding-rem container-flex-1">
+      <QSkeleton />
     </div>
 
     <div
@@ -53,18 +53,17 @@
       <div
         v-for="app in applications"
         :key="app.id"
-        class="bg-card padding-rem radius-half-rem inner-container-column gap-half"
+        class="bg-card padding-rem radius-half-rem inner-container-column"
       >
         <div class="inner-container container-space-between">
           <div class="inner-container gap-half container-align-center">
-            <QIcon icon="User" size="20px" />
+            <QIcon icon="User" size="20" />
             <span class="text-1rem"
               ><strong>用户ID: {{ app.userId }}</strong></span
             >
-            <QTag
-              :text="statusText(app.status)"
-              :color="statusColor(app.status)"
-            />
+            <span :style="{ color: statusColor(app.status) }">
+              {{ statusText(app.status) }}
+            </span>
           </div>
           <span class="text-085rem text-muted">{{
             app.createdAt?.split('T')[0]
@@ -109,13 +108,7 @@
 import { onBeforeMount, ref } from 'vue';
 import { useApiAuthorApplication } from '@guga-reading/shares';
 import type { AuthorApplication } from '@guga-reading/types';
-import {
-  QIcon,
-  QFormButton,
-  QTag,
-  QLoading,
-  useMessage,
-} from 'qyani-components';
+import { QIcon, QFormButton, useMessage, QSkeleton } from 'qyani-components';
 
 defineOptions({ name: 'AuthorAudit' });
 
@@ -134,9 +127,9 @@ const statusText = (status: string) => {
 
 const statusColor = (status: string) => {
   const map: Record<string, string> = {
-    pending: 'var(--color-warning)',
-    approved: 'var(--color-success)',
-    rejected: 'var(--color-danger)',
+    pending: 'var(--warning-color)',
+    approved: 'var(--success-color)',
+    rejected: 'var(--danger-bg)',
   };
   return map[status] || '';
 };
