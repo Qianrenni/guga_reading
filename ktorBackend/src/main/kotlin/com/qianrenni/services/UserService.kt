@@ -34,6 +34,9 @@ class UserService(private val application: Application) {
         }
         val fullUser = user?.toFullUser()
             ?: throw IllegalArgumentException("用户不存在")
+        if (!fullUser.isActive) {
+            throw IllegalArgumentException("用户已禁用")
+        }
         val rolIds =
             application.rightService.getUserRoles(listOf(fullUser.id))[fullUser.id]?.map { it.roleId } ?: emptyList()
         check(rolIds.isNotEmpty()) { "用户没有无权限" }
