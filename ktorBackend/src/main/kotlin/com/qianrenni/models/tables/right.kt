@@ -22,7 +22,7 @@ object PermissionTable : IntIdTable(name = "permission") {
 
 object RoleTable : IntIdTable(name = "role") {
     val name = varchar("name", 50)
-    val code = varchar("code", 25)
+    val code = varchar("code", 50)
     val description = varchar("description", 255).nullable()
     val createdAt = datetime(name = "createdAt").clientDefault { LocalDateTime.now() }
     val updatedAt = datetime(name = "updatedAt").clientDefault { LocalDateTime.now() }
