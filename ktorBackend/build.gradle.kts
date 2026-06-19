@@ -48,7 +48,7 @@ dependencies {
     implementation(ktorLibs.server.resources)
     implementation(ktorLibs.server.routingOpenapi)
     implementation(ktorLibs.server.statusPages)
-    implementation(libs.flaxoos.ktor.server.rateLimiting)
+    implementation(ktorLibs.server.rateLimit)
     implementation(libs.logback.classic)
     implementation(ktorLibs.serialization.kotlinx.json)
     implementation(libs.ucasoft.ktorSimpleCache)

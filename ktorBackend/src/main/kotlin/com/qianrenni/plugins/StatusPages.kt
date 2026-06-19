@@ -14,6 +14,10 @@ import io.ktor.server.response.*
  */
 fun Application.configureStatusPages() {
     install(StatusPages) {
+        status(HttpStatusCode.TooManyRequests) { call, status ->
+            val retryAfter = call.response.headers["Retry-After"]
+            call.respondText(text = "429: Too many requests. Wait for $retryAfter seconds.", status = status)
+        }
         exception<PermissionDeniedException> { call, cause ->
             call.respond(HttpStatusCode.Forbidden, message = ResponseModel.Error(message = cause.message ?: ""))
         }

@@ -30,6 +30,9 @@ fun Application.configureHTTP() {
         allowHeader(HttpHeaders.ContentType)
         allowHeader("x-captcha-id")
         exposeHeader("x-captcha-id")
+        exposeHeader("X-RateLimit-Reset")
+        exposeHeader("X-RateLimit-Remaining")
+        exposeHeader("X-RateLimit-Limit")
         config.allowHost.split(",").forEach {
             allowHost(it.trim())
         }

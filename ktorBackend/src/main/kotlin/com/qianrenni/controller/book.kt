@@ -9,6 +9,7 @@ import com.qianrenni.services.bookService
 import com.qianrenni.services.generatePermissionCode
 import com.ucasoft.ktor.simpleCache.cacheOutput
 import io.ktor.server.auth.*
+import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -59,20 +60,22 @@ fun Routing.book() {
             }
         }
         authenticate("auth-jwt") {
-            get("/chapter/{chapterId}") {
-                call.requirePermission(
-                    permissions = listOf(
-                        generatePermissionCode(
-                            resource = ResourceTypeEnum.BOOK,
-                            action = ActionEnum.READ,
-                            scope = ScopeEnum.ALL
+            rateLimit(RateLimitName("protected")) {
+                get("/chapter/{chapterId}") {
+                    call.requirePermission(
+                        permissions = listOf(
+                            generatePermissionCode(
+                                resource = ResourceTypeEnum.BOOK,
+                                action = ActionEnum.READ,
+                                scope = ScopeEnum.ALL
+                            )
                         )
                     )
-                )
-                val chapterId = call.requirePathParameter("chapterId").toInt()
-                val bookId = call.requireQueryParameter("bookId").toInt()
-                val result = application.bookService.getBookChapter(chapterId, bookId)
-                call.respond(ResponseModel.Success(result))
+                    val chapterId = call.requirePathParameter("chapterId").toInt()
+                    val bookId = call.requireQueryParameter("bookId").toInt()
+                    val result = application.bookService.getBookChapter(chapterId, bookId)
+                    call.respond(ResponseModel.Success(result))
+                }
             }
         }
         get("/select") {
