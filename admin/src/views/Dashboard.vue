@@ -114,6 +114,7 @@
 
 <script lang="ts" setup>
 import {
+  formatBytes,
   useApiAuthor,
   useApiBooks,
   useApiSystem,
@@ -142,20 +143,6 @@ const swapPercent = computed(() => {
   if (!total) return 0;
   return Math.round((used / total) * 100);
 });
-
-/**
- * 将字节值格式化为可读的容量字符串
- * 例: 1073741824 → "1.0 GB"
- */
-function formatBytes(bytes: number | undefined | null): string {
-  if (!bytes || bytes <= 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-  const k = 1024;
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const idx = Math.min(i, units.length - 1);
-  const value = bytes / Math.pow(k, idx);
-  return `${value.toFixed(1)} ${units[idx]}`;
-}
 
 const task = () => {
   useApiAuthor.getAuthorCount().then((res) => {
