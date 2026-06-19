@@ -1,5 +1,5 @@
 <template>
-  <div class="container-column">
+  <div class="container-column bg-card">
     <h4>日志监控</h4>
 
     <!-- ===== 日志监控面板 ===== -->
@@ -48,7 +48,7 @@
 
       <!-- 日志内容展示 -->
       <div
-        class="bg-card inner-container-column border-horizontal-gray padding-rem scroll-container"
+        class="bg-card inner-container-column border-horizontal-gray scroll-container"
         style="height: calc(100vh - 10rem)"
       >
         <QSkeleton v-if="loading" />
@@ -57,26 +57,30 @@
         <span v-else-if="logEntries.length === 0" class="text-muted"
           >暂无匹配的日志数据</span
         >
-        <div v-else class="inner-container-column">
+        <div v-else class="log-list">
           <div
             v-for="entry in logEntries"
             :key="entry.lineNumber"
-            class="inner-container-column"
+            class="log-entry"
+            :class="[`log-level-${entry.level.toLowerCase()}`]"
           >
-            <p>
-              <span>{{ entry.lineNumber }}</span>
-              <span class="margin-half-horizontal">{{ entry.timestamp }}</span>
-              <span class="margin-half-horizontal">
+            <div class="log-meta">
+              <span class="log-line">{{ entry.lineNumber }}</span>
+              <span class="log-time">{{ entry.timestamp }}</span>
+              <span
+                class="log-badge"
+                :class="`badge-${entry.level.toLowerCase()}`"
+              >
                 {{ entry.level }}
               </span>
-              <span class="margin-half-horizontal" :title="entry.thread">{{
+              <span class="log-thread" :title="entry.thread">{{
                 entry.thread
               }}</span>
-              <span class="margin-half-horizontal" :title="entry.logger">{{
+              <span class="log-logger" :title="entry.logger">{{
                 entry.logger
               }}</span>
-            </p>
-            <p class="padding-rem">{{ entry.message }}</p>
+            </div>
+            <p class="log-message">{{ entry.message }}</p>
           </div>
         </div>
       </div>
@@ -225,3 +229,90 @@ onBeforeMount(() => {
   loadLogFiles();
 });
 </script>
+
+<style scoped>
+/* ===== 日志列表 ===== */
+.log-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.log-entry {
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  padding: 0.45rem 0;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  transition: background-color 0.15s ease;
+}
+/* 左侧边框颜色 */
+.log-level-debug {
+  border-left-color: #9ca3af;
+}
+.log-level-info {
+  border-left-color: #3b82f6;
+}
+.log-level-warn {
+  border-left-color: #f59e0b;
+}
+.log-level-error {
+  border-left-color: #ef4444;
+}
+.log-level-fatal {
+  border-left-color: #dc2626;
+}
+
+/* 元信息行 */
+.log-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text-secondary, #6b7280);
+  white-space: nowrap;
+}
+
+.log-line {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.75rem;
+}
+
+.log-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.badge-debug {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.badge-info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.badge-warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+.badge-error {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.badge-fatal {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+/* 消息内容 */
+.log-message {
+  margin: 0.2rem 0 0 1rem;
+  color: var(--text-color, #1f2937);
+  white-space: pre-wrap;
+}
+</style>
