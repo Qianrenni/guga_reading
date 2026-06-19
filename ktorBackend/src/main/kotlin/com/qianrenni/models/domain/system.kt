@@ -30,3 +30,26 @@ data class SystemStatus(
     val swapUsed: Long,
     val disks: List<DiskStatus>,
 )
+
+/**
+ * 日志文件信息
+ */
+@Serializable
+data class LogFileInfo(
+    val name: String,
+    val size: Long,
+    val lastModified: String,
+)
+
+/**
+ * 单条日志条目（解析后结构）
+ */
+@Serializable
+data class LogEntry(
+    val lineNumber: Int,
+    val timestamp: String,
+    val thread: String,
+    val level: String,
+    val logger: String,
+    val message: String,
+)

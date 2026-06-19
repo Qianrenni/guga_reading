@@ -1,12 +1,18 @@
 package com.qianrenni.services
 
 import com.qianrenni.models.domain.DiskStatus
+import com.qianrenni.models.domain.LogEntry
+import com.qianrenni.models.domain.LogFileInfo
 import com.qianrenni.models.domain.SystemStatus
+import com.qianrenni.schemas.PageResult
 import io.ktor.server.application.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import oshi.SystemInfo
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.math.round
 
 /**
@@ -17,6 +23,31 @@ class SystemService {
 
     companion object {
         val attributeKey = AttributeKey<SystemService>("SystemService")
+
+        /**
+         * 日志行正则（匹配 logback.xml 中的 pattern）
+         * pattern: %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+         */
+        private val logLineRegex = Regex(
+            """^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\s+\[(.*?)]\s+(\w+)\s+(\S+)\s*-\s*(.*)$""",
+            setOf(RegexOption.MULTILINE)
+        )
+
+        /**
+         * 解析单行日志
+         */
+        private fun parseLogLine(lineNumber: Int, line: String): LogEntry? {
+            val match = logLineRegex.find(line) ?: return null
+            val (timestamp, thread, level, logger, message) = match.destructured
+            return LogEntry(
+                lineNumber = lineNumber,
+                timestamp = timestamp,
+                thread = thread,
+                level = level,
+                logger = logger,
+                message = message
+            )
+        }
     }
     private val si = SystemInfo()
 
@@ -45,6 +76,63 @@ class SystemService {
         }
 
         return round(percent * 1000.0) / 10.0 // 保留一位小数
+    }
+
+    /**
+     * 列出所有可用日志文件
+     * 扫描 logs/ 目录下所有 .log 文件
+     */
+    suspend fun listLogFiles(): List<LogFileInfo> = withContext(Dispatchers.IO) {
+        val logDir = File("logs")
+        if (!logDir.exists() || !logDir.isDirectory) return@withContext emptyList()
+
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        logDir.listFiles { file -> file.extension == "log" }
+            ?.map { file ->
+                LogFileInfo(
+                    name = file.name,
+                    size = file.length(),
+                    lastModified = sdf.format(Date(file.lastModified())),
+                )
+            }
+            ?.sortedByDescending { it.lastModified }
+            ?: emptyList()
+    }
+
+    /**
+     * 读取日志文件内容（分页 + 级别过滤）
+     *
+     * @param fileName  日志文件名,如 "app.log"
+     * @param level     过滤级别,可选 null(不过滤)
+     * @param page      页码,从1开始
+     * @param size      每页条数
+     * @return PageResult<LogEntry>
+     */
+    suspend fun readLogFile(
+        fileName: String,
+        level: String? = null,
+        page: Int = 1,
+        size: Int = 100
+    ): PageResult<LogEntry> = withContext(Dispatchers.IO) {
+        val logFile = File("logs", fileName)
+        if (!logFile.exists() || !logFile.isFile) {
+            return@withContext PageResult(items = emptyList(), total = 0, page = page, size = size)
+        }
+
+        val allLines = logFile.readLines(Charsets.UTF_8)
+
+        // 解析并过滤
+        val matchedEntries = allLines.mapIndexedNotNull { index, line ->
+            parseLogLine(index + 1, line)
+        }.filter { entry ->
+            level == null || entry.level.equals(level, ignoreCase = true)
+        }
+
+        val total = matchedEntries.size
+        val offset = (page - 1) * size
+        val items = matchedEntries.drop(offset).take(size)
+
+        PageResult(items = items, total = total, page = page, size = size)
     }
 
     /**

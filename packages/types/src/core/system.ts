@@ -34,3 +34,24 @@ export interface SystemInfo {
   swapUsed: number;
   disks: DiskStatus[];
 }
+
+/**
+ * 日志文件信息
+ */
+export interface LogFileInfo {
+  name: string;
+  size: number;
+  lastModified: string;
+}
+
+/**
+ * 单条日志条目
+ */
+export interface LogEntry {
+  lineNumber: number;
+  timestamp: string;
+  thread: string;
+  level: string;
+  logger: string;
+  message: string;
+}

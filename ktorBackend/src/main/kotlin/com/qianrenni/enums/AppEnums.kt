@@ -31,7 +31,8 @@ enum class ResourceTypeEnum(val value: String) {
     USER("user"),
     PERMISSION("permission"),
     CHAPTER("chapter"),
-    SHELF("shelf");
+    SHELF("shelf"),
+    SYSTEM("system");
 
     companion object {
         fun fromValue(value: String): ResourceTypeEnum {
