@@ -50,7 +50,7 @@ class CacheService(val application: Application) {
     ): T {
         // 1. 尝试读缓存
         redis.get(cacheKey).await()?.let {
-            application.log.info("Cache hit: $cacheKey")
+            application.log.debug("Cache hit: $cacheKey")
             return json.decodeFromString(serializer, it)
         }
         // 2. 尝试加锁回源
@@ -89,7 +89,7 @@ class CacheService(val application: Application) {
                 if (!(ignoreNull && isEmpty)) {
                     val encoded = json.encodeToString(serializer, result)
                     redis.setex(cacheKey, expire.toLong(), encoded).await()
-                    application.log.info("Cache set: $cacheKey (expire=${expire}s)")
+                    application.log.debug("Cache set: $cacheKey (expire=${expire}s)")
                 }
                 return result
             } else {
@@ -100,7 +100,7 @@ class CacheService(val application: Application) {
                 while (System.currentTimeMillis() - startTime < maxWait) {
                     delay(50.milliseconds)
                     redis.get(cacheKey).await()?.let {
-                        application.log.info("Cache filled by another worker: $cacheKey")
+                        application.log.debug("Cache filled by another worker: $cacheKey")
                         return json.decodeFromString(serializer, it)
                     }
                 }

@@ -38,7 +38,7 @@ class ServerTest {
         val response = client.get("/token/auth/me") {
             header(HttpHeaders.Authorization, token)
         }
-        application.log.info(response.bodyAsText())
+        application.log.debug(response.bodyAsText())
         assertEquals(HttpStatusCode.OK, response.status)
     }
 

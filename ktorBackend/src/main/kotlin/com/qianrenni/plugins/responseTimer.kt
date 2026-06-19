@@ -27,7 +27,7 @@ val ResponseTimePlugin = createApplicationPlugin("ResponseTime") {
             val uri = call.request.uri
 
             // 3. 打印到控制台 (格式示例: [200] GET /api/captcha - 45ms)
-            call.application.log.info("[$status] $method $uri -  ${duration}ms")
+            call.application.log.debug("[{}] {} {} -  {}ms", status, method, uri, duration)
 
             // (可选) 如果你想让前端也能看到这个耗时,可以取消下面这行的注释
             // call.response.headers.append("X-Process-Time", "${duration}ms")

@@ -42,7 +42,7 @@ class RenewLock(
                     ).await()
 
                     if (result == 0L) {
-                        application.log.info("Lock $lockKey is no longer held (deleted or stolen). Stopping renewal.")
+                        application.log.debug("Lock $lockKey is no longer held (deleted or stolen). Stopping renewal.")
                         break
                     }
                     application.log.debug("Lock renewed: $lockKey")

@@ -91,5 +91,5 @@ fun Application.loadConfig() {
     val config = HoconApplicationConfig(ConfigFactory.load())
     val appConfig = AppConfig.fromConfig(config)
     attributes.put(AppConfigKey, appConfig)
-    log.info(appConfig.toString())
+    log.debug(appConfig.toString())
 }
