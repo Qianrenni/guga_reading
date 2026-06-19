@@ -25,6 +25,7 @@ export interface Book {
   name: string;
   tags: string;
   createdAt: string;
+  isActive: boolean;
   isEnded: boolean;
   wordsCount: number;
   updatedAt: string;
