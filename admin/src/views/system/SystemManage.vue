@@ -22,7 +22,7 @@
         </div>
 
         <!-- 级别筛选标签 -->
-        <div class="inner-container container-align-center">
+        <div class="inner-container container-align-center container-wrap">
           <label class="text-label">级别筛选：</label>
           <button
             v-for="lvl in logLevels"
@@ -49,7 +49,9 @@
       <!-- 日志内容展示 -->
       <div
         class="bg-card inner-container-column border-horizontal-gray scroll-container"
-        style="height: calc(100vh - 10rem)"
+        :style="{
+          height: `${isMobile ? 'calc(100vh - 13rem)' : 'calc(100vh - 10rem)'}`,
+        }"
       >
         <QSkeleton v-if="loading" />
 
@@ -101,15 +103,19 @@
             :disabled="page <= 1"
             @click="changePage(page - 1)"
           >
-            上一页
+            <span class="hidden-768">上一页</span>
+            <QIcon icon="Left" size="18" class="show-768" />
           </button>
-          <span class="text-085rem">{{ page }} / {{ totalPages }}</span>
+          <span class="text-085rem text-one-line"
+            >{{ page }} / {{ totalPages }}</span
+          >
           <button
             class="button"
             :disabled="page >= totalPages"
             @click="changePage(page + 1)"
           >
-            下一页
+            <span class="hidden-768">下一页</span>
+            <QIcon icon="Right" size="18" class="show-768" />
           </button>
           <select
             v-model.number="pageSize"
@@ -128,7 +134,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue';
-import { QSkeleton } from 'qyani-components';
+import { QIcon, QSkeleton, useScreenSize } from 'qyani-components';
 import { formatBytes, useApiSystem } from '@guga-reading/shares';
 import type { LogFileInfo, LogEntry } from '@guga-reading/types';
 
@@ -144,7 +150,7 @@ const selectedFile = ref('');
 const selectedFileObj = computed(() =>
   logFiles.value.find((f) => f.name === selectedFile.value),
 );
-
+const isMobile = useScreenSize.getWidth(768);
 // 日志内容
 const logEntries = ref<LogEntry[]>([]);
 const selectedLevel = ref('');
@@ -269,7 +275,7 @@ onBeforeMount(() => {
   align-items: center;
   gap: 0.6rem;
   color: var(--text-secondary, #6b7280);
-  white-space: nowrap;
+  flex-wrap: wrap;
 }
 
 .log-line {
@@ -313,6 +319,7 @@ onBeforeMount(() => {
 .log-message {
   margin: 0.2rem 0 0 1rem;
   color: var(--text-color, #1f2937);
+  line-break: anywhere;
   white-space: pre-wrap;
 }
 </style>
