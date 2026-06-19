@@ -71,3 +71,6 @@ body.dark-mode {
 .text-read-indent {
   text-indent: 2em;
 }
+.text-indent-1rem {
+  text-indent: 1rem;
+}

@@ -45,9 +45,16 @@
           @select="(index) => (tabIndex = index)"
         >
         </QTab>
-        <div v-if="tabIndex === 0" class="text-secondary">
-          <p class="padding-rem text-muted">
-            {{ book.description }}
+        <div
+          v-if="tabIndex === 0"
+          class="text-muted scroll-container"
+          style="max-height: 300px"
+        >
+          <p
+            v-for="line in book.description.split(/\s+/)"
+            class="margin-half-horizontal text-indent-1rem"
+          >
+            {{ line }}
           </p>
         </div>
         <div v-if="tabIndex === 1" class="scroll-container catalog">
@@ -110,7 +117,7 @@
               </p>
               <p
                 :title="item.description"
-                class="text-description text-08rem text-overflow"
+                class="text-description text-08rem text-overflow text-indent-1rem"
               >
                 {{ item.description }}
               </p>
