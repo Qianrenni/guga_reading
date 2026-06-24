@@ -1,0 +1,28 @@
+{
+  "name": "@guga-reading/react-user",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.0.1",
+    "@guga-reading/shares": "workspace:*",
+    "@guga-reading/types": "workspace:*",
+    "antd": "^6.0.0",
+    "axios": "^1.13.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "typescript": "~5.8.3",
+    "vite": "^7.1.2"
+  }
+}

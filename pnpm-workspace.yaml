@@ -3,3 +3,4 @@ packages:
   - 'author'
   - 'user'
   - 'admin'
+  - 'react_user'
