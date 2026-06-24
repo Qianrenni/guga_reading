@@ -61,20 +61,22 @@ fun Routing.book() {
         }
         authenticate("auth-jwt") {
             rateLimit(RateLimitName("protected")) {
-                get("/chapter/{chapterId}") {
-                    call.requirePermission(
-                        permissions = listOf(
-                            generatePermissionCode(
-                                resource = ResourceTypeEnum.BOOK,
-                                action = ActionEnum.READ,
-                                scope = ScopeEnum.ALL
+                cacheOutput(30.minutes) {
+                    get("/chapter/{chapterId}") {
+                        call.requirePermission(
+                            permissions = listOf(
+                                generatePermissionCode(
+                                    resource = ResourceTypeEnum.BOOK,
+                                    action = ActionEnum.READ,
+                                    scope = ScopeEnum.ALL
+                                )
                             )
                         )
-                    )
-                    val chapterId = call.requirePathParameter("chapterId").toInt()
-                    val bookId = call.requireQueryParameter("bookId").toInt()
-                    val result = application.bookService.getBookChapter(chapterId, bookId)
-                    call.respond(ResponseModel.Success(result))
+                        val chapterId = call.requirePathParameter("chapterId").toInt()
+                        val bookId = call.requireQueryParameter("bookId").toInt()
+                        val result = application.bookService.getBookChapter(chapterId, bookId)
+                        call.respond(ResponseModel.Success(result))
+                    }
                 }
             }
         }

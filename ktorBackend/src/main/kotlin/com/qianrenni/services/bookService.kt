@@ -91,27 +91,21 @@ class BookService(private val application: Application) {
     }
 
     suspend fun getBookChapter(chapterId: Int, bookId: Int): String {
-        return application.cache(
-            keyPrefix = "book_service",
-            args = listOf("book_chapter", bookId.toString(), chapterId.toString()),
-            serializer = String.serializer()
-        ) {
-            val result = application.databaseManager.suspendedTransaction(readOnly = true) {
-                BookChapterTable
-                    .selectAll()
-                    .where {
-                        (BookChapterTable.id eq chapterId) and (BookChapterTable.bookId eq bookId) and (BookChapterTable.status eq BookStatus.PUBLISHED) and (BookChapterTable.isActive eq true)
-                    }.firstOrNull()
-            }
-            if (result == null) {
-                throw IllegalArgumentException("书籍内容遍历攻击")
-            }
-            ChapterStoreService(
-                bookId = bookId,
-                baseDir = application.appConfig.contentDir + "/book",
-            ).use {
-                it.readChapter(chapterId)
-            }
+        val result = application.databaseManager.suspendedTransaction(readOnly = true) {
+            BookChapterTable
+                .selectAll()
+                .where {
+                    (BookChapterTable.id eq chapterId) and (BookChapterTable.bookId eq bookId) and (BookChapterTable.status eq BookStatus.PUBLISHED) and (BookChapterTable.isActive eq true)
+                }.firstOrNull()
+        }
+        if (result == null) {
+            throw IllegalArgumentException("书籍内容遍历攻击")
+        }
+        return ChapterStoreService(
+            bookId = bookId,
+            baseDir = application.appConfig.contentDir + "/book",
+        ).use {
+            it.readChapter(chapterId)
         }
     }
 
