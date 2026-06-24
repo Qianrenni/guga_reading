@@ -33,5 +33,12 @@ fun Application.configureStatusPages() {
         exception<ContentTransformationException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, message = ResponseModel.Error(message = cause.message?:"数据格式错误"))
         }
+        exception<Exception> { call, cause ->
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                message = ResponseModel.Error(message = cause.message ?: "服务器内部错误")
+            )
+            call.application.log.error("Exception: ", cause)
+        }
     }
 }

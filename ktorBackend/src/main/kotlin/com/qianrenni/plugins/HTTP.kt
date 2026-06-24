@@ -78,7 +78,5 @@ fun Application.configureHTTP() {
 //        }
 //    }
     install(AutoHeadResponse)
-    if (appConfig.environment == "dev") {
-        install(ResponseTimePlugin)
-    }
+    install(ResponseTimePlugin)
 }
