@@ -10,10 +10,12 @@ package com.qianrenni.enums
  */
 enum class BookStatus(val value: String) {
     PENDING("pending"),           // 待提交
+    DELETING("deleting"),       // 删除中
     REVIEWING("reviewing"),       // 审核中
     APPROVED("approved"),         // 审核通过
     REJECTED("rejected"),         // 审核拒绝
-    PUBLISHED("published");       // 已发布
+    PUBLISHED("published"),       // 已发布
+    DELETED("deleted");
 
     companion object {
         fun fromValue(value: String): BookStatus {
@@ -32,7 +34,8 @@ enum class ResourceTypeEnum(val value: String) {
     PERMISSION("permission"),
     CHAPTER("chapter"),
     SHELF("shelf"),
-    SYSTEM("system");
+    SYSTEM("system"),
+    COMMENT("comment");
 
     companion object {
         fun fromValue(value: String): ResourceTypeEnum {
