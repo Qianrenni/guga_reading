@@ -224,7 +224,7 @@ suspend fun publishBook(databaseManager: DatabaseManager, appConfig: AppConfig) 
                     ?: return@forEach // 找不到目标章节则跳过
 
                 ChapterStoreService(
-                    bookId = chapter.bookId,
+                    name = chapter.bookId.toString(),
                     baseDir = appConfig.contentDir + "/book"
                 ).use { store ->
                     store.update(

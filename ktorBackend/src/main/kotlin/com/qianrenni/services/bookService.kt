@@ -107,7 +107,7 @@ class BookService(private val application: Application) {
                 throw IllegalArgumentException("书籍内容遍历攻击")
             }
             ChapterStoreService(
-                bookId = bookId,
+                name = bookId.toString(),
                 baseDir = application.appConfig.contentDir + "/book",
             ).use {
                 it.readChapter(chapterId)

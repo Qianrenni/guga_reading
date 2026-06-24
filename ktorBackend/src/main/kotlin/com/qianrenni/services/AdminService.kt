@@ -247,7 +247,7 @@ class AdminService(private val application: Application) {
             }.value
         }
         val chapterStoreService = ChapterStoreService(
-            bookId = bookId,
+            name = bookId.toString(),
             baseDir = application.appConfig.contentDir + "/book"
         )
         // 5. 创建章节记录并存储内容

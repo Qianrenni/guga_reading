@@ -241,7 +241,7 @@ class AuthorService(private val application: Application) {
         }
         val chapterStore =
             ChapterStoreService(
-                bookId = requestUpdateBookChapter.bookId,
+                name = requestUpdateBookChapter.bookId.toString(),
                 baseDir = application.appConfig.contentDir + "/book"
             )
         chapterStore.use {
@@ -262,7 +262,7 @@ class AuthorService(private val application: Application) {
         }
         if (deleteCount > 0) {
             val chapterStoreService =
-                ChapterStoreService(bookId = bookId, baseDir = application.appConfig.contentDir + "/book")
+                ChapterStoreService(name = bookId.toString(), baseDir = application.appConfig.contentDir + "/book")
             chapterStoreService.use {
                 it.delete(chapterId)
             }
@@ -275,7 +275,7 @@ class AuthorService(private val application: Application) {
     ): List<String> {
         checkAuthor(userId, bookId)
         val chapterStoreService = ChapterStoreService(
-            bookId = bookId,
+            name = bookId.toString(),
             baseDir = application.appConfig.contentDir + "/book"
         )
         return chapterStoreService.use {

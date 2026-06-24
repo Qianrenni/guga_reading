@@ -450,8 +450,8 @@ object ChapterStoreManager {
      * 获取或创建指定书籍的同步单元。
      * 该方法是线程安全的，但不会自动加载索引，索引加载由各自的 ensureLoaded 按需触发。
      */
-    fun getOrCreateSync(bookId: Int, baseDir: String): ChapterStoreSync {
-        val dir = Path(baseDir, bookId.toString())
+    fun getOrCreateSync(name: String, baseDir: String): ChapterStoreSync {
+        val dir = Path(baseDir, name)
         return stores.compute(dir) { path, existing ->
             if (existing != null) {
                 existing.acquire()
@@ -468,8 +468,8 @@ object ChapterStoreManager {
         }!!
     }
 
-    fun releaseSync(bookId: Int, baseDir: String) {
-        val dir = Path(baseDir, bookId.toString())
+    fun releaseSync(name: String, baseDir: String) {
+        val dir = Path(baseDir, name)
         stores.computeIfPresent(dir) { _, sync ->
             val count = sync.release()
             if (count <= 0) {
@@ -482,8 +482,8 @@ object ChapterStoreManager {
     }
 
     /** 测试用：判断指定书籍的同步单元是否已缓存 */
-    internal fun containsSync(bookId: Int, baseDir: String): Boolean {
-        val dir = Path(baseDir, bookId.toString())
+    internal fun containsSync(name: String, baseDir: String): Boolean {
+        val dir = Path(baseDir, name)
         return stores.containsKey(dir)
     }
 
@@ -499,10 +499,10 @@ object ChapterStoreManager {
  * 使用方式与原类完全一致，但内部已是多协程安全。
  */
 class ChapterStoreService(
-    private val bookId: Int,
+    private val name: String,
     private val baseDir: String
 ) : AutoCloseable {
-    private val sync: ChapterStoreSync = ChapterStoreManager.getOrCreateSync(bookId, baseDir)
+    private val sync: ChapterStoreSync = ChapterStoreManager.getOrCreateSync(name, baseDir)
 
     // 显式初始化索引（可在应用启动时调用，非必须，因为后续操作会延迟加载）
 
@@ -521,6 +521,6 @@ class ChapterStoreService(
     /** 执行 compact 整理 */
     suspend fun compact() = sync.compact()
     override fun close() {
-        ChapterStoreManager.releaseSync(bookId, baseDir)
+        ChapterStoreManager.releaseSync(name, baseDir)
     }
 }

@@ -383,3 +383,127 @@ CREATE TABLE IF NOT EXISTS `user_reading_progress`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
+
+-- ============================================================
+-- book_comment
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `book_comment`
+(
+    `id`
+    INT
+    NOT
+    NULL
+    AUTO_INCREMENT,
+    `bookId`
+    INT
+    NOT
+    NULL,
+    `userId`
+    INT
+    NOT
+    NULL,
+    `status`
+    ENUM
+(
+    'PENDING',
+    'DELETING',
+    'APPROVED',
+    'REJECTED',
+    'DELETED'
+) NOT NULL DEFAULT 'APPROVED',
+    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `parentId` INT NULL,
+    PRIMARY KEY
+(
+    `id`
+),
+    INDEX `idx_comment_status`
+(
+    `status`
+),
+    CONSTRAINT `fk_comment_book` FOREIGN KEY
+(
+    `bookId`
+) REFERENCES `book`
+(
+    `id`
+),
+    CONSTRAINT `fk_comment_user` FOREIGN KEY
+(
+    `userId`
+) REFERENCES `user`
+(
+    `id`
+),
+    CONSTRAINT `fk_comment_parent` FOREIGN KEY
+(
+    `parentId`
+) REFERENCES `book_comment`
+(
+    `id`
+)
+    ) ENGINE = InnoDB
+    DEFAULT CHARSET = utf8mb4
+    COLLATE = utf8mb4_0900_ai_ci;
+CREATE TABLE IF NOT EXISTS `book_chapter_comment`
+(
+    `id`
+    INT
+    NOT
+    NULL
+    AUTO_INCREMENT,
+    `chapterId`
+    INT
+    NULL,
+    `line`
+    INT
+    NULL,
+    `userId`
+    INT
+    NOT
+    NULL,
+    `status`
+    ENUM
+(
+    'PENDING',
+    'DELETING',
+    'APPROVED',
+    'REJECTED',
+    'DELETED'
+) NOT NULL DEFAULT 'APPROVED',
+    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `parentId` INT NULL,
+    PRIMARY KEY
+(
+    `id`
+),
+    INDEX `idx_comment_status`
+(
+    `status`
+),
+    CONSTRAINT `fk_book_chapter_comment_book_chapter` FOREIGN KEY
+(
+    `chapterId`
+) REFERENCES `book_chapter`
+(
+    `id`
+),
+    CONSTRAINT `fk_book_chapter_comment_user` FOREIGN KEY
+(
+    `userId`
+) REFERENCES `user`
+(
+    `id`
+),
+    CONSTRAINT `fk_book_chapter_comment_parent` FOREIGN KEY
+(
+    `parentId`
+) REFERENCES `book_chapter_comment`
+(
+    `id`
+)
+    ) ENGINE = InnoDB
+    DEFAULT CHARSET = utf8mb4
+    COLLATE = utf8mb4_0900_ai_ci;

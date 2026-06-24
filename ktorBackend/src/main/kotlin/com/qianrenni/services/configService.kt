@@ -17,4 +17,5 @@ fun Application.configService() {
     registerAuthorBookService()
     registerAuditBookService()
     registerAuthorApplicationService()
+    registerCommentService()
 }
