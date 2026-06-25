@@ -1,5 +1,6 @@
 package com.qianrenni.services
 
+import com.qianrenni.config.appConfig
 import com.qianrenni.controller.RequestTokenGet
 import com.qianrenni.database.databaseManager
 import com.qianrenni.enums.RoleEnum
@@ -20,6 +21,7 @@ class UserService(private val application: Application) {
         val attributeKey = AttributeKey<UserService>("UserService")
     }
 
+    fun getUserAvatar(userId: Int) = "${application.appConfig.serverUrl}/static/guga.webp"
     /**
      * 根据用户ID获取用户信息
      * @param userId 用户ID

@@ -17,6 +17,7 @@ fun Application.configureRouting() {
         statistics()
         shelf()
         admin()
+        comment()
         author()
         system()
         if (application.appConfig.environment == "dev") {
