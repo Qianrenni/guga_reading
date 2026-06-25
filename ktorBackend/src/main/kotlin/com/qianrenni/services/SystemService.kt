@@ -130,7 +130,7 @@ class SystemService {
 
         val total = matchedEntries.size
         val offset = (page - 1) * size
-        val items = matchedEntries.drop(offset).take(size)
+        val items = matchedEntries.sortedByDescending { it.timestamp }.drop(offset).take(size)
 
         PageResult(items = items, total = total, page = page, size = size)
     }
