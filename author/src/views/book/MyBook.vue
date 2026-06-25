@@ -44,7 +44,9 @@ onBeforeMount(() => {
     .getBook()
     .then((res) => {
       bookItems.value.push(
-        ...(res.data.filter((book) => book.status === 'PUBLISHED') ?? []),
+        ...(res.data.filter(
+          (book) => book.status === 'PUBLISHED' || book.status === 'APPROVED',
+        ) ?? []),
       );
     })
     .finally(() => {
