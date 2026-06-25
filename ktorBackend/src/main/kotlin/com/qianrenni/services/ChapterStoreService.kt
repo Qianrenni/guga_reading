@@ -212,7 +212,7 @@ class ChapterStoreSync(
 
     // （追加记录）
     suspend fun appendRecord(
-        chapterId: Int,
+        contentId: Int,
         content: String,
         deleted: Boolean = false
     ) {
@@ -233,7 +233,7 @@ class ChapterStoreSync(
         }
 
         val header = ByteBuffer.allocate(RECORD_HEADER_SIZE).apply {
-            putInt(chapterId)
+            putInt(contentId)
             putInt(data.size)
             putInt(originalSize)
             put(if (deleted) 1.toByte() else 0.toByte())
@@ -265,7 +265,7 @@ class ChapterStoreSync(
 
             // 更新不可变索引快照
             val newMap = indexSnapshot.toMutableMap()
-            newMap[chapterId] = Record(
+            newMap[contentId] = Record(
                 offset = recordOffset,
                 contentSize = data.size,
                 originalSize = originalSize,
@@ -281,12 +281,12 @@ class ChapterStoreSync(
     }
 
     // -------------------- 读操作 --------------------
-    suspend fun readChapter(chapterId: Int): String {
+    suspend fun readChapter(contentId: Int): String {
         ensureLoaded()
 
         return rwLock.withReadLock {
             val snap = indexSnapshot
-            val record = snap[chapterId] ?: throw IllegalStateException("Chapter $chapterId not found")
+            val record = snap[contentId] ?: throw IllegalStateException("Chapter $contentId not found")
             if (record.isDelete) return@withReadLock ""
 
             return@withReadLock withContext(Dispatchers.IO) {
@@ -297,7 +297,7 @@ class ChapterStoreSync(
                     val buf = ByteBuffer.allocate(record.contentSize)
                     val bytesRead = ch.read(buf, record.offset).get()
                     if (bytesRead <= 0)
-                        throw IllegalStateException("Unexpected end of file while reading chapter $chapterId")
+                        throw IllegalStateException("Unexpected end of file while reading chapter $contentId")
                     buf.flip()
 
                     var targetArray = buf.array()
@@ -314,14 +314,14 @@ class ChapterStoreSync(
     }
 
     // -------------------- 更新与删除 --------------------
-    suspend fun update(chapterId: Int, content: String) {
-        appendRecord(chapterId = chapterId, content = content, deleted = false)
+    suspend fun update(contentId: Int, content: String) {
+        appendRecord(contentId = contentId, content = content, deleted = false)
     }
 
-    suspend fun delete(chapterId: Int) {
+    suspend fun delete(contentId: Int) {
         val currentSnap = indexSnapshot
-        if (currentSnap[chapterId]?.isDelete == true) return // 幂等
-        appendRecord(chapterId = chapterId, content = "", deleted = true)
+        if (currentSnap[contentId]?.isDelete == true) return // 幂等
+        appendRecord(contentId = contentId, content = "", deleted = true)
     }
 
     // -------------------- 章节列表 --------------------
@@ -507,13 +507,13 @@ class ChapterStoreService(
     // 显式初始化索引（可在应用启动时调用，非必须，因为后续操作会延迟加载）
 
     /** 读取章节内容，若已删除返回空字符串 */
-    suspend fun readChapter(chapterId: Int): String = sync.readChapter(chapterId)
+    suspend fun readChapter(contentId: Int): String = sync.readChapter(contentId)
 
     /** 新增或更新章节 */
-    suspend fun update(chapterId: Int, content: String) = sync.update(chapterId, content)
+    suspend fun update(contentId: Int, content: String) = sync.update(contentId, content)
 
     /** 逻辑删除章节（幂等） */
-    suspend fun delete(chapterId: Int) = sync.delete(chapterId)
+    suspend fun delete(contentId: Int) = sync.delete(contentId)
 
     /** 获取所有有效章节 ID 列表（升序） */
     fun toList(): List<Int> = sync.toList()

@@ -228,7 +228,7 @@ suspend fun publishBook(databaseManager: DatabaseManager, appConfig: AppConfig) 
                     baseDir = appConfig.contentDir + "/book"
                 ).use { store ->
                     store.update(
-                        chapterId = targetId,
+                        contentId = targetId,
                         content = store.readChapter(chapter.id)
                     )
                     store.delete(chapter.id)
