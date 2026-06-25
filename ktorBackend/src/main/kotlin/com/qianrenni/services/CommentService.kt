@@ -43,7 +43,7 @@ class CommentService(private val application: Application) {
             }.value
         }
         // 存储评论内容到 ChapterStoreService
-        ChapterStoreService(
+        ContentStoreService(
             name = "$bookId",
             baseDir = bookStoreBaseDir
         ).use { store ->
@@ -65,7 +65,7 @@ class CommentService(private val application: Application) {
                     query.andWhere { BookCommentTable.parentId eq it }
                 }
             }.count()
-            val chapterStoreService = ChapterStoreService(
+            val contentStoreService = ContentStoreService(
                 name = bookId.toString(),
                 baseDir = chapterStoreBaseDir
             )
@@ -90,14 +90,14 @@ class CommentService(private val application: Application) {
                 .offset(offset.toLong())
                 .limit(size)
                 .map {
-                    val content = chapterStoreService.readChapter(it[BookCommentTable.id].value)
+                    val content = contentStoreService.readChapter(it[BookCommentTable.id].value)
                     it.toBookComment(
                         it[UserTable.userName],
                         application.userService.getUserAvatar(it[BookCommentTable.userId]),
                         content
                     )
                 }
-            chapterStoreService.close()
+            contentStoreService.close()
             PageResult(total = total.toInt(), items = rows, page = page, size = size)
         }
     }
@@ -106,7 +106,7 @@ class CommentService(private val application: Application) {
      * 获取当前用户的书评
      */
     suspend fun getMyBookReview(userId: Int, bookId: Int): BookComment? {
-        val contentStore = ChapterStoreService(
+        val contentStore = ContentStoreService(
             name = bookId.toString(),
             baseDir = chapterStoreBaseDir
         )
@@ -171,7 +171,7 @@ class CommentService(private val application: Application) {
             }.value
         }
         // 存储评论内容
-        ChapterStoreService(
+        ContentStoreService(
             name = "$bookId",
             baseDir = chapterStoreBaseDir
         ).use { store ->
@@ -196,7 +196,7 @@ class CommentService(private val application: Application) {
      * 获取某章所有有评论的行 Map<line, BookComment>
      */
     suspend fun getChapterComments(chapterId: Int): Map<Int, List<BookChapterComment>> {
-        val store = ChapterStoreService(name = "$chapterId", baseDir = chapterStoreBaseDir)
+        val store = ContentStoreService(name = "$chapterId", baseDir = chapterStoreBaseDir)
         val rows = application.databaseManager.suspendedTransaction(readOnly = true) {
             BookChapterCommentTable
                 .innerJoin(UserTable, { BookChapterCommentTable.userId }, { UserTable.id })

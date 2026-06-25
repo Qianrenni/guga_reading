@@ -246,7 +246,7 @@ class AdminService(private val application: Application) {
                 it[BookTable.isEnded] = false
             }.value
         }
-        val chapterStoreService = ChapterStoreService(
+        val contentStoreService = ContentStoreService(
             name = bookId.toString(),
             baseDir = application.appConfig.contentDir + "/book"
         )
@@ -265,7 +265,7 @@ class AdminService(private val application: Application) {
             }
 
             // 存储章节内容到文件存储
-            chapterStoreService.use { store ->
+            contentStoreService.use { store ->
                 store.update(chapterId, chapter.content)
             }
         }

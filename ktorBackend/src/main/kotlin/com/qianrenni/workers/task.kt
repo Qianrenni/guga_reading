@@ -5,7 +5,7 @@ import com.qianrenni.database.DatabaseManager
 import com.qianrenni.enums.BookStatus
 import com.qianrenni.enums.ReportEnum
 import com.qianrenni.models.tables.*
-import com.qianrenni.services.ChapterStoreService
+import com.qianrenni.services.ContentStoreService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.*
@@ -223,7 +223,7 @@ suspend fun publishBook(databaseManager: DatabaseManager, appConfig: AppConfig) 
                 val targetId = chapterMap[chapter.bookId to (-chapter.order)]?.id
                     ?: return@forEach // 找不到目标章节则跳过
 
-                ChapterStoreService(
+                ContentStoreService(
                     name = chapter.bookId.toString(),
                     baseDir = appConfig.contentDir + "/book"
                 ).use { store ->

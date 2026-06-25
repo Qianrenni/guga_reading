@@ -68,7 +68,7 @@ class CoroutineReadWriteLock {
  * 该对象全局唯一（由 ChapterStoreManager 保证），
  * 同一本书的所有操作都必须通过此单元进行。
  */
-class ChapterStoreSync(
+class ContentStoreSync(
     val dir: Path,
     val dataFile: File,
     val indexFile: File,
@@ -443,14 +443,14 @@ class ChapterStoreSync(
 /**
  * 管理所有书籍的同步单元，确保每个 (baseDir, bookId) 全局只有一个同步单元。
  */
-object ChapterStoreManager {
-    private val stores = ConcurrentHashMap<Path, ChapterStoreSync>()
+object ContentStoreManager {
+    private val stores = ConcurrentHashMap<Path, ContentStoreSync>()
 
     /**
      * 获取或创建指定书籍的同步单元。
      * 该方法是线程安全的，但不会自动加载索引，索引加载由各自的 ensureLoaded 按需触发。
      */
-    fun getOrCreateSync(name: String, baseDir: String): ChapterStoreSync {
+    fun getOrCreateSync(name: String, baseDir: String): ContentStoreSync {
         val dir = Path(baseDir, name)
         return stores.compute(dir) { path, existing ->
             if (existing != null) {
@@ -461,7 +461,7 @@ object ChapterStoreManager {
                 path.toFile().mkdirs()
                 val dataFile = path.resolve("data.log").toFile()
                 val indexFile = path.resolve("index.idx").toFile()
-                val sync = ChapterStoreSync(path, dataFile, indexFile)
+                val sync = ContentStoreSync(path, dataFile, indexFile)
                 sync.acquire()
                 sync
             }
@@ -498,11 +498,11 @@ object ChapterStoreManager {
  * 可以创建多个实例，但同一本书的操作最终共享同一个底层同步单元。
  * 使用方式与原类完全一致，但内部已是多协程安全。
  */
-class ChapterStoreService(
+class ContentStoreService(
     private val name: String,
     private val baseDir: String
 ) : AutoCloseable {
-    private val sync: ChapterStoreSync = ChapterStoreManager.getOrCreateSync(name, baseDir)
+    private val sync: ContentStoreSync = ContentStoreManager.getOrCreateSync(name, baseDir)
 
     // 显式初始化索引（可在应用启动时调用，非必须，因为后续操作会延迟加载）
 
@@ -521,6 +521,6 @@ class ChapterStoreService(
     /** 执行 compact 整理 */
     suspend fun compact() = sync.compact()
     override fun close() {
-        ChapterStoreManager.releaseSync(name, baseDir)
+        ContentStoreManager.releaseSync(name, baseDir)
     }
 }

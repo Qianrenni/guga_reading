@@ -126,10 +126,10 @@ class AuditService(private val application: Application) {
                     chapterIds = it
                 }
         }
-        val chapterStoreService =
-            ChapterStoreService(name = bookId.toString(), baseDir = application.appConfig.contentDir + "/book")
+        val contentStoreService =
+            ContentStoreService(name = bookId.toString(), baseDir = application.appConfig.contentDir + "/book")
         return chapterIds.map {
-            chapterStoreService.readChapter(it)
+            contentStoreService.readChapter(it)
         }
     }
 

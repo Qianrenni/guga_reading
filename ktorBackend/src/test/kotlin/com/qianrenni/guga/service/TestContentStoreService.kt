@@ -1,7 +1,7 @@
 package com.qianrenni.guga.service
 
-import com.qianrenni.services.ChapterStoreManager
-import com.qianrenni.services.ChapterStoreService
+import com.qianrenni.services.ContentStoreManager
+import com.qianrenni.services.ContentStoreService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import kotlin.io.path.ExperimentalPathApi
@@ -11,14 +11,14 @@ import kotlin.random.Random
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 
-class TestChapterStoreService {
+class TestContentStoreService {
 
     private lateinit var tempDir: java.nio.file.Path
 
     @BeforeTest
     fun setUp() {
         tempDir = createTempDirectory("chapter-store-new-test")
-        ChapterStoreManager.resetForTest() // 每个测试前清空全局缓存，避免交叉影响
+        ContentStoreManager.resetForTest() // 每个测试前清空全局缓存，避免交叉影响
     }
 
     @OptIn(ExperimentalPathApi::class)
@@ -30,7 +30,7 @@ class TestChapterStoreService {
     // ================= 原有基础测试 =================
     @Test
     fun testCRUD() = runTest {
-        val store = ChapterStoreService(name = "1", baseDir = tempDir.toString())
+        val store = ContentStoreService(name = "1", baseDir = tempDir.toString())
         store.update(1, "第一章内容")
         store.update(2, "第二章内容")
         store.update(3, "第三章内容")
@@ -48,18 +48,18 @@ class TestChapterStoreService {
 
     @Test
     fun testPersistence() = runTest {
-        val store1 = ChapterStoreService(name = "2", baseDir = tempDir.toString())
+        val store1 = ContentStoreService(name = "2", baseDir = tempDir.toString())
         store1.update(1, "持久化测试内容")
         store1.update(2, "第二章内容")
 
-        val store2 = ChapterStoreService(name = "2", baseDir = tempDir.toString())
+        val store2 = ContentStoreService(name = "2", baseDir = tempDir.toString())
         assertEquals(listOf(1, 2), store2.toList())
         assertEquals("持久化测试内容", store2.readChapter(1))
     }
 
     @Test
     fun testCompact() = runTest {
-        val store = ChapterStoreService(name = "3", baseDir = tempDir.toString())
+        val store = ContentStoreService(name = "3", baseDir = tempDir.toString())
         store.update(1, "初始内容")
         store.update(1, "第一次更新")
         store.update(1, "第二次更新")
@@ -73,7 +73,7 @@ class TestChapterStoreService {
 
     @Test
     fun testLargeContent() = runTest {
-        val store = ChapterStoreService(name = "4", baseDir = tempDir.toString())
+        val store = ContentStoreService(name = "4", baseDir = tempDir.toString())
         val contentSize = 10 * 1024
         val randomContent = buildString {
             val chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?~"
@@ -85,7 +85,7 @@ class TestChapterStoreService {
         val readBack = store.readChapter(1)
         assertEquals(randomContent, readBack)
 
-        val store2 = ChapterStoreService(name = "4", baseDir = tempDir.toString())
+        val store2 = ContentStoreService(name = "4", baseDir = tempDir.toString())
         assertEquals(randomContent, store2.readChapter(1))
     }
 
@@ -96,7 +96,7 @@ class TestChapterStoreService {
      */
     @Test
     fun testConcurrentWritesToDifferentChapters() = runTest {
-        val store = ChapterStoreService(name = "100", baseDir = tempDir.toString())
+        val store = ContentStoreService(name = "100", baseDir = tempDir.toString())
         val chapterCount = 20
         val jobs = (1..chapterCount).map { chapterId ->
             launch(Dispatchers.Default) {
@@ -117,7 +117,7 @@ class TestChapterStoreService {
      */
     @Test
     fun testConcurrentWritesToSameChapter() = runTest {
-        val store = ChapterStoreService(name = "101", baseDir = tempDir.toString())
+        val store = ContentStoreService(name = "101", baseDir = tempDir.toString())
         val coroutineCount = 10
         val results = mutableListOf<Deferred<String>>()
         repeat(coroutineCount) { index ->
@@ -138,7 +138,7 @@ class TestChapterStoreService {
      */
     @Test
     fun testConcurrentReadsAndWrites() = runTest {
-        val store = ChapterStoreService(name = "102", baseDir = tempDir.toString())
+        val store = ContentStoreService(name = "102", baseDir = tempDir.toString())
         store.update(1, "InitialValue")
         val readJobs = mutableListOf<Deferred<List<String>>>()
         val writeJob = async(Dispatchers.Default) {
@@ -170,7 +170,7 @@ class TestChapterStoreService {
      */
     @Test
     fun testConcurrentDeleteAndList() = runTest {
-        val store = ChapterStoreService(name = "103", baseDir = tempDir.toString())
+        val store = ContentStoreService(name = "103", baseDir = tempDir.toString())
         store.update(1, "C1")
         store.update(2, "C2")
         store.update(3, "C3")
@@ -197,7 +197,7 @@ class TestChapterStoreService {
      */
     @Test
     fun testCompactUnderConcurrency() = runTest {
-        val store = ChapterStoreService(name = "104", baseDir = tempDir.toString())
+        val store = ContentStoreService(name = "104", baseDir = tempDir.toString())
         // 先写入一些数据
         store.update(1, "V1")
         store.update(2, "V2")
@@ -238,7 +238,7 @@ class TestChapterStoreService {
         val baseDir = tempDir.toString()
 
         // 创建第一个实例并写入初始数据
-        val store1 = ChapterStoreService(name = bookId.toString(), baseDir)
+        val store1 = ContentStoreService(name = bookId.toString(), baseDir)
         store1.update(1, "shared")
 
         // 并发使用多个实例
@@ -246,7 +246,7 @@ class TestChapterStoreService {
         repeat(5) { index ->
             jobs.add(launch(Dispatchers.Default) {
                 // 每个协程内创建自己的实例并执行操作
-                ChapterStoreService(name = bookId.toString(), baseDir).use { store ->
+                ContentStoreService(name = bookId.toString(), baseDir).use { store ->
                     store.readChapter(1)
                     store.update(2, "from-$index")
                     // 简单读取
@@ -258,7 +258,7 @@ class TestChapterStoreService {
 
         // 确认仍有实例存活（store1 未关闭）
         assertTrue(
-            ChapterStoreManager.containsSync(bookId.toString(), baseDir),
+            ContentStoreManager.containsSync(bookId.toString(), baseDir),
             "Sync should still be cached because store1 is open"
         )
 
@@ -266,12 +266,12 @@ class TestChapterStoreService {
         store1.close()
         // 此时引用计数归零，缓存应被移除
         assertFalse(
-            ChapterStoreManager.containsSync(bookId.toString(), baseDir),
+            ContentStoreManager.containsSync(bookId.toString(), baseDir),
             "Sync should be removed after all instances closed"
         )
 
         // 再次打开新实例，应能正常加载原有数据
-        val store2 = ChapterStoreService(name = bookId.toString(), baseDir)
+        val store2 = ContentStoreService(name = bookId.toString(), baseDir)
         assertEquals("shared", store2.readChapter(1))
         assertTrue(store2.toList().contains(2))
         store2.close()
