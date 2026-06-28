@@ -25,9 +25,29 @@
           letterSpacing: `${useReadingSetting.readSettings.letterSpacing}px`,
           color: useReadingSetting.readSettings.color,
         }"
-        @click="shwoBottomSettings = true"
-        v-html="content"
-      />
+        @dblclick.stop="shwoBottomSettings = true"
+      >
+        <QPopContainer
+          :visible="showComment && currentCommentIndex === index"
+          position="right-center"
+          v-for="(line, index) in content"
+        >
+          <p
+            class="text-read-indent bg-hover-secondary mouse-curso user-select-none"
+            @click.stop="
+              {
+                showComment = !(showComment && currentCommentIndex === index);
+                currentCommentIndex = index;
+              }
+            "
+          >
+            {{ line }}
+          </p>
+          <template #pop>
+            <span>评论</span>
+          </template>
+        </QPopContainer>
+      </div>
       <div class="book-read-sidebar bg-card hidden-768 container-column">
         <div
           class="inner-container-column container-align-center bg-hover-secondary"
@@ -219,14 +239,12 @@ import type { Book, Catalog } from '@guga-reading/types';
 import { useBookStore, useReadSettingStore } from '@/store';
 import router from '@/route';
 import {
-  applySpacingToHtml,
   indexToCN,
-  isHtml,
   toggleFullScreen,
   useApiBooks,
   useTitle,
 } from '@guga-reading/shares';
-import { useScreenSize, useThrottle } from 'qyani-components';
+import { QPopContainer, useScreenSize, useThrottle } from 'qyani-components';
 import { useReadingHistoryStore } from '@/store';
 import { QLoading, QIcon, QDrawer } from 'qyani-components';
 import { useApiReport } from '@guga-reading/shares';
@@ -234,6 +252,10 @@ import ReadSetting from '@/components/ReadSetting.vue';
 const fullScreen = toggleFullScreen();
 // 用于切换时滚动到顶部
 const bookReadContainer = useTemplateRef<HTMLDivElement>('bookReadContainer');
+// 是否显示评论
+const showComment = ref<boolean>(false);
+//
+const currentCommentIndex = ref<number>(-1);
 // 书籍信息
 const book = ref<Book>({} as Book);
 // 目录
@@ -243,7 +265,7 @@ const bookStore = useBookStore();
 // 是否显示目录
 const showCatalog = ref<boolean>(false);
 // 当前内容
-const content = ref<string>('');
+const content = ref<string[]>([]);
 // 目录呈现顺序
 const catalogAscOrder = ref(true);
 // 当前内容对应的章节ID
@@ -260,6 +282,7 @@ watch(
   () => currentContentIndex.value,
   (index) => {
     useTitle(catalog.value[index].title);
+    showComment.value = false;
   },
 );
 // 是否显示底部设置
@@ -332,14 +355,9 @@ const run = async (chapterId: number) => {
   );
   const rawContent = data || '';
   // 处理章节内容
-  const processedContent = isHtml(rawContent)
-    ? rawContent
-    : rawContent
-        .split('\n')
-        .map((item) => `<p class='text-read-indent'>${item}</p>`)
-        .join('');
+  const processedContent = rawContent.split('\n').map((item) => item.trim());
   // 更新实际显示内容
-  content.value = applySpacingToHtml(processedContent);
+  content.value = processedContent;
   // 更新当前内容ID
   currentContentId.value = chapterId;
   // 更新阅读历史
