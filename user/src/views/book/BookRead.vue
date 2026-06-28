@@ -25,28 +25,28 @@
           letterSpacing: `${useReadingSetting.readSettings.letterSpacing}px`,
           color: useReadingSetting.readSettings.color,
         }"
-        @dblclick.stop="shwoBottomSettings = true"
+        @click.stop="shwoBottomSettings = true"
       >
-        <QPopContainer
-          :visible="showComment && currentCommentIndex === index"
-          position="right-center"
-          v-for="(line, index) in content"
-        >
-          <p
-            class="text-read-indent bg-hover-secondary mouse-curso user-select-none"
+        <p v-for="(line, index) in content" class="text-read-indent">
+          {{ line }}
+          <span
+            style="
+              display: inline-flex;
+              vertical-align: -webkit-baseline-middle;
+            "
             @click.stop="
               {
-                showComment = !(showComment && currentCommentIndex === index);
+                showComment = true;
                 currentCommentIndex = index;
               }
             "
           >
-            {{ line }}
-          </p>
-          <template #pop>
-            <span>评论</span>
-          </template>
-        </QPopContainer>
+            <QIcon
+              icon="ChatDotRound"
+              :size="useReadingSetting.readSettings.fontSize"
+            />
+          </span>
+        </p>
       </div>
       <div class="book-read-sidebar bg-card hidden-768 container-column">
         <div
@@ -221,6 +221,17 @@
       >
         <ReadSetting />
       </QDrawer>
+      <QDrawer
+        v-model:visible="showComment"
+        :direction="isMobile ? 'bottom' : 'right'"
+        :close-on-click-overlay="true"
+        :overlay="false"
+        @close="showComment = false"
+      >
+        <div class="inner-container-column">
+          <p>评论</p>
+        </div>
+      </QDrawer>
     </div>
   </div>
 </template>
@@ -244,12 +255,13 @@ import {
   useApiBooks,
   useTitle,
 } from '@guga-reading/shares';
-import { QPopContainer, useScreenSize, useThrottle } from 'qyani-components';
+import { useScreenSize, useThrottle } from 'qyani-components';
 import { useReadingHistoryStore } from '@/store';
 import { QLoading, QIcon, QDrawer } from 'qyani-components';
 import { useApiReport } from '@guga-reading/shares';
 import ReadSetting from '@/components/ReadSetting.vue';
 const fullScreen = toggleFullScreen();
+const isMobile = useScreenSize.getWidth(768);
 // 用于切换时滚动到顶部
 const bookReadContainer = useTemplateRef<HTMLDivElement>('bookReadContainer');
 // 是否显示评论
