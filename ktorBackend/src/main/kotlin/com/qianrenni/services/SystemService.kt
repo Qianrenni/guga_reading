@@ -8,12 +8,15 @@ import com.qianrenni.schemas.PageResult
 import io.ktor.server.application.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import oshi.SystemInfo
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.round
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 系统信息服务
@@ -111,6 +114,7 @@ class SystemService {
     suspend fun readLogFile(
         fileName: String,
         level: String? = null,
+        regex: String? = null,
         page: Int = 1,
         size: Int = 100
     ): PageResult<LogEntry> = withContext(Dispatchers.IO) {
@@ -121,16 +125,32 @@ class SystemService {
 
         val allLines = logFile.readLines(Charsets.UTF_8)
 
-        // 解析并过滤
+        // 解析并过滤（级别）
         val matchedEntries = allLines.mapIndexedNotNull { index, line ->
             parseLogLine(index + 1, line)
         }.filter { entry ->
             level == null || entry.level.equals(level, ignoreCase = true)
         }
 
-        val total = matchedEntries.size
+        // 正则过滤（带超时保护，防止 redos）
+        val filteredEntries = if (regex != null) {
+            try {
+                val pattern = Regex(regex)
+                withTimeout(5.seconds) {
+                    matchedEntries.filter { entry ->
+                        pattern.containsMatchIn(entry.message)
+                    }
+                }
+            } catch (_: TimeoutCancellationException) {
+                throw IllegalArgumentException("正则执行超时，请尝试更简单的表达式")
+            }
+        } else {
+            matchedEntries
+        }
+
+        val total = filteredEntries.size
         val offset = (page - 1) * size
-        val items = matchedEntries.sortedByDescending { it.timestamp }.drop(offset).take(size)
+        val items = filteredEntries.sortedByDescending { it.timestamp }.drop(offset).take(size)
 
         PageResult(items = items, total = total, page = page, size = size)
     }

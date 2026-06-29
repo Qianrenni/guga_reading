@@ -24,12 +24,14 @@ export const useApiSystem = {
    * @param level  过滤级别(可选)
    * @param page   页码(默认1)
    * @param size   每页条数(默认100)
+   * @param regex  正则搜索表达式(可选)
    */
   readLog: async function (
     file: string,
     level?: string,
     page: number = 1,
     size: number = 100,
+    regex?: string,
   ) {
     const params = new URLSearchParams({
       file,
@@ -37,6 +39,7 @@ export const useApiSystem = {
       size: String(size),
     });
     if (level) params.set('level', level);
+    if (regex) params.set('regex', regex);
     return await get<PageResult<LogEntry>>(
       `${this.prefix}/logs/read?${params.toString()}`,
     );

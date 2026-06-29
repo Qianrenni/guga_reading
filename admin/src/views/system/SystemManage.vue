@@ -46,11 +46,33 @@
         </div>
       </div>
 
+      <!-- 正则搜索行 -->
+      <div class="inner-container container-wrap">
+        <div class="inner-container container-align-center">
+          <label class="text-label">正则搜索：</label>
+          <input
+            v-model="regexPattern"
+            type="text"
+            class="text-input regex-input"
+            placeholder="输入正则表达式搜索..."
+            @keyup.enter="onRegexSearch"
+            @input="onRegexInput"
+          />
+          <span
+            v-if="regexError"
+            class="text-danger text-085rem"
+            style="margin-left: 0.5rem"
+          >
+            {{ regexError }}
+          </span>
+        </div>
+      </div>
+
       <!-- 日志内容展示 -->
       <div
         class="bg-card inner-container-column border-horizontal-gray scroll-container"
         :style="{
-          height: `${isMobile ? 'calc(100vh - 13rem)' : 'calc(100vh - 10rem)'}`,
+          height: `${isMobile ? 'calc(100vh - 13rem)' : 'calc(100vh - 11.5rem)'}`,
         }"
       >
         <QSkeleton v-if="loading" />
@@ -159,6 +181,8 @@ const pageSize = ref(100);
 const total = ref(0);
 const loading = ref(false);
 const errorMsg = ref('');
+const regexPattern = ref('');
+const regexError = ref('');
 
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(total.value / pageSize.value)),
@@ -182,19 +206,27 @@ async function loadLogContent() {
   if (!selectedFile.value) return;
   loading.value = true;
   errorMsg.value = '';
+  regexError.value = '';
   try {
-    const { success, data } = await useApiSystem.readLog(
+    const { success, data, message } = await useApiSystem.readLog(
       selectedFile.value,
       selectedLevel.value || undefined,
       page.value,
       pageSize.value,
+      regexPattern.value || undefined,
     );
     if (success && data) {
       logEntries.value = data.items || [];
       total.value = data.total || 0;
     } else {
+      // 后端返回错误（如非法正则）
       logEntries.value = [];
       total.value = 0;
+      if (message) {
+        regexError.value = message;
+      } else {
+        errorMsg.value = '加载日志失败';
+      }
     }
   } catch {
     errorMsg.value = '加载日志失败，请检查文件是否存在';
@@ -229,6 +261,21 @@ function changePage(newPage: number) {
 function onPageSizeChange() {
   page.value = 1;
   loadLogContent();
+}
+
+/** 回车触发正则搜索 */
+function onRegexSearch() {
+  page.value = 1;
+  loadLogContent();
+}
+
+/** 正则输入框变化：清空时自动重置 */
+function onRegexInput() {
+  if (regexPattern.value === '') {
+    regexError.value = '';
+    page.value = 1;
+    loadLogContent();
+  }
 }
 
 onBeforeMount(() => {
@@ -321,5 +368,13 @@ onBeforeMount(() => {
   color: var(--text-color, #1f2937);
   line-break: anywhere;
   white-space: pre-wrap;
+}
+
+/* 正则输入框 */
+.regex-input {
+  min-width: 260px;
+  max-width: 380px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  font-size: 0.82rem;
 }
 </style>

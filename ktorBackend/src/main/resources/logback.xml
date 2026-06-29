@@ -38,7 +38,7 @@
     </appender>
 
     <!-- ========== 根日志级别 ========== -->
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE_ASYNC"/>   <!-- 使用异步版本 -->
     </root>

@@ -45,7 +45,7 @@ fun Routing.system() {
                 call.respond(ResponseModel.Success(data = files))
             }
 
-            // GET /system/logs/read - 读取日志内容（分页+级别筛选）
+            // GET /system/logs/read - 读取日志内容（分页+级别筛选+正则搜索）
             get("/logs/read") {
                 call.requirePermission(
                     listOf(
@@ -58,12 +58,14 @@ fun Routing.system() {
                 )
                 val fileName = call.requireQueryParameter("file")
                 val level = call.queryParameters["level"]
+                val regex = call.queryParameters["regex"]
                 val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
                 val size = call.request.queryParameters["size"]?.toIntOrNull() ?: 100
 
                 val result = application.systemService.readLogFile(
                     fileName = fileName,
                     level = level,
+                    regex = regex,
                     page = page,
                     size = size
                 )
