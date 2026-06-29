@@ -8,7 +8,19 @@ import HeaderNavigation from './components/common/HeaderNavigation.vue';
 import { IconConfig } from 'qyani-components';
 const authStore = useAuthStore();
 IconConfig.setBase('/admin');
-
+import axios from 'axios';
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
+axios.interceptors.response.use(
+  (response) => {
+    if (response.status === 401) {
+      authStore.clearUser();
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 /*
  * 路由守卫
  * params:
@@ -31,15 +43,16 @@ router.beforeEach((to, _, next) => {
   next();
 });
 watch(
-  () => authStore.getUser,
-  (newUser) => {
+  () => authStore.isLogin,
+  (newValue) => {
     if (
-      newUser === null &&
+      !newValue &&
       !excludePaths.some((item) =>
         router.currentRoute.value.path.startsWith(item),
       )
     ) {
-      router.push('/login');
+      authStore.setRedictUrl(router.currentRoute.value.path);
+      router.replace('/login');
     }
   },
 );
