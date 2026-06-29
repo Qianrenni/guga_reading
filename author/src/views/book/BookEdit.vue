@@ -25,12 +25,23 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
-import { onBeforeMount } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+  onBeforeMount,
+  onMounted,
+  onUnmounted,
+} from 'vue';
 import { router } from '@/route';
 import ContentEditor from '@/components/common/ContentEditor.vue';
 import BackButton from '@/components/common/BackButton.vue';
-import { QIcon, useMessage, UseTimeUtils } from 'qyani-components';
+import {
+  QIcon,
+  useMessage,
+  useShowLoading,
+  UseTimeUtils,
+} from 'qyani-components';
 import { useApiAuthor } from '@guga-reading/shares';
 import { TranslationStatus, type BookChapter } from '@guga-reading/types';
 import EditableTitle from '@/components/common/EditableTitle.vue';
@@ -60,6 +71,7 @@ watch(
   },
 );
 const saveChapter = () => {
+  useShowLoading.show();
   const item = bookChapters.value[currentIndex.value]!;
   useApiAuthor
     .updateBookChapter(
@@ -74,9 +86,28 @@ const saveChapter = () => {
       } else {
         useMessage.error(`${res.message || '保存失败'}`);
       }
+    })
+    .finally(() => {
+      useShowLoading.hide();
     });
 };
+const handleKeydown = (e: KeyboardEvent) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    saveChapter();
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+});
+
 onBeforeMount(() => {
+  useShowLoading.show();
   Promise.all([
     useApiAuthor.getBookChapter(bookId, chapterIds).then((res) => {
       if (res.success) {
@@ -88,9 +119,13 @@ onBeforeMount(() => {
         chapterContents.value = res.data;
       }
     }),
-  ]).then(() => {
-    currentIndex.value = bookChapters.value.length - 1;
-  });
+  ])
+    .then(() => {
+      currentIndex.value = bookChapters.value.length - 1;
+    })
+    .finally(() => {
+      useShowLoading.hide();
+    });
 });
 </script>
 <style scoped></style>
