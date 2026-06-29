@@ -46,5 +46,4 @@
     <!-- ========== 第三方库的级别控制 ========== -->
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
-    <logger name="io.lettuce" level="WARN"/>
 </configuration>
