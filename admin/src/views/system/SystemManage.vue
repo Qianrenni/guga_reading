@@ -7,72 +7,40 @@
       <!-- 工具栏：文件选择 + 级别筛选 -->
       <div class="inner-container container-wrap">
         <!-- 文件选择 -->
-        <div class="inner-container container-align-center">
-          <label class="text-label">日志文件：</label>
-          <select
-            v-model="selectedFile"
-            class="text-input"
-            @change="onFileChange"
-          >
-            <option value="" disabled>选择日志文件</option>
-            <option v-for="f in logFiles" :key="f.name" :value="f.name">
-              {{ f.name }}（{{ formatBytes(f.size) }}）
-            </option>
-          </select>
-        </div>
-
-        <!-- 级别筛选标签 -->
-        <div class="inner-container container-align-center container-wrap">
-          <label class="text-label">级别筛选：</label>
-          <button
-            v-for="lvl in logLevels"
-            class="button"
-            :key="lvl"
-            :class="{
-              'button-primary': selectedLevel === lvl,
-              [`level-${lvl.toLowerCase()}`]: true,
-            }"
-            @click="onLevelChange(lvl)"
-          >
-            {{ lvl }}
-          </button>
-          <button
-            class="button"
-            :class="{ 'button-primary': selectedLevel === '' }"
-            @click="onLevelChange('')"
-          >
-            全部
-          </button>
-        </div>
+        <QFormSelect
+          label="日志文件"
+          :options="
+            logFiles.map((file) => {
+              return {
+                label: `${file.name}${formatBytes(file.size)}`,
+                value: file.name,
+              };
+            })
+          "
+          :required="false"
+          v-model="selectedFile"
+        />
+        <QFormSelect
+          label="级别筛选"
+          :required="false"
+          v-model="selectedLevel"
+          :options="
+            logLevels.map((value) => {
+              return { label: value, value: value === '全部' ? '' : value };
+            })
+          "
+        />
+        <QSearch
+          placeholder="正则搜索"
+          v-model="regexPattern"
+          @search="onRegexSearch"
+        />
       </div>
-
-      <!-- 正则搜索行 -->
-      <div class="inner-container container-wrap">
-        <div class="inner-container container-align-center">
-          <label class="text-label">正则搜索：</label>
-          <input
-            v-model="regexPattern"
-            type="text"
-            class="text-input regex-input"
-            placeholder="输入正则表达式搜索..."
-            @keyup.enter="onRegexSearch"
-            @input="onRegexInput"
-          />
-          <span
-            v-if="regexError"
-            class="text-danger text-085rem"
-            style="margin-left: 0.5rem"
-          >
-            {{ regexError }}
-          </span>
-        </div>
-      </div>
-
       <!-- 日志内容展示 -->
       <div
         class="bg-card inner-container-column border-horizontal-gray scroll-container"
         :style="{
-          height: `${isMobile ? 'calc(100vh - 13rem)' : 'calc(100vh - 11.5rem)'}`,
+          height: `${isMobile ? 'calc(100vh - 14rem)' : 'calc(100vh - 10rem)'}`,
         }"
       >
         <QSkeleton v-if="loading" />
@@ -155,15 +123,21 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue';
-import { QIcon, QSkeleton, useScreenSize } from 'qyani-components';
+import { ref, computed, onBeforeMount, watch } from 'vue';
+import {
+  QFormSelect,
+  QIcon,
+  QSearch,
+  QSkeleton,
+  useScreenSize,
+} from 'qyani-components';
 import { formatBytes, useApiSystem } from '@guga-reading/shares';
 import type { LogFileInfo, LogEntry } from '@guga-reading/types';
 
 defineOptions({ name: 'SystemManage' });
 
 // 日志级别
-const logLevels = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'] as const;
+const logLevels = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', '全部'] as const;
 
 // 文件列表
 const logFiles = ref<LogFileInfo[]>([]);
@@ -182,8 +156,6 @@ const total = ref(0);
 const loading = ref(false);
 const errorMsg = ref('');
 const regexPattern = ref('');
-const regexError = ref('');
-
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(total.value / pageSize.value)),
 );
@@ -196,7 +168,6 @@ async function loadLogFiles() {
     if (data.length > 0 && !selectedFile.value) {
       const firstFile = data[0]!;
       selectedFile.value = firstFile.name;
-      loadLogContent();
     }
   }
 }
@@ -206,7 +177,6 @@ async function loadLogContent() {
   if (!selectedFile.value) return;
   loading.value = true;
   errorMsg.value = '';
-  regexError.value = '';
   try {
     const { success, data, message } = await useApiSystem.readLog(
       selectedFile.value,
@@ -222,11 +192,7 @@ async function loadLogContent() {
       // 后端返回错误（如非法正则）
       logEntries.value = [];
       total.value = 0;
-      if (message) {
-        regexError.value = message;
-      } else {
-        errorMsg.value = '加载日志失败';
-      }
+      errorMsg.value = message || '加载日志失败';
     }
   } catch {
     errorMsg.value = '加载日志失败，请检查文件是否存在';
@@ -237,20 +203,23 @@ async function loadLogContent() {
   }
 }
 
-/** 切换文件 */
-function onFileChange() {
-  page.value = 1;
-  errorMsg.value = '';
-  loadLogContent();
-}
+watch(
+  () => selectedFile.value,
+  () => {
+    page.value = 1;
+    errorMsg.value = '';
+    loadLogContent();
+  },
+);
 
 /** 切换级别 */
-function onLevelChange(level: string) {
-  selectedLevel.value = level;
-  page.value = 1;
-  loadLogContent();
-}
-
+watch(
+  () => selectedLevel.value,
+  () => {
+    page.value = 1;
+    loadLogContent();
+  },
+);
 /** 翻页 */
 function changePage(newPage: number) {
   page.value = newPage;
@@ -268,16 +237,6 @@ function onRegexSearch() {
   page.value = 1;
   loadLogContent();
 }
-
-/** 正则输入框变化：清空时自动重置 */
-function onRegexInput() {
-  if (regexPattern.value === '') {
-    regexError.value = '';
-    page.value = 1;
-    loadLogContent();
-  }
-}
-
 onBeforeMount(() => {
   loadLogFiles();
 });
