@@ -1,81 +1,107 @@
 package com.qianrenni.config
 
-import com.typesafe.config.ConfigFactory
 import io.ktor.server.application.*
-import io.ktor.server.config.*
 import io.ktor.util.*
 
 /**
  * 应用配置管理类
- * 对应 Python 项目中的 app/core/config.py
+ * 直接通过环境变量加载，忽略大小写，支持默认值
  */
 data class AppConfig(
     // 运行环境
-    val environment: String = "dev",
-    val allowHost: String = "localhost",
+    val environment: String ,
+    val allowHost: String ,
     // 数据库配置
-    val mysqlDsn: String,
-    val dbPoolSize: Int = 20,
-    val dbMaxOverflow: Int = 10,
-    val dbPoolRecycle: Int = 3600,
+    val mysqlDsn: String ,
+    val dbPoolSize: Int ,
+    val dbMaxOverflow: Int ,
+    val dbPoolRecycle: Int ,
 
     // Redis 配置
-    val redisUrl: String,
-    val redisPoolSize: Int = 50,
-    val redisWaitTimeout: Int = 3,
+    val redisUrl: String ,
+    val redisPoolSize: Int ,
+    val redisWaitTimeout: Int ,
 
     // JWT 配置
-    val secretKey: String,
-    val audience: String = "",
-    val issuer: String = "",
-    val accessTokenExpire: Int = 43200,      // 12小时(秒)
-    val refreshTokenExpire: Int = 604800,     // 7天(秒)
-    val emailVerifyExpire: Int = 300,         // 5分钟(秒)
-    val captchaExpire: Int = 120,             // 2分钟(秒)
-    val permissionBitLength: Int = 32,
+    val secretKey: String ,
+    val audience: String ,
+    val issuer: String ,
+    val accessTokenExpire: Int ,
+    val refreshTokenExpire: Int ,
+    val emailVerifyExpire: Int ,
+    val captchaExpire: Int ,
+    val permissionBitLength: Int ,
 
     // 缓存配置
-    val bookCacheExpire: Int = 1800,          // 书籍缓存30分钟
-    val permissionCacheExpire: Int = 604800,  // 权限缓存7天
+    val bookCacheExpire: Int ,
+    val permissionCacheExpire: Int ,
 
     // 限流配置
-    val ipLimitEnable: Boolean = true,
-    val ipLimitWindow: Int = 60,              // 60秒窗口
-    val ipLimitCount: Int = 30,               // 最多30次请求
+    val ipLimitEnable: Boolean ,
+    val ipLimitWindow: Int ,
+    val ipLimitCount: Int ,
 
     // 存储配置
-    val bookShardCount: Int = 64,
-    val staticDir: String = "static",
-    val contentDir: String = "store",
-    val chapterEncoding: String = "utf-8",
+    val bookShardCount: Int ,
+    val staticDir: String ,
+    val contentDir: String ,
+    val chapterEncoding: String ,
 
     // 服务器配置
-    val serverUrl: String = "http://localhost:8080",
+    val serverUrl: String ,
 
     // 邮箱配置
-    val smtpServer: String = "smtp.qq.com",
-    val smtpPort: Int = 465,
-    val emailAccount: String = "",
-    val emailCode: String = "",
+    val smtpServer: String ,
+    val smtpPort: Int ,
+    val emailAccount: String ,
+    val emailCode: String ,
 
     // 跨域配置
     val allowOrigins: String = "*"
 ) {
     companion object {
-        fun fromConfig(config: ApplicationConfig): AppConfig {
+        /** 忽略大小写的环境变量映射 */
+        private val envMap: Map<String, String> =
+            System.getenv().mapKeys { it.key.uppercase() }
+
+        private fun env(key: String): String? = envMap[key.uppercase()]
+
+        fun load(): AppConfig {
+            fun String?.toIntOrDefault(default: Int) = this?.toIntOrNull() ?: default
+
             return AppConfig(
-                environment = config.property("app.env").getString(),
-                allowHost = config.property("app.server.allowHost").getString(),
-                contentDir = config.property("app.contentDir").getString(),
-                staticDir = config.property("app.staticDir").getString(),
-                serverUrl = config.property("app.server.url").getString(),
-                mysqlDsn = config.property("app.database.mysql-dsn").getString(),
-                redisUrl = config.property("app.cache.redis-url").getString(),
-                secretKey = config.property("app.security.secret-key").getString(),
-                smtpServer = config.property("app.email.smtp-server").getString(),
-                smtpPort = config.property("app.email.smtp-port").getString().toInt(),
-                emailAccount = config.property("app.email.account").getString(),
-                emailCode = config.property("app.email.code").getString(),
+                environment = env("ENV") ?: "dev",
+                allowHost = env("ALLOW_HOST") ?: "localhost",
+                mysqlDsn = env("MYSQL_DSN") ?: "",
+                dbPoolSize = env("DB_POOL_SIZE").toIntOrDefault(20),
+                dbMaxOverflow = env("DB_MAX_OVERFLOW").toIntOrDefault(10),
+                dbPoolRecycle = env("DB_POOL_RECYCLE").toIntOrDefault(3600),
+                redisUrl = env("REDIS_URL") ?: "",
+                redisPoolSize = env("REDIS_POOL_SIZE").toIntOrDefault(50),
+                redisWaitTimeout = env("REDIS_WAIT_TIMEOUT").toIntOrDefault(3),
+                secretKey = env("SECRET_KEY") ?: "",
+                audience = env("AUDIENCE") ?: "",
+                issuer = env("ISSUER") ?: "",
+                accessTokenExpire = env("ACCESS_TOKEN_EXPIRE").toIntOrDefault(30),
+                refreshTokenExpire = env("REFRESH_TOKEN_EXPIRE").toIntOrDefault(60 * 30),
+                emailVerifyExpire = env("EMAIL_VERIFY_EXPIRE").toIntOrDefault(300),
+                captchaExpire = env("CAPTCHA_EXPIRE").toIntOrDefault(120),
+                permissionBitLength = env("PERMISSION_BIT_LENGTH").toIntOrDefault(32),
+                bookCacheExpire = env("BOOK_CACHE_EXPIRE").toIntOrDefault(1800),
+                permissionCacheExpire = env("PERMISSION_CACHE_EXPIRE").toIntOrDefault(604800),
+                ipLimitEnable = env("IP_LIMIT_ENABLE")?.toBooleanStrictOrNull() ?: true,
+                ipLimitWindow = env("IP_LIMIT_WINDOW").toIntOrDefault(60),
+                ipLimitCount = env("IP_LIMIT_COUNT").toIntOrDefault(30),
+                bookShardCount = env("BOOK_SHARD_COUNT").toIntOrDefault(64),
+                staticDir = env("STATIC_DIR") ?: "static",
+                contentDir = env("CONTENT_DIR") ?: "store",
+                chapterEncoding = env("CHAPTER_ENCODING") ?: "utf-8",
+                serverUrl = env("SERVER_URL") ?: "http://localhost:8080",
+                smtpServer = env("SMTP_SERVER") ?: "smtp.qq.com",
+                smtpPort = env("SMTP_PORT").toIntOrDefault(465),
+                emailAccount = env("EMAIL_ACCOUNT") ?: "",
+                emailCode = env("EMAIL_CODE") ?: "",
+                allowOrigins = env("ALLOW_ORIGINS") ?: "*"
             )
         }
     }
@@ -83,13 +109,11 @@ data class AppConfig(
 
 private val AppConfigKey = AttributeKey<AppConfig>("AppConfig")
 
-// Application 扩展属性用于存储配置
 val Application.appConfig: AppConfig
     get() = attributes[AppConfigKey]
 
 fun Application.loadConfig() {
-    val config = HoconApplicationConfig(ConfigFactory.load())
-    val appConfig = AppConfig.fromConfig(config)
+    val appConfig = AppConfig.load()
     attributes.put(AppConfigKey, appConfig)
     log.info(appConfig.toString())
 }

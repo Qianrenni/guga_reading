@@ -6,7 +6,21 @@ import { includePaths } from '@/config';
 import router from '@/route';
 import { useAuthStore } from '@/store';
 import { useTitle } from '@guga-reading/shares';
+import { watch } from 'vue';
 const authStore = useAuthStore();
+import axios from 'axios';
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
+axios.interceptors.response.use(
+  (response) => {
+    if (response.status === 401) {
+      authStore.clearUser();
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 /*
  * 路由守卫
  * params:
@@ -29,5 +43,19 @@ router.beforeEach((to, _, next) => {
   useTitle(`${to.meta.title ?? '咕嘎阅读'}`);
   next();
 });
+watch(
+  () => authStore.isLogin,
+  (newValue) => {
+    if (
+      !newValue &&
+      includePaths.find((path) =>
+        router.currentRoute.value.path.startsWith(path),
+      ) !== undefined
+    ) {
+      authStore.setRedictUrl(router.currentRoute.value.path);
+      router.replace('/login');
+    }
+  },
+);
 </script>
 <style scoped lang="css"></style>
